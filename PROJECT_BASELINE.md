@@ -1,6 +1,7 @@
 # Project Baseline
 
 ## Scope Baseline
+
 - Core race types in initial scope: Duck, Horse, Rocket.
 - Brand system applies to all race types.
 - Admin panel manages players, presets, race settings, and brand profiles.
@@ -11,13 +12,21 @@
 - Integration layer must support connecting existing bots through adapters/webhooks.
 
 ## Engineering Baseline
+
 - Monorepo with strict TypeScript boundaries.
 - Versioned REST API under `/api/v1`.
 - Deterministic race simulation mode with reproducible seed.
 - CI quality gates with staged strictness (light, extended, full).
 - Core engine remains independent from UI, storage, and connector implementations.
 
+## Current Implementation Snapshot
+
+- Phase 1 tooling is active with TypeScript, ESLint, Prettier, and Vitest.
+- Minimal modular source boundaries exist for apps and core packages.
+- Foundation smoke test is in place and running in CI.
+
 ## Visual Baseline
+
 - Curved tracks supported by path-based movement (not X-axis-only).
 - Lightweight procedural animation effects:
   - Duck: water motion, wake, bubbles.
@@ -25,11 +34,13 @@
   - Rocket: cloud parallax, flame particles.
 
 ## Security Baseline
+
 - Input validation at all API boundaries.
 - Authn/Authz required for admin actions.
 - Dependency scanning in full CI gate.
 
 ## Test Baseline
+
 - Unit tests for engine, config validation, and domain services.
 - Integration tests for API + persistence + race lifecycle.
 - E2E tests for admin-to-viewer flow.
