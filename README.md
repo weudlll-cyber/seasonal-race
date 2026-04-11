@@ -27,6 +27,14 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - `pnpm ci:extended`: light gate + typecheck + tests
 - `pnpm ci:full`: extended gate + dependency security checks
 
+## Local Package Manager Setup
+- Use Corepack to run pnpm without global admin installation.
+- Recommended commands:
+	- `corepack pnpm --version`
+	- `corepack pnpm install`
+	- `corepack pnpm run ci:full`
+- Keep `pnpm-lock.yaml` committed for reproducible CI runs.
+
 ## Current Status
 - Project bootstrap and documentation baseline created.
 - Implementation has not started yet.
