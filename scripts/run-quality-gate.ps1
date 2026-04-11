@@ -5,7 +5,7 @@ Usage Examples:
   ./scripts/run-quality-gate.ps1 -Gate light
   ./scripts/run-quality-gate.ps1 -Gate extended
   ./scripts/run-quality-gate.ps1 -Gate full
-Dependencies: pnpm and project package scripts.
+Dependencies: Corepack and project package scripts.
 Edge Cases: Fails fast if an unknown gate value is provided.
 #>
 
@@ -21,12 +21,12 @@ $ErrorActionPreference = 'Stop'
 
 switch ($Gate) {
   'light' {
-    pnpm ci:light
+    corepack pnpm run ci:light
   }
   'extended' {
-    pnpm ci:extended
+    corepack pnpm run ci:extended
   }
   'full' {
-    pnpm ci:full
+    corepack pnpm run ci:full
   }
 }

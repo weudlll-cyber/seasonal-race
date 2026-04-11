@@ -8,13 +8,22 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "lint": "echo \"lint pipeline will be wired in phase 1\"",
-    "format:check": "echo \"format check pipeline will be wired in phase 1\"",
-    "typecheck": "echo \"typecheck pipeline will be wired in phase 1\"",
-    "test": "echo \"test pipeline will be wired in phase 1\"",
-    "security:deps": "echo \"dependency audit pipeline will be wired in phase 1\"",
-    "ci:light": "npm run lint && npm run format:check",
-    "ci:extended": "npm run ci:light && npm run typecheck && npm run test",
-    "ci:full": "npm run ci:extended && npm run security:deps"
+    "lint": "eslint . --ext .ts",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "security:deps": "corepack pnpm audit --audit-level high",
+    "ci:light": "corepack pnpm run lint && corepack pnpm run format:check",
+    "ci:extended": "corepack pnpm run ci:light && corepack pnpm run typecheck && corepack pnpm run test",
+    "ci:full": "corepack pnpm run ci:extended && corepack pnpm run security:deps"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.1",
+    "@typescript-eslint/parser": "^8.58.1",
+    "eslint": "^10.2.0",
+    "prettier": "^3.8.2",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
   }
 }
