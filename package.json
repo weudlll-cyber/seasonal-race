@@ -1,0 +1,20 @@
+{
+  "name": "seasonal-race",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Modular race-game platform monorepo",
+  "packageManager": "pnpm@10.8.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "lint": "echo \"lint pipeline will be wired in phase 1\"",
+    "format:check": "echo \"format check pipeline will be wired in phase 1\"",
+    "typecheck": "echo \"typecheck pipeline will be wired in phase 1\"",
+    "test": "echo \"test pipeline will be wired in phase 1\"",
+    "security:deps": "echo \"dependency audit pipeline will be wired in phase 1\"",
+    "ci:light": "pnpm lint && pnpm format:check",
+    "ci:extended": "pnpm ci:light && pnpm typecheck && pnpm test",
+    "ci:full": "pnpm ci:extended && pnpm security:deps"
+  }
+}
