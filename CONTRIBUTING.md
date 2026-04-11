@@ -25,15 +25,19 @@
 - Add or update tests for behavior changes.
 - Update relevant docs in the same commit as code changes.
 - Avoid hard-coded values when configuration is possible.
+- Keep files modular, avoid redundancy, and remove dead code.
+- Ensure every source file has a descriptive header block.
+- Add inline comments where reasoning is not obvious.
 
 ## Quality Gates
 
 - During iteration: targeted checks allowed.
 - Before PR/merge: full gate required.
+- Before every push: full gate + manual security/source-hygiene review required.
 - Use:
-  - `pnpm ci:light`
-  - `pnpm ci:extended`
-  - `pnpm ci:full`
+  - `corepack pnpm run ci:light`
+  - `corepack pnpm run ci:extended`
+  - `corepack pnpm run ci:full`
 
 ## Pull Request Checklist
 
