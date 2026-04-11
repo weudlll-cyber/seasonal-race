@@ -20,6 +20,11 @@
 - Pushes to `main` run full gate.
 - Failing gate blocks merge.
 
+## Package Manager and Lockfile Policy
+- CI uses pnpm via Corepack-compatible setup.
+- `pnpm-lock.yaml` must be committed and kept up to date.
+- Dependency install in CI runs with frozen lockfile mode.
+
 ## Release Expectations
 - Tag-based release workflow.
 - Build artifacts generated from clean main branch.
