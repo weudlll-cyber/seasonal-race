@@ -5,13 +5,14 @@
 - Monorepo setup
 - Shared contracts package
 - Initial CI gates
-- Status: In progress (tooling baseline active)
+- Status: Completed
 
 ## Phase 2: Race Engine Core
 
 - Tick loop and deterministic RNG
 - Duck adapter reference implementation
 - Basic replay event model
+- Status: In progress (deterministic RNG, session orchestration, and adapter registry active)
 
 ## Phase 3: Viewer and Admin
 
@@ -60,3 +61,5 @@
 - Production image build
 - Staging and release workflow
 - Rollback and incident checklist
+- Hardened VPS deployment runbook
+- One-command install script for reproducible provisioning

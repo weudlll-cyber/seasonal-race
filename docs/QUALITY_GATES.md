@@ -6,17 +6,17 @@ This project uses a strict, tiered gate model.
 
 1. Commit gate (light)
 
-- Command: `pnpm ci:light`
+- Command: `corepack pnpm run ci:light`
 - Purpose: quick local confidence (lint + formatting)
 
 2. Pull request gate (extended)
 
-- Command: `pnpm ci:extended`
+- Command: `corepack pnpm run ci:extended`
 - Purpose: enforce lint/format + type safety + tests
 
 3. Merge/release gate (full)
 
-- Command: `pnpm ci:full`
+- Command: `corepack pnpm run ci:full`
 - Purpose: full confidence including dependency security checks
 
 ## Rules

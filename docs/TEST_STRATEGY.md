@@ -41,3 +41,8 @@
 - Local iteration: targeted tests allowed.
 - PR: extended gate.
 - Merge/release: full gate required.
+
+## Current Baseline Suites
+
+- `tests/foundation.test.ts`: module boundary and bootstrap stability checks.
+- `tests/race-engine-core.test.ts`: deterministic RNG, session orchestration, and registry guard behavior.

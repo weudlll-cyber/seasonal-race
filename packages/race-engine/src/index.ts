@@ -1,14 +1,19 @@
 /**
  * File: packages/race-engine/src/index.ts
- * Purpose: Declares the core race-engine adapter contract.
- * Usage: Race-type modules implement this interface to plug into the engine.
- * Dependencies: Shared types package.
- * Edge cases: Methods must stay deterministic when a seed is provided.
+ * Purpose: Public exports for race-engine contracts and session orchestration.
+ * Usage: Import engine interfaces and helpers from this module in other packages.
+ * Dependencies: Session and RNG modules.
+ * Edge cases: Keep exports backward compatible for extension packages.
  */
 
-import type { Participant, RaceTypeKey } from '../../shared-types/src/index';
-
-export interface RaceAdapter {
-  readonly raceType: RaceTypeKey;
-  initialize(participants: Participant[], seed?: string): void;
-}
+export {
+  createRaceSession,
+  type RaceAdapter,
+  type RaceEvent,
+  type RaceInitializationContext,
+  type RaceSession,
+  type RaceSessionConfig,
+  type RaceStateSnapshot,
+  type RaceTickResult
+} from './session';
+export { createDeterministicRng, createSecureRng, type EngineRng } from './random';

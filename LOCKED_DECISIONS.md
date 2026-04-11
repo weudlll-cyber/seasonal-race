@@ -33,3 +33,9 @@ The following decisions are locked unless explicitly changed via ADR:
 6. Quality strategy
 
 - Tiered quality gates (light, extended, full) must exist and remain green before merge.
+
+7. Delivery strategy
+
+- Development and feature validation are local-first.
+- Production target is VPS hosting.
+- A secure one-command installation script is a mandatory release artifact.

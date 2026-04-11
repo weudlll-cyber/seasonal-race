@@ -25,8 +25,13 @@ Each race adapter should implement:
 - `initialize(context)`
 - `tick(deltaMs)`
 - `getState()`
-- `getEventsSince(lastTick)`
 - `finalize()`
+
+Race session orchestration is provided through `createRaceSession(...)` and includes:
+
+- deterministic RNG for seeded runs
+- secure RNG fallback for non-seeded runs
+- tick and elapsed-time tracking
 
 ## Visual Strategy
 
