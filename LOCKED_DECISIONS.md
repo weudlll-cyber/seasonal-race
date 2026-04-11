@@ -16,6 +16,14 @@ The following decisions are locked unless explicitly changed via ADR:
 4. Extensibility strategy
 - Race types through adapter/plugin contract.
 - Brands through schema-driven profiles and validated APIs.
+- Tracks through pluggable path and environment configuration.
+- Player name lists through provider/import adapters (manual, file, API).
+- Results through export adapters (JSON, CSV, webhook payload).
+- External integrations through connector adapters (for bots and other services).
 
-5. Quality strategy
+5. Modularity-first rule
+- New race types, tracks, brands, list providers, and export targets must be addable without changing core engine behavior.
+- Core modules may expose contracts only; implementation details stay behind module boundaries.
+
+6. Quality strategy
 - Tiered quality gates (light, extended, full) must exist and remain green before merge.

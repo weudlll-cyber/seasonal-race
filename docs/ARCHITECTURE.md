@@ -38,12 +38,37 @@ New race type requirements:
 3. Adapter implementation
 4. Registration manifest
 
+New track requirements:
+1. Path definition (Bezier/Spline/segments)
+2. Environment effect profile (for water, dust, clouds)
+3. Track metadata schema and manifest
+
 New brand requirements:
 1. JSON profile following schema
 2. Optional UI form entry
 3. API endpoint validation
 
+New player-list provider requirements:
+1. Import adapter contract (CSV, TXT, API, manual)
+2. Validation and deduplication strategy
+3. Reusable list persistence contract
+
+New result export requirements:
+1. Export adapter contract (JSON, CSV, webhook)
+2. Versioned export payload schema
+3. Delivery status and retry policy for remote endpoints
+
+External integration requirements:
+1. Connector contract for bots and third-party services
+2. Event-driven publishing via integration events
+3. Outbox pattern for reliable delivery
+
 ## Data Boundaries
 - API contracts in shared types package.
 - Engine is UI-agnostic and transport-agnostic.
 - Frontends consume versioned DTOs from API.
+
+## Integration Layer
+- Integration adapters subscribe to domain events and convert them into provider-specific payloads.
+- Core domain never depends on concrete bot SDKs.
+- Connectors are configured through integration manifests and environment-safe credentials.
