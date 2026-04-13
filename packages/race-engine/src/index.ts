@@ -17,3 +17,4 @@ export {
   type RaceTickResult
 } from './session';
 export { createDeterministicRng, createSecureRng, type EngineRng } from './random';
+export { interpolatePosition, polylineLength } from './track-path';

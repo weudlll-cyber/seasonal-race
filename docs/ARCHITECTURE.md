@@ -35,12 +35,88 @@ Race session orchestration is provided through `createRaceSession(...)` and incl
 
 ## Visual Strategy
 
-- Path-based track movement allows curved tracks.
-- Lightweight procedural effects reduce asset requirements.
-- Effects examples:
-  - Duck: water motion, wake lines, bubbles.
-  - Horse: gallop bounce and dust.
-  - Rocket: cloud drift and flame particles.
+### Design goal
+
+The races should feel **broadcast-quality** — not a game but a live event.
+Smooth motion, layered atmosphere, particles and distortion everywhere.
+All effects are driven by code + JSON config; no custom shaders needed for the MVP.
+
+### PixiJS layer stack (bottom → top, every race type)
+
+| Z-order | Layer                              | Technique                                                                |
+| ------- | ---------------------------------- | ------------------------------------------------------------------------ |
+| 0       | Background scene                   | Static PNG/WebP sprite                                                   |
+| 1       | Environment surface (water / dirt) | `TilingSprite` — offset advances each frame                              |
+| 2       | Surface distortion                 | `DisplacementFilter` on layer 1 — scrolling grayscale map creates wobble |
+| 3       | Ambient particles                  | `@pixi/particle-emitter` always-on instances                             |
+| 4       | Obstacles / decorations            | Static sprites at positions from `interpolatePosition()`                 |
+| 5       | Racer sprites                      | `AnimatedSprite` from spritesheet atlas, runtime-tinted                  |
+| 6       | Per-racer trail/wake               | `@pixi/particle-emitter` instance following each racer                   |
+| 7       | Burst effects                      | One-shot emitters triggered by engine event type                         |
+| 8       | Finish line                        | Static sprite at last `TrackPoint`                                       |
+| 9       | UI overlay                         | Names, rank indicators, timer                                            |
+
+### Duck Race — specific effects
+
+| Effect                       | Technique                                                       | Asset needed                                 |
+| ---------------------------- | --------------------------------------------------------------- | -------------------------------------------- |
+| Water wobble                 | `DisplacementFilter` + scrolling grayscale map                  | `displacement-water.png` (256×256 grayscale) |
+| Scrolling water surface      | `TilingSprite` + `environmentScrollSpeed`                       | `water-tile.png` (512×512 tileable)          |
+| Rising bubbles (ambient)     | `@pixi/particle-emitter` — slow upward drift, alpha fade        | `bubble.png` (~16×16)                        |
+| Wake trail behind each duck  | Per-racer `@pixi/particle-emitter` — white foam, short lifetime | `foam.png` (~16×16)                          |
+| Splash burst on acceleration | Burst emitter on `duck.tick` event — radial water drops         | `water-drop.png` (~8×8)                      |
+| Duck sprite                  | `AnimatedSprite` — idle bob + racing paddle + celebrate         | `duck.png` + `duck.json` spritesheet         |
+| Finish line                  | Static sprite                                                   | `finish-flag.png`                            |
+
+### Horse Race — specific effects
+
+| Effect                      | Technique                                                                 | Asset needed                                |
+| --------------------------- | ------------------------------------------------------------------------- | ------------------------------------------- |
+| Rolling dirt / heat shimmer | `DisplacementFilter` + slow-scrolling map                                 | `displacement-dirt.png` (256×256 grayscale) |
+| Ground dust (ambient)       | `@pixi/particle-emitter` — horizontal drift near ground                   | `dust.png` (~24×24)                         |
+| Sand burst per hoofstrike   | Burst emitter on `horse.hoofstrike` event — upward spray                  | `sand.png` (~12×12)                         |
+| Horse trail shadowing       | Per-racer emitter — brown dust cloud behind hooves                        | `dust.png` (reuse)                          |
+| Hurdles                     | `TrackObstacle[]` — sprites at fixed progress points from `EffectProfile` | `hurdle.png` (per obstacle)                 |
+| Horse sprite                | `AnimatedSprite` — gallop cycle + celebrate                               | `horse.png` + `horse.json` spritesheet      |
+
+### Asset requirements summary
+
+| Asset                      | Format             | Size         | Used by                  |
+| -------------------------- | ------------------ | ------------ | ------------------------ |
+| `background-canal.png`     | PNG/WebP           | 1920×1080    | Duck background          |
+| `background-track.png`     | PNG/WebP           | 1920×1080    | Horse background         |
+| `water-tile.png`           | PNG (tileable)     | 512×512      | Duck TilingSprite        |
+| `displacement-water.png`   | PNG grayscale      | 256×256      | Duck DisplacementFilter  |
+| `displacement-dirt.png`    | PNG grayscale      | 256×256      | Horse DisplacementFilter |
+| `duck.png` + `duck.json`   | PixiJS spritesheet | ≥64×64/frame | Duck AnimatedSprite      |
+| `horse.png` + `horse.json` | PixiJS spritesheet | ≥96×64/frame | Horse AnimatedSprite     |
+| `bubble.png`               | PNG                | 16×16        | Duck ambient particles   |
+| `foam.png`                 | PNG                | 16×16        | Duck wake trail          |
+| `water-drop.png`           | PNG                | 8×8          | Duck splash burst        |
+| `dust.png`                 | PNG                | 24×24        | Horse ambient + trail    |
+| `sand.png`                 | PNG                | 12×12        | Horse hoofstrike burst   |
+| `hurdle.png`               | PNG                | 64×32        | Horse obstacles          |
+| `finish-flag.png`          | PNG                | 128×64       | All race types           |
+
+**Runtime tinting rule:** all racer sprites use a single grayscale/white base spritesheet
+tinted at runtime via `BrandingProfile.palette` — no per-color variant sprites needed.
+
+### EffectProfile contract
+
+`EffectProfile` (in `shared-types`) binds all the above together in one JSON-serializable
+object. The viewer loads it by `TrackDefinition.effectProfileId` at race start.
+The engine and adapters never read it — visual and simulation layers are fully decoupled.
+
+### Recommended creation tools
+
+| Asset type                | Recommended tool                                          | Cost          |
+| ------------------------- | --------------------------------------------------------- | ------------- |
+| Background scene          | Midjourney / DALL-E 3 → touch up in GIMP                  | Free/Paid     |
+| Spritesheet (duck, horse) | **Aseprite** — animates + exports PNG+JSON atlas directly | ~€20 one-time |
+| Small particle textures   | Aseprite or even Paint.NET                                | Free          |
+| Displacement maps         | GIMP Plasma filter (grayscale cloud)                      | Free          |
+| Tileable water texture    | Photoshop / GIMP with Offset filter                       | Free          |
+| Particle effect tuning    | pixijs.io/particle-emitter live editor (browser-based)    | Free          |
 
 ## Extensibility Model
 
