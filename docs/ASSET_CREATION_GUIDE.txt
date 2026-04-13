@@ -1,0 +1,540 @@
+================================================================================
+  SEASONAL RACE — COMPLETE ASSET CREATION GUIDE
+  Everything you need to create, what it should look like, and how to make it
+  Tools used: Microsoft Designer (M365), Canva (paid), GIMP (free), Piskel (free browser)
+================================================================================
+
+IMPORTANT: You do NOT need to buy any additional software.
+You can do everything with what you already have:
+  - Microsoft Designer  → included in your M365 Copilot subscription
+  - Bing Image Creator  → free, also powered by DALL-E, included in M365
+  - Canva               → you already pay for this
+  - GIMP                → completely free, download at gimp.org
+  - Piskel              → free, runs in browser at piskelapp.com (no install)
+
+================================================================================
+  OVERVIEW: ALL ASSETS YOU NEED
+================================================================================
+
+PRIORITY 1 — Backgrounds (biggest visual impact, start here)
+  [ ] background-canal.png       Duck race background
+  [ ] background-horse.png       Horse race background
+
+PRIORITY 2 — Displacement maps (gives you the water wobble and heat shimmer)
+  [ ] displacement-water.png     Water wobble effect map
+  [ ] displacement-dirt.png      Dirt shimmer effect map
+
+PRIORITY 3 — Tileable surface textures
+  [ ] water-tile.png             Scrolling water surface
+  [ ] dirt-tile.png              Scrolling dirt/sand surface
+
+PRIORITY 4 — Particle textures (tiny, drawn in Piskel — easy)
+  [ ] bubble.png                 Rising water bubbles
+  [ ] foam.png                   Duck wake trail foam
+  [ ] water-drop.png             Water splash bits
+  [ ] dust.png                   Horse dust cloud
+  [ ] sand.png                   Hoofstrike sand spray
+
+PRIORITY 5 — Racer sprites (most work, but most rewarding)
+  [ ] duck.png + duck.json       Duck spritesheet + atlas
+  [ ] horse.png + horse.json     Horse spritesheet + atlas
+
+PRIORITY 6 — Props and decorations
+  [ ] buoy.png                   Duck track marker
+  [ ] hurdle.png                 Horse jump obstacle
+  [ ] finish-flag.png            Finish line banner (all race types)
+
+================================================================================
+  SECTION 1: BACKGROUND SCENES
+================================================================================
+
+What they are:
+  Wide panoramic images that the camera pans across during the race.
+  NOT standard 1920x1080 — they must be WIDER so the camera can move.
+  The code moves the camera over the image following the leading racer.
+
+Required dimensions: 4000 x 800 pixels (width x height)
+
+--------------------------------------------------------------------------------
+  BACKGROUND 1: Duck Canal (S-Curve Track)
+  File: background-canal.png
+--------------------------------------------------------------------------------
+
+What it should look like:
+  - Birds-eye / top-down view of a canal
+  - The canal curves in an S-shape from left to right across the image
+  - Lush green grass banks on both sides
+  - Clear blue-green water in the canal
+  - Maybe some lily pads, reeds, a small stone bridge somewhere in the middle
+  - Cartoon/illustrated style, vibrant colors
+  - NO perspective distortion — completely flat top-down view
+  - NO text, NO logos, NO UI elements
+
+HOW TO CREATE IT — Using Microsoft Designer (already paid via M365):
+  1. Go to: https://designer.microsoft.com
+  2. Click "Image Creator" or "Generate an image"
+  3. Use this prompt:
+     "Top-down flat aerial view of a winding canal race track with an S-curve,
+      cartoon illustration style, lush green grass banks, clear blue-green water,
+      lily pads and reeds along the edges, small stone bridge in the middle,
+      vibrant colors, no people, no text, wide panoramic format"
+  4. Generate 4 variations, pick the best one
+  5. Download at highest resolution available
+
+  Then in CANVA:
+  1. Create new design → Custom size → 4000 x 800 px
+  2. Upload your generated image as background
+  3. Stretch/fit it to fill the canvas
+  4. If it doesn't cover the full width, use Canva's AI image extend feature
+     (click image → Edit → Extend) to fill the gaps
+  5. Download as PNG
+
+ALTERNATIVE — Bing Image Creator (also free with M365):
+  Go to: https://www.bing.com/images/create
+  Same prompt as above, also powered by DALL-E
+
+--------------------------------------------------------------------------------
+  BACKGROUND 2: Horse Racetrack
+  File: background-horse.png
+--------------------------------------------------------------------------------
+
+What it should look like:
+  - Birds-eye / top-down view of a horse racing track
+  - Oval dirt track with white wooden fence rails on both sides
+  - Green infield (grass inside the oval)
+  - Implied grandstands or crowd at the far edge (can be very simplified)
+  - Brown/tan colored dirt track
+  - The track curves at both ends of the oval
+  - Cartoon/illustrated style, no realistic photo look
+  - NO text, NO numbers, NO logos
+
+HOW TO CREATE IT — Microsoft Designer:
+  Prompt:
+  "Top-down flat aerial view of a horse racing oval track, cartoon illustration style,
+   brown dirt track, white fence rails, green grass infield, tiny simplified grandstands
+   at the edge, vibrant colors, no perspective distortion, no text, no people visible,
+   wide panoramic format"
+
+  Then same process in Canva: 4000 x 800 px, export as PNG.
+
+--------------------------------------------------------------------------------
+  FUTURE BACKGROUNDS (add later when ready)
+--------------------------------------------------------------------------------
+
+  background-river.png  — River rapids, top-down, rocks and whitewater foam
+  background-space.png  — Top-down dark space with stars (for rocket race)
+  background-city.png   — Top-down city street circuit
+
+  Each future race type will need its own 4000x800 background.
+  Always use Microsoft Designer + Canva for consistency.
+
+================================================================================
+  SECTION 2: DISPLACEMENT MAPS (Water Wobble / Heat Shimmer)
+================================================================================
+
+What they are:
+  Grayscale blurry noise images. The code scrolls them invisibly over the
+  water/dirt surface to distort it, creating a living wobble effect.
+  They are NEVER directly visible — only their distortion effect is seen.
+
+Required dimensions: 256 x 256 pixels
+Format: PNG, grayscale
+
+--------------------------------------------------------------------------------
+  BOTH DISPLACEMENT MAPS — Created in GIMP (free, gimp.org)
+  Takes about 2 minutes each
+--------------------------------------------------------------------------------
+
+HOW TO CREATE displacement-water.png:
+  1. Download and open GIMP (gimp.org → Download)
+  2. File → New → Width: 256, Height: 256 → OK
+  3. Filters → Render → Clouds → Plasma
+     - Set Turbulence to about 2.0 (gives smooth blobs)
+     - Click OK
+  4. Colors → Desaturate → Desaturate (makes it grayscale)
+  5. Filters → Blur → Gaussian Blur → Size: 8-10 px (smooths it out)
+  6. File → Export As → displacement-water.png → Export
+
+HOW TO CREATE displacement-dirt.png:
+  1. Same as above BUT in step 3:
+     - Set Turbulence to 4.0 (gives more streaky horizontal pattern)
+  2. After desaturating, do:
+     Filters → Distorts → Ripple → Orientation: Horizontal, Amplitude: 3
+     This makes it look more like heat shimmer rising from hot ground
+  3. Export as displacement-dirt.png
+
+================================================================================
+  SECTION 3: TILEABLE SURFACE TEXTURES
+================================================================================
+
+What they are:
+  512x512 textures that tile seamlessly edge-to-edge.
+  The code creates a TilingSprite from them that slowly scrolls,
+  making the water/dirt surface appear to move continuously.
+
+Required dimensions: 512 x 512 pixels
+Format: PNG
+CRITICAL: Must tile seamlessly (no visible seam when repeated)
+
+--------------------------------------------------------------------------------
+  TEXTURE 1: water-tile.png
+--------------------------------------------------------------------------------
+
+What it should look like:
+  - Top-down water with subtle ripple/wave pattern
+  - Blue-green color
+  - Very subtle — not too busy, the displacement map adds the wobble on top
+
+HOW TO CREATE IT — Microsoft Designer:
+  Prompt:
+  "Seamless tileable top-down water texture, subtle ripple pattern, blue-green color,
+   cartoon style, no foam, no shadows, square format, must tile seamlessly"
+
+  Then in GIMP:
+  1. Open the generated image
+  2. Scale to 512x512: Image → Scale Image → 512x512
+  3. Make it seamless: Filters → Map → Make Seamless
+  4. Export as water-tile.png
+
+ALTERNATIVE — GIMP only (no AI needed):
+  1. New 512x512 image
+  2. Filters → Render → Clouds → Plasma (Turbulence: 1.5)
+  3. Colors → Hue-Saturation → shift Hue towards blue-green
+  4. Filters → Map → Make Seamless
+  5. Export as water-tile.png
+
+--------------------------------------------------------------------------------
+  TEXTURE 2: dirt-tile.png
+--------------------------------------------------------------------------------
+
+What it should look like:
+  - Top-down dirt/sand track surface
+  - Tan/brown color with subtle texture
+  - Maybe faint hoofprint impressions implied
+
+HOW TO CREATE IT — Microsoft Designer:
+  Prompt:
+  "Seamless tileable top-down dirt track texture, tan brown color, subtle granular
+   texture, horse racing track surface, cartoon style, square format, must tile seamlessly"
+
+  Then: same GIMP process as water-tile (scale to 512x512, Make Seamless, export)
+
+================================================================================
+  SECTION 4: PARTICLE TEXTURES (Small, Draw in Piskel)
+================================================================================
+
+What they are:
+  Tiny PNG images used as individual particles.
+  Hundreds of copies are spawned by the particle system to create effects.
+  They don't need to look perfect — when many small ones move together,
+  they create a convincing effect. Simple blobs/circles are totally fine.
+
+Open Piskel at: https://www.piskelapp.com (free, no login needed)
+
+--------------------------------------------------------------------------------
+  bubble.png — 16x16 pixels
+--------------------------------------------------------------------------------
+  In Piskel:
+  1. New sprite → 16x16
+  2. Draw a circle in the center (not touching edges)
+  3. Color: light blue (#99DDFF) with white highlight on top-left
+  4. Outside the circle: completely transparent (checkerboard = transparent)
+  5. Stroke (outline): slightly darker blue (#44AADD), 1px thick
+  6. Export → PNG spritesheet → 1 frame per row → Download
+
+  Shortcut: You can also ask Microsoft Designer:
+  "Simple cartoon water bubble, 16x16 pixel art style, transparent background,
+   light blue circle with white highlight, 1 frame"
+  Then clean up transparent background in Canva (Background Remover tool)
+
+--------------------------------------------------------------------------------
+  foam.png — 16x16 pixels
+--------------------------------------------------------------------------------
+  In Piskel:
+  1. New sprite → 16x16
+  2. Draw an irregular white blob — looks like a small cloud puff
+  3. Color: white (#FFFFFF) with very light blue-grey edges (#DDEEEE)
+  4. Transparent background (no fill outside the blob)
+  5. Export as PNG
+
+--------------------------------------------------------------------------------
+  water-drop.png — 8x8 pixels
+--------------------------------------------------------------------------------
+  In Piskel:
+  1. New sprite → 8x8
+  2. Draw a tiny teardrop or circle
+  3. Color: bright blue (#55AAFF)
+  4. Transparent background
+  5. Export as PNG
+
+--------------------------------------------------------------------------------
+  dust.png — 24x24 pixels
+--------------------------------------------------------------------------------
+  In Piskel:
+  1. New sprite → 24x24
+  2. Draw a soft irregular circle/cloud shape
+  3. Color: brown/tan (#C4956A) with lighter center (#DDB080)
+  4. Make the edges fade out (use semi-transparent pixels at edges)
+  5. Transparent background
+  6. Export as PNG
+
+--------------------------------------------------------------------------------
+  sand.png — 12x12 pixels
+--------------------------------------------------------------------------------
+  In Piskel:
+  1. New sprite → 12x12
+  2. Draw a small irregular speck
+  3. Color: light tan/yellow (#E8C87A)
+  4. Transparent background
+  5. Export as PNG
+
+================================================================================
+  SECTION 5: RACER SPRITESHEETS (Most work — start after Sections 1-4 done)
+================================================================================
+
+What they are:
+  A single PNG image containing all animation frames in a grid.
+  A matching .json file that tells the code which pixel coordinates = which frame.
+  Piskel exports BOTH automatically.
+
+The code uses runtime color tinting, so:
+  - Draw all ducks/horses in WHITE or very light grey
+  - The branding colors get applied automatically by the code
+  - You only need ONE spritesheet per racer type, not one per color
+
+--------------------------------------------------------------------------------
+  DUCK SPRITESHEET — duck.png + duck.json
+  Frame size: 64x64 pixels per frame
+  Total frames: 10 (3 idle + 4 racing + 3 celebrating)
+--------------------------------------------------------------------------------
+
+Animation 1 — IDLE (3 frames, loops)
+  Frame 1: Duck sitting on water, facing right, normal position
+  Frame 2: Same duck but body slightly higher (bobbing up)
+  Frame 3: Same duck but body slightly lower (bobbing down)
+  → This creates a gentle bob animation on the water surface
+
+Animation 2 — RACING (4 frames, loops)
+  Frame 1: Duck leaning forward, right foot/wing back
+  Frame 2: Duck mid-stroke, both wings slightly out
+  Frame 3: Duck leaning forward, left foot/wing back
+  Frame 4: Recovery position, wings slightly tucked
+  → This creates a paddling forward motion
+
+Animation 3 — CELEBRATING (3 frames, plays once at finish)
+  Frame 1: Duck with wings raised up, excited
+  Frame 2: Duck mid-jump or spin, wings fully spread
+  Frame 3: Duck landing, beak open (like quacking in joy)
+
+HOW TO CREATE IN PISKEL:
+  1. Go to piskelapp.com
+  2. New sprite → 64x64
+  3. Draw frame 1 of idle duck (facing right, simple cartoon style, white/light grey)
+  4. Add frame (+ button) → draw frame 2 (slight variation)
+  5. Continue for all 10 frames (can copy frames and modify slightly)
+  6. When done: Export → PNG Spritesheet
+     - Set "Number of columns" to 4 (so you get a 4-wide grid)
+     - Also export the JSON: Download ZIP (contains both .png and .json)
+  7. Rename files to duck.png and duck.json
+
+AI SHORTCUT for duck drawing:
+  1. Use Microsoft Designer to generate a reference duck:
+     "Cute cartoon rubber duck facing right, white/light grey, simple flat design,
+      transparent background, suitable for pixel art tracing"
+  2. Import it into Piskel as a reference layer
+  3. Trace over it, then modify for each animation frame
+
+--------------------------------------------------------------------------------
+  HORSE SPRITESHEET — horse.png + horse.json
+  Frame size: 96x64 pixels per frame (wider because horse is wider than duck)
+  Total frames: 11 (2 idle + 6 racing + 3 celebrating)
+--------------------------------------------------------------------------------
+
+Animation 1 — IDLE (2 frames, loops slowly)
+  Frame 1: Horse standing, facing right, tail at rest
+  Frame 2: Horse standing, head slightly lower (breathing), tail up slightly
+
+Animation 2 — RACING (6 frames, loops fast) — The full gallop cycle
+  Frame 1: Two front legs extended forward, two back legs behind (full stretch)
+  Frame 2: Front legs landing, back legs starting to push
+  Frame 3: Body lowered, all legs gathered under body
+  Frame 4: Back legs pushing off, front legs lifting
+  Frame 5: Back legs extended back, front legs lifting forward
+  Frame 6: Front legs coming down, transitioning back to frame 1
+  → Tip: search "horse gallop cycle pixel art" on Google Images for reference frames
+
+Animation 3 — CELEBRATING (3 frames, plays once at finish)
+  Frame 1: Horse rearing up on back legs, front legs raised
+  Frame 2: Full rear, highest point, front legs kicking
+  Frame 3: Coming back down, jockey (tiny figure) raising arm (optional — skip jockey for simplicity)
+
+HOW TO CREATE IN PISKEL:
+  Same as duck process but 96x64 frame size.
+  The gallop cycle is the hardest part — use Google Images reference for the 6 poses.
+  Keep the style very simple — cartoon/flat, no shading needed.
+
+AI SHORTCUT for horse drawing:
+  Microsoft Designer prompt:
+  "Cartoon horse sprite facing right, flat pixel art style, white/light grey color,
+   simple design, transparent background, galloping position"
+  Generate 4 variations, use the cleanest one as tracing reference in Piskel.
+
+================================================================================
+  SECTION 6: PROPS AND DECORATIONS
+================================================================================
+
+These are simpler — one frame each, drawn or generated easily.
+
+--------------------------------------------------------------------------------
+  buoy.png — 32x32 pixels
+--------------------------------------------------------------------------------
+  What it looks like: Red and white striped round floating marker, top-down view
+  (looks like a circle with alternating red/white segments, seen from above)
+
+  In Piskel (5 minutes):
+  1. New sprite → 32x32
+  2. Draw a circle filling most of the canvas
+  3. Fill with alternating red (#FF3333) and white (#FFFFFF) segments (like a pie chart)
+  4. Add dark border around circle
+  5. Transparent background
+  6. Export as PNG
+
+  OR in Canva:
+  1. New design → 32x32 custom size
+  2. Add circle shape → striped pattern
+  3. Export as PNG with transparent background
+
+--------------------------------------------------------------------------------
+  hurdle.png — 64x32 pixels
+--------------------------------------------------------------------------------
+  What it looks like: A horse jump hurdle viewed from a slight angle
+  Two vertical posts on each side, one horizontal wooden bar across the top
+
+  In Canva (easiest):
+  1. New design → 64x32 custom size
+  2. Add rectangle for the bar (brown, horizontal, thin)
+  3. Add two thin rectangles for the vertical posts (striped red/white like polo)
+  4. Export as PNG with transparent background
+
+  OR Microsoft Designer:
+  "Cartoon horse race hurdle, front view, transparent background, red and white
+   striped poles, wooden bar, flat illustration style, no background"
+
+--------------------------------------------------------------------------------
+  finish-flag.png — 128x64 pixels
+--------------------------------------------------------------------------------
+  What it looks like: A checkered finish line banner or arch
+
+  In Canva (perfect for this):
+  1. New design → 128x64 custom size
+  2. Add a checkered pattern banner (Canva has this in elements)
+  3. Maybe add two thin vertical poles on each side
+  4. Export as PNG with transparent background
+
+  TIP: Canva has many banner/flag elements already — just search "checkered banner"
+  in the Canva elements panel.
+
+================================================================================
+  SECTION 7: FILE NAMING AND FOLDER STRUCTURE
+================================================================================
+
+Put all assets in this folder structure inside the project:
+
+  apps/web-viewer/public/assets/
+  ├── backgrounds/
+  │   ├── background-canal.png         (4000x800)
+  │   └── background-horse.png         (4000x800)
+  ├── textures/
+  │   ├── water-tile.png               (512x512, tileable)
+  │   ├── dirt-tile.png                (512x512, tileable)
+  │   ├── displacement-water.png       (256x256, grayscale)
+  │   └── displacement-dirt.png        (256x256, grayscale)
+  ├── particles/
+  │   ├── bubble.png                   (16x16)
+  │   ├── foam.png                     (16x16)
+  │   ├── water-drop.png               (8x8)
+  │   ├── dust.png                     (24x24)
+  │   └── sand.png                     (12x12)
+  ├── racers/
+  │   ├── duck.png                     (spritesheet)
+  │   ├── duck.json                    (atlas)
+  │   ├── horse.png                    (spritesheet)
+  │   └── horse.json                   (atlas)
+  └── props/
+      ├── buoy.png                     (32x32)
+      ├── hurdle.png                   (64x32)
+      └── finish-flag.png              (128x64)
+
+================================================================================
+  SECTION 8: QUICK REFERENCE — WHICH TOOL FOR WHAT
+================================================================================
+
+TASK                          TOOL                    COST      DIFFICULTY
+Background scenes (AI art)    Microsoft Designer       FREE*     Easy (AI generates)
+Extend/resize backgrounds     Canva                    PAID*     Easy
+Displacement maps             GIMP                     FREE      Very easy (2 min)
+Tileable textures             Microsoft Designer+GIMP  FREE      Easy
+Particle textures (tiny)      Piskel (browser)         FREE      Easy (15 min each)
+Duck/horse sprites            Piskel (browser)         FREE      Medium (1-2 hours)
+Props (buoy, hurdle, flag)    Canva OR Piskel          PAID/FREE Easy
+
+* = already included in your existing subscriptions
+
+BONUS — Microsoft Copilot (M365) can also help you:
+  - Refine image prompts: "Help me write a better prompt for generating
+    a top-down cartoon canal race background for a web game"
+  - Create Canva design instructions step by step
+  - Describe exactly what color palette to use for each race type
+
+================================================================================
+  SECTION 9: EXPORT SETTINGS SUMMARY
+================================================================================
+
+ALL assets must be exported as PNG with TRANSPARENT background
+(except backgrounds which are full bleed — no transparency needed there)
+
+In Canva: Download → PNG → check "Transparent background" ✓
+In Piskel: Export → PNG Spritesheet (also Download ZIP for the JSON)
+In GIMP: File → Export As → .png → Export
+
+Image sizes summary:
+  Backgrounds:           4000 x 800 px  (PNG or WebP)
+  Displacement maps:      256 x 256 px  (PNG, grayscale)
+  Tileable textures:      512 x 512 px  (PNG)
+  Particles:           8-24 x 8-24 px  (PNG, transparent bg)
+  Duck frames:            64 x  64 px  (PNG, transparent bg)
+  Horse frames:           96 x  64 px  (PNG, transparent bg)
+  Buoy:                   32 x  32 px  (PNG, transparent bg)
+  Hurdle:                 64 x  32 px  (PNG, transparent bg)
+  Finish flag:           128 x  64 px  (PNG, transparent bg)
+
+================================================================================
+  SECTION 10: RECOMMENDED ORDER OF WORK
+================================================================================
+
+Do these in order — each visible milestone motivates the next:
+
+  WEEK 1 — Get a working visual prototype:
+  [ ] Step 1: Make displacement-water.png and displacement-dirt.png in GIMP (10 min)
+  [ ] Step 2: Generate background-canal.png in Microsoft Designer + resize in Canva
+  [ ] Step 3: Make water-tile.png in Microsoft Designer + GIMP Make Seamless
+  [ ] Step 4: Make all 5 particle textures in Piskel (bubble, foam, water-drop, dust, sand)
+  [ ] Step 5: Make finish-flag.png in Canva
+
+  WEEK 2 — Add the first racer:
+  [ ] Step 6: Make duck.png + duck.json spritesheet in Piskel (idle + racing first)
+  [ ] Step 7: Add celebrating animation to duck spritesheet
+  [ ] Step 8: Make buoy.png in Piskel
+
+  WEEK 3 — Horse race:
+  [ ] Step 9: Generate background-horse.png + dirt-tile.png
+  [ ] Step 10: Make horse.png + horse.json spritesheet in Piskel
+  [ ] Step 11: Make hurdle.png in Canva
+
+================================================================================
+  END OF GUIDE
+================================================================================
+  This file is stored at: docs/ASSET_CREATION_GUIDE.txt
+  Last updated: 2026-04-13
+  For questions about how the code uses these assets, see: docs/ARCHITECTURE.md
+================================================================================
