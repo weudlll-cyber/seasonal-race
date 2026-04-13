@@ -6,7 +6,21 @@
  * Edge cases: Keep backward compatibility for versioned API contracts.
  */
 
-export type RaceTypeKey = 'duck' | 'horse' | 'rocket';
+/**
+ * Open string type so new race types can be registered without touching this file.
+ * Use KNOWN_RACE_TYPES for the built-in set; third-party adapters supply their own key.
+ */
+export type RaceTypeKey = string;
+
+/**
+ * Built-in race type identifiers shipped with the platform.
+ * External plugins use their own unique string keys (e.g. 'camel', 'snail').
+ */
+export const KNOWN_RACE_TYPES = {
+  DUCK: 'duck',
+  HORSE: 'horse',
+  ROCKET: 'rocket'
+} as const;
 
 export type ResultExportFormat = 'json' | 'csv' | 'webhook';
 
@@ -73,6 +87,67 @@ export interface ResultExporter {
 export interface IntegrationConnector {
   readonly connectorId: string;
   publish(event: IntegrationEvent): Promise<void>;
+}
+
+// ─── Race Type Manifest ─────────────────────────────────────────────────────
+// Ties a race type key to all its viewer-side assets and default settings.
+// The engine never reads this — it is purely a viewer/admin contract.
+
+/**
+ * Spritesheet animation set names expected per racer.
+ * The viewer picks the right set based on race state.
+ */
+export interface RacerAnimationSet {
+  /** Frames to loop while racer is waiting for race start. */
+  idle: string;
+  /** Frames to loop while racer is actively racing. */
+  racing: string;
+  /** Frames to play once when a racer crosses the finish line. */
+  celebrating: string;
+}
+
+/**
+ * Complete asset + configuration manifest for one race type.
+ * Register one per race type via RaceTypeManifestProvider.
+ * Adding a new race type = create a new manifest + adapter; no core file changes needed.
+ */
+export interface RaceTypeManifest {
+  /** Must match the RaceTypeKey used by the corresponding RaceAdapter. */
+  raceTypeKey: RaceTypeKey;
+  /** Human-readable name shown in admin UI and overlays. */
+  displayName: string;
+  /** Path to the 1920×1080 background scene image, relative to asset root. */
+  backgroundPath: string;
+  /**
+   * Tileable environment surface texture (water, dirt, grass...).
+   * Displayed as a TilingSprite above the background.
+   */
+  environmentTilePath: string;
+  /**
+   * Racer spritesheet image path and atlas JSON path relative to asset root.
+   * One base spritesheet for all racers; runtime tinting provides color variants.
+   */
+  racerSpritesheetPath: string;
+  racerAtlasPath: string;
+  /** Animation set names matching frames in the spritesheet atlas. */
+  racerAnimations: RacerAnimationSet;
+  /** Finish banner/flag sprite path. */
+  finishLinePath: string;
+  /**
+   * ID of the default EffectProfile to use when a track does not specify one.
+   * Must match an EffectProfile registered with EffectProfileProvider.
+   */
+  defaultEffectProfileId: string;
+}
+
+/**
+ * Provider that resolves a RaceTypeManifest by race type key.
+ * Implement as a static registry (bundled) or an API call.
+ */
+export interface RaceTypeManifestProvider {
+  readonly providerId: string;
+  getManifest(raceTypeKey: RaceTypeKey): Promise<RaceTypeManifest>;
+  listManifests(): Promise<RaceTypeManifest[]>;
 }
 
 // ─── Visual Effect Contracts ────────────────────────────────────────────────
