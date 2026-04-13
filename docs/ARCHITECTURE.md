@@ -41,20 +41,64 @@ The races should feel **broadcast-quality** — not a game but a live event.
 Smooth motion, layered atmosphere, particles and distortion everywhere.
 All effects are driven by code + JSON config; no custom shaders needed for the MVP.
 
+---
+
+### How curved tracks work
+
+`TrackDefinition.points` is an array of 2D points that form a polyline.
+`interpolatePosition(points, t)` maps normalized progress [0,1] to a 2D coordinate.
+
+The **background art** is a wide scene image (wider than 1920px) that represents the whole
+track from bird's eye perspective. The camera pans and zooms into the part of the
+background matching the current action — the image just needs to visually match the curve
+described by the points array. No pixel coordinates in the image encode path data.
+
+Example: a duck canal with an S-curve has a background that is ~4000px wide and shows
+the canal bending left then right. The `TrackPoint[]` array describes the same S-curve
+mathematically. The camera follows the leader's position along that path.
+
+---
+
+### Camera system
+
+The viewer has a virtual camera sitting over a large `app.stage` container.
+Moving the camera = shifting and scaling `app.stage` — PixiJS handles all math.
+
+| Camera behavior          | When it triggers                     | How                                                           |
+| ------------------------ | ------------------------------------ | ------------------------------------------------------------- |
+| **Follow leader**        | Every tick                           | Stage position tracks leading racer via `interpolatePosition` |
+| **Zoom in**              | 3 racers bunched within 10% of track | `stage.scale` eases to ~1.4×                                  |
+| **Zoom out to overview** | Race start & finish                  | `stage.scale` eases to show full track width                  |
+| **Dramatic zoom in**     | Last 10% of track                    | Slow push to 1.8× on the leader                               |
+| **Spin/pan to winner**   | Finish detected                      | Camera eases to winner position and locks                     |
+| **Cutaway to pack**      | Long gap opens                       | Optional: pan back to show the full field                     |
+
+All transitions use **easing functions** (ease-in-out) — no instant jumps.
+The `CameraController` is a plain TypeScript class; it reads from `RaceStateSnapshot`
+and writes `stage.position` + `stage.scale` each animation frame.
+
+---
+
 ### PixiJS layer stack (bottom → top, every race type)
 
-| Z-order | Layer                              | Technique                                                                |
-| ------- | ---------------------------------- | ------------------------------------------------------------------------ |
-| 0       | Background scene                   | Static PNG/WebP sprite                                                   |
-| 1       | Environment surface (water / dirt) | `TilingSprite` — offset advances each frame                              |
-| 2       | Surface distortion                 | `DisplacementFilter` on layer 1 — scrolling grayscale map creates wobble |
-| 3       | Ambient particles                  | `@pixi/particle-emitter` always-on instances                             |
-| 4       | Obstacles / decorations            | Static sprites at positions from `interpolatePosition()`                 |
-| 5       | Racer sprites                      | `AnimatedSprite` from spritesheet atlas, runtime-tinted                  |
-| 6       | Per-racer trail/wake               | `@pixi/particle-emitter` instance following each racer                   |
-| 7       | Burst effects                      | One-shot emitters triggered by engine event type                         |
-| 8       | Finish line                        | Static sprite at last `TrackPoint`                                       |
-| 9       | UI overlay                         | Names, rank indicators, timer                                            |
+| Z-order | Layer                              | Technique                                                 |
+| ------- | ---------------------------------- | --------------------------------------------------------- |
+| 0       | Background scene                   | Sprite — wide PNG/WebP, camera pans over it               |
+| 1       | Environment surface (water / dirt) | `TilingSprite` — offset advances each frame               |
+| 2       | Surface distortion                 | `DisplacementFilter` on layer 1 — scrolling grayscale map |
+| 3       | Ambient particles                  | `@pixi/particle-emitter` always-on instances              |
+| 4       | Obstacles / decorations            | Static sprites at positions from `interpolatePosition()`  |
+| 5       | Racer sprites                      | `AnimatedSprite` from spritesheet atlas, runtime-tinted   |
+| 6       | Per-racer trail/wake               | `@pixi/particle-emitter` instance following each racer    |
+| 7       | Burst effects                      | One-shot emitters triggered by engine event type          |
+| 8       | Finish line                        | Static sprite at last `TrackPoint`                        |
+| 9       | UI overlay (fixed to screen)       | Names, rank badge, gap timer — does NOT move with camera  |
+
+The UI overlay (layer 9) is a separate `app.stage` child that is **not** inside the
+camera container — so name labels and rank numbers stay fixed on screen regardless of
+camera position.
+
+---
 
 ### Duck Race — specific effects
 
