@@ -64,13 +64,13 @@ mathematically. The camera follows the leader's position along that path.
 The viewer has a virtual camera sitting over a large `app.stage` container.
 Moving the camera = shifting and scaling `app.stage` — PixiJS handles all math.
 
-| Camera behavior          | When it triggers                     | How                                                           |
-| ------------------------ | ------------------------------------ | ------------------------------------------------------------- |
-| **Intro overview hold**  | Race start                           | Start zoomed out and hold full-track framing briefly          |
-| **Intro focus transition** | After intro hold                   | Slow lerp from overview zoom into leader-follow framing       |
-| **Follow leader**        | Every tick                           | Stage position tracks leading racer via `interpolatePosition` |
-| **Runtime pulse zoom**   | During race runtime                  | Mild in/out zoom pulses; pulse count defaults from duration   |
-| **Finish overview**      | Finish detected                      | Camera eases back out to show winners and full result context |
+| Camera behavior            | When it triggers    | How                                                           |
+| -------------------------- | ------------------- | ------------------------------------------------------------- |
+| **Intro overview hold**    | Race start          | Start zoomed out and hold full-track framing briefly          |
+| **Intro focus transition** | After intro hold    | Slow lerp from overview zoom into leader-follow framing       |
+| **Follow leader**          | Every tick          | Stage position tracks leading racer via `interpolatePosition` |
+| **Runtime pulse zoom**     | During race runtime | Mild in/out zoom pulses; pulse count defaults from duration   |
+| **Finish overview**        | Finish detected     | Camera eases back out to show winners and full result context |
 
 All transitions use **easing functions** (ease-in-out) — no instant jumps.
 The `CameraController` is a plain TypeScript class; it reads from `RaceStateSnapshot`

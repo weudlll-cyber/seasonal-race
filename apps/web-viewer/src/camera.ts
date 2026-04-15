@@ -202,7 +202,8 @@ export class CameraController {
   }
 
   private resolveCameraSettings(settings?: RaceCameraSettings): Required<RaceCameraSettings> {
-    const expectedDurationMs = settings?.expectedDurationMs ?? DEFAULT_EXPECTED_DURATION_SECONDS * 1000;
+    const expectedDurationMs =
+      settings?.expectedDurationMs ?? DEFAULT_EXPECTED_DURATION_SECONDS * 1000;
     const expectedDurationSeconds = Math.max(10, expectedDurationMs / 1000);
     const defaultPulseCount = defaultZoomPulseCountForExpectedDuration(expectedDurationSeconds);
 
@@ -215,10 +216,7 @@ export class CameraController {
     };
   }
 
-  private computePulseZoom(
-    state: CameraState,
-    settings: Required<RaceCameraSettings>
-  ): number {
+  private computePulseZoom(state: CameraState, settings: Required<RaceCameraSettings>): number {
     const pulses = Math.max(0, settings.zoomPulseCount);
     if (pulses === 0) return 0;
 
