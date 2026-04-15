@@ -48,6 +48,14 @@ All effects are driven by code + JSON config; no custom shaders needed for the M
 `TrackDefinition.points` is an array of 2D points that form a polyline.
 `interpolatePosition(points, t)` maps normalized progress [0,1] to a 2D coordinate.
 
+The viewer now includes an interactive track editor workflow:
+
+- click on canvas to place path points
+- use as many points as needed for complex curves
+- keep fewer points for straight/simple tracks
+- export TrackDefinition JSON (copy/download)
+- reload edited JSON back into the canvas for iteration
+
 The **background art** is a wide scene image (wider than 1920px) that represents the whole
 track from bird's eye perspective. The camera pans and zooms into the part of the
 background matching the current action — the image just needs to visually match the curve

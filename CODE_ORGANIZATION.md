@@ -36,11 +36,14 @@
 ## Web Viewer Module Map
 
 - `apps/web-viewer/src/main.ts`
-  - Viewer bootstrap and local PixiJS prototype wiring.
-  - Connects ticker updates, demo track movement, and camera update flow.
+  - Viewer bootstrap and interactive track editor wiring.
+  - Handles click-to-place points, live preview runner, and JSON import/export actions.
 - `apps/web-viewer/src/camera.ts`
   - `CameraController` for smooth world follow/zoom behavior.
   - Receives camera-ready race state and applies interpolated world transform.
+- `apps/web-viewer/src/track-editor-utils.ts`
+  - Reusable path utilities for editor mode.
+  - Builds TrackDefinition output and interpolates movement over variable point-count paths.
 - `apps/web-viewer/src/scene.ts`
   - Layered scene builder (background, environment, obstacles, racers, trails, bursts, finish).
   - Asset load with placeholder fallback to keep rendering resilient during asset gaps.

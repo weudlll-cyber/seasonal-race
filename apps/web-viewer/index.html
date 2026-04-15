@@ -8,29 +8,198 @@
     />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Seasonal Race — Live Viewer</title>
+    <title>Seasonal Race — Track Editor</title>
     <style>
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
-      body {
-        background: #000;
-        overflow: hidden;
-        width: 100vw;
-        height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+
+      :root {
+        --bg: #0b1219;
+        --panel: #132130;
+        --panel-2: #192b3f;
+        --text: #e6edf4;
+        --muted: #9db1c7;
+        --accent: #41d6b9;
+        --danger: #e87b7b;
       }
+
+      body {
+        background: radial-gradient(80% 120% at 10% 0%, #16324a 0%, var(--bg) 48%);
+        color: var(--text);
+        width: 100svw;
+        min-height: 100svh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .layout {
+        width: 100%;
+        min-height: 100svh;
+        display: grid;
+        grid-template-columns: minmax(320px, 380px) 1fr;
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .panel {
+        border: 1px solid #2a4058;
+        border-radius: 14px;
+        background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      h1 {
+        font-size: 1.2rem;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      label {
+        font-size: 0.84rem;
+        color: var(--muted);
+      }
+
+      input,
+      textarea,
+      button {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #35516d;
+        background: #0d1a28;
+        color: var(--text);
+        padding: 8px 9px;
+        font-size: 0.9rem;
+      }
+
+      textarea {
+        min-height: 180px;
+        resize: vertical;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      button {
+        cursor: pointer;
+        transition: filter 0.15s ease;
+      }
+
+      button:hover {
+        filter: brightness(1.15);
+      }
+
+      .primary {
+        background: #113d35;
+        border-color: #2a8e79;
+      }
+
+      .danger {
+        background: #3b1c1c;
+        border-color: #8e4040;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        font-size: 0.9rem;
+      }
+
+      .stats div {
+        border: 1px solid #2b4560;
+        border-radius: 8px;
+        padding: 8px;
+        background: #102131;
+      }
+
       #race-canvas {
+        border: 1px solid #2a4159;
+        border-radius: 14px;
         display: block;
+        overflow: hidden;
+        min-height: 720px;
+      }
+
+      #race-canvas canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      @media (max-width: 1100px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        #race-canvas {
+          min-height: 520px;
+        }
       }
     </style>
   </head>
   <body>
-    <div id="race-canvas"></div>
+    <main class="layout">
+      <aside class="panel">
+        <h1>Track Path Editor</h1>
+        <p class="muted">
+          Click the canvas to add points. Use more points for curvy tracks, fewer points for
+          straight tracks.
+        </p>
+
+        <div class="form-grid">
+          <label for="track-id-input">Track ID</label>
+          <input id="track-id-input" value="custom-track" />
+
+          <label for="track-name-input">Track Name</label>
+          <input id="track-name-input" value="Custom Track" />
+
+          <label for="effect-profile-input">Effect Profile ID (optional)</label>
+          <input id="effect-profile-input" placeholder="duck-canal-v1" />
+        </div>
+
+        <div class="stats">
+          <div>Points: <strong id="point-count-value">0</strong></div>
+          <div>Length: <strong id="track-length-value">0.00 px</strong></div>
+        </div>
+
+        <div class="actions">
+          <button id="preview-toggle-btn" class="primary">Pause Preview</button>
+          <button id="undo-btn">Undo Point</button>
+          <button id="load-curvy-btn">Load Curvy Sample</button>
+          <button id="load-straight-btn">Load Straight Sample</button>
+          <button id="clear-btn" class="danger">Clear Points</button>
+          <button id="load-json-btn">Load JSON To Canvas</button>
+        </div>
+
+        <p id="editor-help-text" class="muted"></p>
+
+        <label for="track-json-output">Track JSON</label>
+        <textarea id="track-json-output"></textarea>
+
+        <div class="actions">
+          <button id="copy-json-btn" class="primary">Copy JSON</button>
+          <button id="download-json-btn" class="primary">Download JSON</button>
+        </div>
+      </aside>
+
+      <section id="race-canvas"></section>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

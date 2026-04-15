@@ -30,6 +30,7 @@
 - Phase 2 started with deterministic RNG, race session orchestration, and modular extension contracts.
 - Web-viewer prototype is active: PixiJS scene renders a moving racer on an S-curve path with a cinematic `CameraController` (intro overview, slower intro transition, runtime-aware zoom pulses, and finish overview).
 - `RaceSessionConfig` supports optional `cameraSettings` overrides so admin-managed races can tune cinematic behavior without changing viewer code.
+- Track authoring workflow is active in the web-viewer: variable point-count path editor with live preview and TrackDefinition JSON export (copy/download + JSON reload).
 
 ## Visual Baseline
 
