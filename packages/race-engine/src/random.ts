@@ -2,12 +2,9 @@
  * File: packages/race-engine/src/random.ts
  * Purpose: Provides deterministic and non-deterministic RNG implementations for simulation.
  * Usage: Use createDeterministicRng for seeded races and createSecureRng for non-seeded runs.
- * Dependencies: Node crypto API.
+ * Dependencies: Web Crypto API (globalThis.crypto) — works in browser and Node 22+.
  * Edge cases: Deterministic mode must generate identical sequences for identical seeds.
  */
-
-import { randomBytes } from 'node:crypto';
-
 export interface EngineRng {
   next(): number;
   nextInt(minInclusive: number, maxInclusive: number): number;
@@ -61,10 +58,10 @@ export function createDeterministicRng(seed: string): EngineRng {
 
 export function createSecureRng(): EngineRng {
   const nextValue = (): number => {
-    const bytes = randomBytes(4);
-    const uint = bytes.readUInt32BE(0);
-
-    return uint / UINT32_MAX_PLUS_ONE;
+    // Web Crypto API — available in browsers and Node 22+ without any import
+    const buf = new Uint32Array(1);
+    globalThis.crypto.getRandomValues(buf);
+    return (buf[0] ?? 0) / UINT32_MAX_PLUS_ONE;
   };
 
   return buildRng(nextValue);

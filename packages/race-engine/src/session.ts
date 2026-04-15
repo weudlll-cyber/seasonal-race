@@ -2,12 +2,9 @@
  * File: packages/race-engine/src/session.ts
  * Purpose: Implements a deterministic-capable race session orchestration layer.
  * Usage: Create sessions through createRaceSession and advance ticks through advanceTick.
- * Dependencies: Shared contracts and RNG utilities.
+ * Dependencies: Shared contracts, RNG utilities, Web Crypto API (globalThis.crypto).
  * Edge cases: Adapter initialization must happen exactly once per session.
  */
-
-import { randomBytes } from 'node:crypto';
-
 import type {
   Participant,
   RaceResult,
@@ -69,7 +66,11 @@ export interface RaceSession {
 }
 
 function createSeed(): string {
-  return `seed-${Date.now().toString(36)}-${randomBytes(8).toString('hex')}`;
+  // Use Web Crypto API — works in browser and Node 22+ without any import
+  const buf = new Uint8Array(8);
+  globalThis.crypto.getRandomValues(buf);
+  const hex = Array.from(buf, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `seed-${Date.now().toString(36)}-${hex}`;
 }
 
 export function createRaceSession(adapter: RaceAdapter, config: RaceSessionConfig): RaceSession {

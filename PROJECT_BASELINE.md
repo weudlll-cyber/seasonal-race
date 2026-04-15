@@ -28,6 +28,7 @@
 - Minimal modular source boundaries exist for apps and core packages.
 - Foundation smoke test is in place and running in CI.
 - Phase 2 started with deterministic RNG, race session orchestration, and modular extension contracts.
+- Web-viewer prototype is active: PixiJS scene renders a moving racer on an S-curve path with a working CameraController follow behavior.
 
 ## Visual Baseline
 

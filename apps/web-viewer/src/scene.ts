@@ -15,8 +15,18 @@
  *   - Racer containers are keyed by participantId for fast per-tick updates.
  */
 
-import { Assets, Container, DisplacementFilter, Graphics, Sprite, TilingSprite, AnimatedSprite, Texture } from 'pixi.js';
-import type { Application, Texture } from 'pixi.js';
+import {
+  Assets,
+  Container,
+  DisplacementFilter,
+  Graphics,
+  Sprite,
+  TilingSprite,
+  AnimatedSprite,
+  Texture,
+  WRAP_MODES
+} from 'pixi.js';
+import type { Application } from 'pixi.js';
 import type {
   EffectProfile,
   RaceTypeManifest,
@@ -85,11 +95,11 @@ export async function buildScene(
 
   // ── Layer 1+2: Environment surface + DisplacementFilter ─────────────────
   const envTexture = await loadTextureSafe(manifest.environmentTilePath, PLACEHOLDER_ENV, app);
-  const envSurface = new TilingSprite({
-    texture: envTexture,
-    width: app.screen.width * 3, // wider than viewport so it tiles across zoomed world
-    height: app.screen.height
-  });
+  const envSurface = new TilingSprite(
+    envTexture,
+    app.screen.width * 3, // wider than viewport so it tiles across zoomed world
+    app.screen.height
+  );
   envSurface.zIndex = Z_ENV_SURFACE;
 
   // PixiJS 8: displacement is driven by moving the sprite, not a filter offset property
@@ -97,9 +107,10 @@ export async function buildScene(
   if (effectProfile.displacementMapPath) {
     const dispTexture = await loadTextureSafe(effectProfile.displacementMapPath, 0x888888, app);
     dispSprite = new Sprite(dispTexture);
-    dispSprite.texture.source.addressMode = 'repeat';
+    dispSprite.texture.baseTexture.wrapMode = WRAP_MODES.REPEAT;
     world.addChild(dispSprite);
-    const dispFilter = new DisplacementFilter({ sprite: dispSprite, scale: 18 });
+    const dispFilter = new DisplacementFilter(dispSprite);
+    dispFilter.scale.set(18, 18);
     envSurface.filters = [dispFilter];
   }
   world.addChild(envSurface);
@@ -118,7 +129,7 @@ export async function buildScene(
     const pos = interpolatePosition(track.points, obs.progress);
     obsSprite.anchor.set(0.5);
     obsSprite.position.set(pos.x, pos.y);
-    obsSprite.label = obs.label ?? '';
+    obsSprite.name = obs.label ?? '';
     obstacleLayer.addChild(obsSprite);
   }
   world.addChild(obstacleLayer);
@@ -151,22 +162,22 @@ export async function buildScene(
     let setProgress: (progress: number, trackPoints: TrackPoint[]) => void;
 
     if (i === 0) {
-      // AnimatedSprite demo for the first racer
-      // Create 4 colored textures for animation frames
-      const animColors = [0xffdd00, 0xff5533, 0x33bbff, 0x55dd55];
-      const animTextures: Texture[] = animColors.map((c) => {
-        const g = new Graphics();
-        g.rect(-16, -24, 32, 32);
-        g.fill(c);
-        return app.renderer.generateTexture(g);
-      });
-      const anim = new AnimatedSprite(animTextures);
+      // Use a public PixiJS bunny AnimatedSprite for the first racer
+      // https://pixijs.io/examples/examples/assets/spritesheet/bunnies.json
+      // https://pixijs.io/examples/examples/assets/spritesheet/bunnies.png
+      const atlasUrl = 'https://pixijs.io/examples/examples/assets/spritesheet/bunnies.json';
+      const atlas = await Assets.load(atlasUrl);
+      // The atlas contains frames: 'bunny1', 'bunny2', 'bunny3', 'bunny4'
+      const frames = ['bunny1', 'bunny2', 'bunny3', 'bunny4'].map((name) => Texture.from(name));
+      const anim = new AnimatedSprite(frames);
+      anim.anchor.set(0.5);
       anim.animationSpeed = 0.18;
       anim.play();
       // Name label above racer
       const label = new Graphics();
-      label.rect(-1, -30, 2, 6);
-      label.fill(0xffffff);
+      label.beginFill(0xffffff);
+      label.drawRect(-1, -30, 2, 6);
+      label.endFill();
       anim.addChild(label);
       racerLayer.addChild(anim);
       container = anim;
@@ -177,11 +188,13 @@ export async function buildScene(
     } else {
       // Placeholder rectangle racer
       const g = new Graphics();
-      g.rect(-16, -24, 32, 32);
-      g.fill(color);
+      g.beginFill(color);
+      g.drawRect(-16, -24, 32, 32);
+      g.endFill();
       // Name label above racer
-      g.rect(-1, -30, 2, 6);
-      g.fill(0xffffff);
+      g.beginFill(0xffffff);
+      g.drawRect(-1, -30, 2, 6);
+      g.endFill();
       racerLayer.addChild(g);
       container = g as unknown as Container;
       setProgress = (progress: number, trackPoints: TrackPoint[]) => {
@@ -245,7 +258,8 @@ async function loadTextureSafe(
 
 function makePlaceholder(color: number, app: Application): Texture {
   const g = new Graphics();
-  g.rect(0, 0, 64, 64);
-  g.fill(color);
+  g.beginFill(color);
+  g.drawRect(0, 0, 64, 64);
+  g.endFill();
   return app.renderer.generateTexture(g);
 }
