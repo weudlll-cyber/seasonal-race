@@ -56,28 +56,8 @@ The viewer now includes an interactive track editor workflow:
 - keep fewer points for straight/simple tracks
 - import a background track image and mark points directly on top
 - optional smoothing toggle for curved preview while preserving explicit point export
-- broadcast preview toggle with cinematic camera follow/zoom to validate final spectator perspective
-- fullscreen broadcast layout for player-like framing (editor chrome hidden)
-- broadcast camera is clamped to background bounds to avoid black void areas around the track
-- replay lane-fit controls: lane offsets along track normal + adjustable lane width for water/track adherence
-- dynamic replay racer count up to 100 using packed formation rows (instead of one impossible-wide single row)
-- optional lane-board overlays show left/right replay boundaries directly on the track image
-- replay name visibility modes (`All`, `Leaders + Focus`, `Hover Only`) for better readability under dense racer packs
-- focus racer selector to keep one racer highlighted/visible while validating broadcast discoverability
-- broadcast leaderboard overlay that lists leaders and includes focused racer when outside the top set
-- replay visual policy extracted to a pure helper module so preview simulation and runtime race playback reuse identical rules
-- track layout geometry (normals, lane bounds, background point remap) extracted to shared helpers for preview/runtime reuse
-- world transform reset/background clamp extracted to shared helpers for consistent camera-bound behavior across surfaces
 - export TrackDefinition JSON (copy/download)
 - reload edited JSON back into the canvas for iteration
-
-### Planned App Roles
-
-- Studio app (planned): authoring for tracks, racers, presets, and internal design settings with draft/validate/publish workflow
-- Ops app (planned): race launch and operations with selectable published assets and runtime parameters only (no structural edits)
-- Viewer app (active): race rendering/broadcast playback that consumes published content and shared runtime policies
-- Entrypoint pattern: keep `main.ts` thin as surface dispatcher/bootstrap and place feature logic into dedicated surface modules (for example `studio-app.ts`)
-- Current dispatch contract: `?mode=studio` (default) or `?mode=runtime` selected by `app-surface-dispatcher`
 
 The **background art** is a wide scene image (wider than 1920px) that represents the whole
 track from bird's eye perspective. The camera pans and zooms into the part of the
