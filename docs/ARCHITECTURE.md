@@ -51,8 +51,11 @@ All effects are driven by code + JSON config; no custom shaders needed for the M
 The viewer now includes an interactive track editor workflow:
 
 - click on canvas to place path points
+- drag existing points to refine the route
 - use as many points as needed for complex curves
 - keep fewer points for straight/simple tracks
+- import a background track image and mark points directly on top
+- optional smoothing toggle for curved preview while preserving explicit point export
 - export TrackDefinition JSON (copy/download)
 - reload edited JSON back into the canvas for iteration
 

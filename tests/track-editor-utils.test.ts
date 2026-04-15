@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  buildSmoothedPreviewPath,
   buildTrackDefinition,
   DEFAULT_EDITOR_TRACK_ID,
   DEFAULT_EDITOR_TRACK_NAME,
@@ -60,5 +61,29 @@ describe('track editor utils', () => {
     expect(interpolateTrackPosition(points, -1)).toEqual({ x: 0, y: 0 });
     expect(interpolateTrackPosition(points, 0.5)).toEqual({ x: 100, y: 0 });
     expect(interpolateTrackPosition(points, 2)).toEqual({ x: 100, y: 100 });
+  });
+
+  it('builds a denser path when smoothing is enabled', () => {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 50, y: 100 },
+      { x: 120, y: 60 },
+      { x: 180, y: 120 }
+    ];
+
+    const smoothed = buildSmoothedPreviewPath(points, 8);
+    expect(smoothed.length).toBeGreaterThan(points.length);
+    expect(smoothed[0]).toEqual(points[0]);
+    expect(smoothed[smoothed.length - 1]).toEqual(points[points.length - 1]);
+  });
+
+  it('returns original points for short tracks in smoothing mode', () => {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 }
+    ];
+
+    const smoothed = buildSmoothedPreviewPath(points, 8);
+    expect(smoothed).toEqual(points);
   });
 });

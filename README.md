@@ -57,6 +57,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Web viewer prototype is running with PixiJS: a sprite follows an S-curve track and a cinematic camera starts in overview mode, transitions into leader focus, applies runtime-aware zoom pulses, and returns to an end overview.
 - Race sessions can optionally provide `cameraSettings` to override cinematic defaults (expected duration, pulse count/strength, intro hold, intro transition).
 - Web viewer includes an interactive track path editor: click-to-place variable point counts, live path preview, and TrackDefinition JSON copy/download for fast creation of many track layouts.
+- Track editor supports background image import, drag-to-edit points, and optional smooth-preview mode for curved route visualization.
 - Phase 2 core contracts are in progress: race session orchestration, deterministic RNG, adapter registry, and extensibility interfaces.
 - See `PROJECT_BASELINE.md` and `docs/ROADMAP_PHASES.md` for milestone details.
 

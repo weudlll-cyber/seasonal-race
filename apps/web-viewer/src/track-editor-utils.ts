@@ -20,6 +20,51 @@ export interface TrackEditorMeta {
 }
 
 /**
+ * Creates a denser preview path using Catmull-Rom interpolation.
+ * The original points remain unchanged and are still used for export.
+ */
+export function buildSmoothedPreviewPath(
+  points: TrackPoint[],
+  samplesPerSegment = 10
+): TrackPoint[] {
+  if (points.length < 3 || samplesPerSegment < 2) {
+    return points.map((p) => ({ x: p.x, y: p.y }));
+  }
+
+  const result: TrackPoint[] = [{ x: points[0]!.x, y: points[0]!.y }];
+
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const p0 = points[Math.max(0, i - 1)]!;
+    const p1 = points[i]!;
+    const p2 = points[i + 1]!;
+    const p3 = points[Math.min(points.length - 1, i + 2)]!;
+
+    for (let s = 1; s <= samplesPerSegment; s += 1) {
+      const t = s / samplesPerSegment;
+      const t2 = t * t;
+      const t3 = t2 * t;
+
+      const x =
+        0.5 *
+        (2 * p1.x +
+          (-p0.x + p2.x) * t +
+          (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+          (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+      const y =
+        0.5 *
+        (2 * p1.y +
+          (-p0.y + p2.y) * t +
+          (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+          (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+
+      result.push({ x: round3(x), y: round3(y) });
+    }
+  }
+
+  return result;
+}
+
+/**
  * Builds a serializable TrackDefinition from editor metadata and point list.
  */
 export function buildTrackDefinition(meta: TrackEditorMeta, points: TrackPoint[]): TrackDefinition {
