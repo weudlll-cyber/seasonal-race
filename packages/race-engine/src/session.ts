@@ -7,6 +7,7 @@
  */
 import type {
   Participant,
+  RaceCameraSettings,
   RaceResult,
   RaceTypeKey,
   TrackDefinition
@@ -52,6 +53,7 @@ export interface RaceSessionConfig {
   participants: Participant[];
   track: TrackDefinition;
   seed?: string;
+  cameraSettings?: RaceCameraSettings;
 }
 
 export interface RaceSession {

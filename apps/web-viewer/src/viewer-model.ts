@@ -137,7 +137,10 @@ export function createViewerModel(session: RaceSession, track: TrackDefinition):
       camera: {
         racers: cameraRacers,
         finished,
-        elapsedSeconds: accumulated / 1000
+        elapsedSeconds: accumulated / 1000,
+        ...(session.config.cameraSettings
+          ? { cameraSettings: session.config.cameraSettings }
+          : {})
       }
     };
   }

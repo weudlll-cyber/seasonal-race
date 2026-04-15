@@ -48,6 +48,23 @@ export interface TrackDefinition {
   effectProfileId?: string;
 }
 
+/**
+ * Optional viewer camera settings stored with race configuration.
+ * Admin can override defaults per race without touching viewer code.
+ */
+export interface RaceCameraSettings {
+  /** Expected race runtime used for runtime-aware zoom scheduling. */
+  expectedDurationMs?: number;
+  /** Number of mid-race cinematic zoom pulses (in/out) before final sprint. */
+  zoomPulseCount?: number;
+  /** Pulse intensity added to the base follow zoom (recommended 0.05..0.35). */
+  zoomPulseStrength?: number;
+  /** Seconds to hold wide overview at race start. */
+  introOverviewHoldSeconds?: number;
+  /** Seconds for the slower intro transition from overview to leader follow. */
+  introTransitionSeconds?: number;
+}
+
 export interface NameList {
   id: string;
   name: string;

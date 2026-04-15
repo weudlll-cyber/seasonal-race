@@ -12,7 +12,7 @@
  */
 
 import type { Container } from 'pixi.js';
-import type { TrackPoint } from '@sr/shared-types';
+import type { RaceCameraSettings, TrackPoint } from '../../../packages/shared-types/src/index.js';
 
 // ─── Tuning constants ────────────────────────────────────────────────────────
 
@@ -37,8 +37,24 @@ const FINAL_SPRINT_THRESHOLD = 0.88;
 /** Camera lerp speed — higher = snappier, lower = smoother. */
 const LERP_SPEED = 3.5;
 
+/** Slower camera lerp during intro transition from overview to leader follow. */
+const INTRO_LERP_SPEED = 1.6;
+
 /** How many seconds the overview zoom is held at race start. */
 const OVERVIEW_HOLD_SECONDS = 2.0;
+
+/** How many seconds the intro transition takes before normal follow begins. */
+const INTRO_TRANSITION_SECONDS = 2.6;
+
+/** Default expected race duration if no metadata is provided. */
+const DEFAULT_EXPECTED_DURATION_SECONDS = 75;
+
+/** Default intensity for scheduled mid-race cinematic zoom pulses. */
+const DEFAULT_PULSE_STRENGTH = 0.16;
+
+/** Clamp bounds for safe camera zoom values. */
+const ZOOM_MIN = 0.62;
+const ZOOM_MAX = 2.05;
 
 export interface CameraRacerState {
   progress: number; // normalized [0,1]
@@ -51,6 +67,8 @@ export interface CameraState {
   finished: boolean;
   /** Wall-clock seconds since race start. */
   elapsedSeconds: number;
+  /** Optional admin-overridable camera settings for this race. */
+  cameraSettings?: RaceCameraSettings;
 }
 
 /** Target values the camera eases toward each frame. */
@@ -89,7 +107,7 @@ export class CameraController {
    */
   update(dt: number, state: CameraState, world: Container): void {
     const target = this.computeTarget(state);
-    const alpha = Math.min(1, LERP_SPEED * dt);
+    const alpha = Math.min(1, this.resolveLerpSpeed(state) * dt);
 
     this.currentX = lerp(this.currentX, target.x, alpha);
     this.currentY = lerp(this.currentY, target.y, alpha);
@@ -110,8 +128,10 @@ export class CameraController {
       return this.overviewTarget();
     }
 
+    const settings = this.resolveCameraSettings(state.cameraSettings);
+
     // Overview hold at race start
-    if (state.elapsedSeconds < OVERVIEW_HOLD_SECONDS) {
+    if (state.elapsedSeconds < settings.introOverviewHoldSeconds) {
       return this.overviewTarget();
     }
 
@@ -122,6 +142,20 @@ export class CameraController {
 
     const sorted = [...state.racers].sort((a, b) => b.progress - a.progress);
     const leader = sorted[0]!;
+
+    // Intro transition: still follow leader position, but blend zoom from overview slowly.
+    const introEnd = settings.introOverviewHoldSeconds + settings.introTransitionSeconds;
+    if (state.elapsedSeconds < introEnd) {
+      const blend = clamp01(
+        (state.elapsedSeconds - settings.introOverviewHoldSeconds) / settings.introTransitionSeconds
+      );
+      return {
+        x: leader.position.x,
+        y: leader.position.y,
+        scaleX: lerp(ZOOM_OVERVIEW, ZOOM_FOLLOW, blend),
+        scaleY: lerp(ZOOM_OVERVIEW, ZOOM_FOLLOW, blend)
+      };
+    }
 
     // Final sprint — dramatic push-in on the leader
     if (leader.progress >= FINAL_SPRINT_THRESHOLD) {
@@ -136,7 +170,12 @@ export class CameraController {
     // Check if pack is bunched together
     const last = sorted[sorted.length - 1]!;
     const spread = leader.progress - last.progress;
-    const targetZoom = spread < BUNCH_THRESHOLD ? ZOOM_BUNCH : ZOOM_FOLLOW;
+    const baseZoom = spread < BUNCH_THRESHOLD ? ZOOM_BUNCH : ZOOM_FOLLOW;
+
+    // Runtime-aware cinematic pulses: default count is chosen by expected runtime,
+    // but can be overridden via admin race config.
+    const pulseZoom = this.computePulseZoom(state, settings);
+    const targetZoom = clamp(baseZoom + pulseZoom, ZOOM_MIN, ZOOM_MAX);
 
     // Follow the leader's position
     return {
@@ -155,8 +194,68 @@ export class CameraController {
       scaleY: ZOOM_OVERVIEW
     };
   }
+
+  private resolveLerpSpeed(state: CameraState): number {
+    const settings = this.resolveCameraSettings(state.cameraSettings);
+    const introEnd = settings.introOverviewHoldSeconds + settings.introTransitionSeconds;
+    return state.elapsedSeconds < introEnd ? INTRO_LERP_SPEED : LERP_SPEED;
+  }
+
+  private resolveCameraSettings(settings?: RaceCameraSettings): Required<RaceCameraSettings> {
+    const expectedDurationMs = settings?.expectedDurationMs ?? DEFAULT_EXPECTED_DURATION_SECONDS * 1000;
+    const expectedDurationSeconds = Math.max(10, expectedDurationMs / 1000);
+    const defaultPulseCount = defaultZoomPulseCountForExpectedDuration(expectedDurationSeconds);
+
+    return {
+      expectedDurationMs,
+      zoomPulseCount: settings?.zoomPulseCount ?? defaultPulseCount,
+      zoomPulseStrength: settings?.zoomPulseStrength ?? DEFAULT_PULSE_STRENGTH,
+      introOverviewHoldSeconds: settings?.introOverviewHoldSeconds ?? OVERVIEW_HOLD_SECONDS,
+      introTransitionSeconds: settings?.introTransitionSeconds ?? INTRO_TRANSITION_SECONDS
+    };
+  }
+
+  private computePulseZoom(
+    state: CameraState,
+    settings: Required<RaceCameraSettings>
+  ): number {
+    const pulses = Math.max(0, settings.zoomPulseCount);
+    if (pulses === 0) return 0;
+
+    // Pulse window excludes start overview+transition and final sprint section.
+    const runtimeSeconds = Math.max(10, settings.expectedDurationMs / 1000);
+    const pulseStart = settings.introOverviewHoldSeconds + settings.introTransitionSeconds;
+    const pulseEnd = Math.max(pulseStart + 1, runtimeSeconds * 0.86);
+
+    if (state.elapsedSeconds <= pulseStart || state.elapsedSeconds >= pulseEnd) {
+      return 0;
+    }
+
+    const u = clamp01((state.elapsedSeconds - pulseStart) / (pulseEnd - pulseStart));
+    const sine = Math.sin(u * pulses * Math.PI * 2);
+    return sine * settings.zoomPulseStrength;
+  }
+}
+
+/**
+ * Default pulse count by expected runtime bucket.
+ * Short races get fewer pulses, long races get more camera moments.
+ */
+export function defaultZoomPulseCountForExpectedDuration(expectedDurationSeconds: number): number {
+  if (expectedDurationSeconds <= 30) return 1;
+  if (expectedDurationSeconds <= 60) return 2;
+  if (expectedDurationSeconds <= 120) return 3;
+  return 4;
 }
 
 function lerp(from: number, to: number, alpha: number): number {
   return from + (to - from) * alpha;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function clamp01(value: number): number {
+  return clamp(value, 0, 1);
 }
