@@ -91,7 +91,14 @@ async function main(): Promise<void> {
           }
         ],
         finished: false,
-        elapsedSeconds
+        elapsedSeconds,
+        cameraSettings: {
+          expectedDurationMs: 95_000,
+          zoomPulseCount: 3,
+          zoomPulseStrength: 0.14,
+          introOverviewHoldSeconds: 2.2,
+          introTransitionSeconds: 3.2
+        }
       },
       world
     );

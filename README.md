@@ -54,7 +54,8 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Project bootstrap and documentation baseline created.
 - Phase 1 foundation tooling is active (TypeScript, ESLint, Prettier, Vitest).
 - Minimal modular app/package skeletons are in place for API, viewer, admin, engine, race types, branding, and shared types.
-- Web viewer prototype is running with PixiJS: a sprite follows an S-curve track and the camera follows the leading racer with smooth lerp movement.
+- Web viewer prototype is running with PixiJS: a sprite follows an S-curve track and a cinematic camera starts in overview mode, transitions into leader focus, applies runtime-aware zoom pulses, and returns to an end overview.
+- Race sessions can optionally provide `cameraSettings` to override cinematic defaults (expected duration, pulse count/strength, intro hold, intro transition).
 - Phase 2 core contracts are in progress: race session orchestration, deterministic RNG, adapter registry, and extensibility interfaces.
 - See `PROJECT_BASELINE.md` and `docs/ROADMAP_PHASES.md` for milestone details.
 

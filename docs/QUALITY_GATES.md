@@ -18,6 +18,7 @@ This project uses a strict, tiered gate model.
 
 - Command: `corepack pnpm run ci:full`
 - Purpose: full confidence including dependency security checks
+- Note: dependency audit tolerates temporary registry endpoint failures so CI is not blocked by npm audit API outages; rerun audit before merge if a registry warning appears.
 
 ## Rules
 

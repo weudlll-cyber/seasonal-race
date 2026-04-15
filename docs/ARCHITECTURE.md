@@ -64,18 +64,25 @@ mathematically. The camera follows the leader's position along that path.
 The viewer has a virtual camera sitting over a large `app.stage` container.
 Moving the camera = shifting and scaling `app.stage` — PixiJS handles all math.
 
-| Camera behavior          | When it triggers                     | How                                                           |
-| ------------------------ | ------------------------------------ | ------------------------------------------------------------- |
-| **Follow leader**        | Every tick                           | Stage position tracks leading racer via `interpolatePosition` |
-| **Zoom in**              | 3 racers bunched within 10% of track | `stage.scale` eases to ~1.4×                                  |
-| **Zoom out to overview** | Race start & finish                  | `stage.scale` eases to show full track width                  |
-| **Dramatic zoom in**     | Last 10% of track                    | Slow push to 1.8× on the leader                               |
-| **Spin/pan to winner**   | Finish detected                      | Camera eases to winner position and locks                     |
-| **Cutaway to pack**      | Long gap opens                       | Optional: pan back to show the full field                     |
+| Camera behavior            | When it triggers    | How                                                           |
+| -------------------------- | ------------------- | ------------------------------------------------------------- |
+| **Intro overview hold**    | Race start          | Start zoomed out and hold full-track framing briefly          |
+| **Intro focus transition** | After intro hold    | Slow lerp from overview zoom into leader-follow framing       |
+| **Follow leader**          | Every tick          | Stage position tracks leading racer via `interpolatePosition` |
+| **Runtime pulse zoom**     | During race runtime | Mild in/out zoom pulses; pulse count defaults from duration   |
+| **Finish overview**        | Finish detected     | Camera eases back out to show winners and full result context |
 
 All transitions use **easing functions** (ease-in-out) — no instant jumps.
 The `CameraController` is a plain TypeScript class; it reads from `RaceStateSnapshot`
 and writes `stage.position` + `stage.scale` each animation frame.
+
+`RaceSessionConfig.cameraSettings` can override cinematic defaults per session:
+
+- `expectedDurationMs`
+- `zoomPulseCount`
+- `zoomPulseStrength`
+- `introOverviewHoldSeconds`
+- `introTransitionSeconds`
 
 ---
 
