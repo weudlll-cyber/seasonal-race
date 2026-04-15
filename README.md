@@ -8,6 +8,8 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Keep race visuals attractive with lightweight procedural animations.
 - Provide a responsive race viewer and an admin panel.
 - Maintain strict engineering quality: typed contracts, tests, CI, security checks.
+- Local-first workflow for development and validation before any production rollout.
+- Production-ready VPS deployment with a secure one-command install script as end goal.
 
 ## Planned Tech Stack
 
@@ -40,11 +42,20 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
   - `corepack pnpm run ci:full`
 - Keep `pnpm-lock.yaml` committed for reproducible CI runs.
 
+## Deployment Direction
+
+- Development and feature validation happen locally first.
+- Final target environment is a VPS.
+- Deployment must be reproducible with a single install command based on hardened defaults.
+- See `docs/VPS_DEPLOYMENT.md` for rollout and hardening details.
+
 ## Current Status
 
 - Project bootstrap and documentation baseline created.
 - Phase 1 foundation tooling is active (TypeScript, ESLint, Prettier, Vitest).
 - Minimal modular app/package skeletons are in place for API, viewer, admin, engine, race types, branding, and shared types.
+- Web viewer prototype is running with PixiJS: a sprite follows an S-curve track and the camera follows the leading racer with smooth lerp movement.
+- Phase 2 core contracts are in progress: race session orchestration, deterministic RNG, adapter registry, and extensibility interfaces.
 - See `PROJECT_BASELINE.md` and `docs/ROADMAP_PHASES.md` for milestone details.
 
 ## Language Policy

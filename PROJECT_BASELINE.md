@@ -10,6 +10,8 @@
 - Name-list system must support import/export and reusable list presets.
 - Results must be exportable (at minimum JSON and CSV).
 - Integration layer must support connecting existing bots through adapters/webhooks.
+- Local-first testing is mandatory before VPS rollout.
+- VPS hosting is the production target with one-command installation support.
 
 ## Engineering Baseline
 
@@ -18,12 +20,15 @@
 - Deterministic race simulation mode with reproducible seed.
 - CI quality gates with staged strictness (light, extended, full).
 - Core engine remains independent from UI, storage, and connector implementations.
+- Deployment process must be reproducible and idempotent.
 
 ## Current Implementation Snapshot
 
 - Phase 1 tooling is active with TypeScript, ESLint, Prettier, and Vitest.
 - Minimal modular source boundaries exist for apps and core packages.
 - Foundation smoke test is in place and running in CI.
+- Phase 2 started with deterministic RNG, race session orchestration, and modular extension contracts.
+- Web-viewer prototype is active: PixiJS scene renders a moving racer on an S-curve path with a working CameraController follow behavior.
 
 ## Visual Baseline
 

@@ -19,6 +19,10 @@ The following decisions are locked unless explicitly changed via ADR:
 4. Extensibility strategy
 
 - Race types through adapter/plugin contract.
+- **`RaceTypeKey` is `string` (open type)** — built-in values exported via `KNOWN_RACE_TYPES`
+  constants. Third-party or future race types supply their own key without touching shared-types.
+- Each race type ships a `RaceTypeManifest` (assets, animations, default effect profile).
+  Viewer resolves manifests via `RaceTypeManifestProvider` — no hardcoded type switches in viewer.
 - Brands through schema-driven profiles and validated APIs.
 - Tracks through pluggable path and environment configuration.
 - Player name lists through provider/import adapters (manual, file, API).
@@ -27,9 +31,19 @@ The following decisions are locked unless explicitly changed via ADR:
 
 5. Modularity-first rule
 
-- New race types, tracks, brands, list providers, and export targets must be addable without changing core engine behavior.
+- New race types, tracks, brands, list providers, and export targets must be addable without
+  changing core engine behavior or any existing source file.
+- Adding a new race type = new adapter file + new manifest file + new asset folder. Zero other changes.
 - Core modules may expose contracts only; implementation details stay behind module boundaries.
+- No `switch (raceTypeKey)` or `if (raceTypeKey === 'duck')` in viewer, API, or engine code.
+  All type-specific behavior flows through the plugin/manifest/provider pattern.
 
 6. Quality strategy
 
 - Tiered quality gates (light, extended, full) must exist and remain green before merge.
+
+7. Delivery strategy
+
+- Development and feature validation are local-first.
+- Production target is VPS hosting.
+- A secure one-command installation script is a mandatory release artifact.

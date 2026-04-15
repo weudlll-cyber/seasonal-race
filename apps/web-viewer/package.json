@@ -1,0 +1,20 @@
+{
+  "name": "@seasonal-race/web-viewer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Race viewer frontend — PixiJS canvas renderer with camera system",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "pixi.js": "^7.2.4",
+    "@pixi/particle-emitter": "^5.0.8"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "vite": "^6.3.2"
+  }
+}

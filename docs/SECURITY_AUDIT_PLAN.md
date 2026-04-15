@@ -38,6 +38,14 @@
 - No `eval`-style execution.
 - No unsafe dynamic plugin loading in production.
 
+7. VPS hardening and deployment controls
+
+- Minimum-privilege service user (no root runtime).
+- Firewall defaults deny-by-default, open only required ports.
+- TLS termination with automatic renewal.
+- Secrets stored outside repository and injected securely at deploy/runtime.
+- Install script must be idempotent and fail-fast with explicit rollback hints.
+
 ## Audit Checklist
 
 - Threat model reviewed

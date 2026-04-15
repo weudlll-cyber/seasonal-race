@@ -36,3 +36,5 @@
 - Tag-based release workflow.
 - Build artifacts generated from clean main branch.
 - Rollback procedure documented before first production release.
+- VPS deployment must be executable from a single command.
+- Install process must be idempotent and documented in a runbook.

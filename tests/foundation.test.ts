@@ -11,9 +11,11 @@ import { describe, expect, it } from 'vitest';
 import { apiAppId } from '../apps/api/src/index';
 import { webAdminAppId } from '../apps/web-admin/src/index';
 import { webViewerAppId } from '../apps/web-viewer/src/index';
-import { raceTypeRegistry } from '../packages/race-types/src/index';
+import { clearRaceTypeRegistry, listRaceAdapters } from '../packages/race-types/src/index';
 
 describe('foundation bootstrap', () => {
+  clearRaceTypeRegistry();
+
   it('exposes stable module identifiers', () => {
     expect(apiAppId).toBe('seasonal-race-api');
     expect(webAdminAppId).toBe('seasonal-race-web-admin');
@@ -21,6 +23,6 @@ describe('foundation bootstrap', () => {
   });
 
   it('starts with an empty race-type registry', () => {
-    expect(raceTypeRegistry).toEqual([]);
+    expect(listRaceAdapters()).toEqual([]);
   });
 });

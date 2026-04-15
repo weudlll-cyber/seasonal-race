@@ -31,6 +31,15 @@
 - Public modules require purpose and usage notes.
 - API changes must include OpenAPI updates.
 - Keep docs synchronized with implementation in the same change set.
+- Each source file must include a clear top header with purpose, usage, dependencies, and edge-case notes.
+- Add inline comments only where logic is non-obvious; comments must explain intent, not restate code.
+
+## Source Hygiene
+
+- Remove dead code and avoid duplicated logic.
+- Prefer extracting shared utilities over copy/paste.
+- Keep source files and functions small and composable.
+- Target file size under 300 lines; split files approaching 500+ lines.
 
 ## Commits and Branches
 
