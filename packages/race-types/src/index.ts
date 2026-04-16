@@ -1,10 +1,9 @@
 /**
  * File: packages/race-types/src/index.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Central registration entry for race-type adapters.
  * Usage: API layer imports this module to discover available race types.
- *        Call registerDefaultAdapters() once at application startup to activate built-in adapters.
  * Dependencies: Race engine adapter contract, duck adapter.
- * Edge cases: Registry must remain additive for plugin-like growth.
  */
 
 import type { RaceAdapter } from '../../race-engine/src/index';

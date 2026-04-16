@@ -1,5 +1,6 @@
 /**
  * File: tests/camera-zoom-schedule.test.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Verifies runtime-based default zoom pulse bucket selection.
  * Usage: Run with the regular Vitest suite.
  * Dependencies: vitest, web-viewer camera helper export.

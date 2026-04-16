@@ -1,13 +1,9 @@
 /**
  * File: packages/race-engine/src/track-path.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Linear interpolation along a polyline track path for participant position rendering.
  * Usage: Pass TrackPoint[] and a normalized progress value t ∈ [0,1] to get a 2D coordinate.
  * Dependencies: shared-types TrackPoint.
- * Edge cases:
- *   - Empty arrays return the origin {x:0,y:0}.
- *   - Single-point arrays return that point regardless of t.
- *   - t is clamped to [0,1] before processing.
- *   - Zero-length polylines (all points coincident) return the first point.
  */
 
 import type { TrackPoint } from '../../shared-types/src/index';

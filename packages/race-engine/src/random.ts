@@ -1,10 +1,11 @@
 /**
  * File: packages/race-engine/src/random.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Provides deterministic and non-deterministic RNG implementations for simulation.
  * Usage: Use createDeterministicRng for seeded races and createSecureRng for non-seeded runs.
  * Dependencies: Web Crypto API (globalThis.crypto) — works in browser and Node 22+.
- * Edge cases: Deterministic mode must generate identical sequences for identical seeds.
  */
+
 export interface EngineRng {
   next(): number;
   nextInt(minInclusive: number, maxInclusive: number): number;

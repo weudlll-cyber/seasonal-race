@@ -1,5 +1,6 @@
 /**
  * File: tests/track-editor-utils.test.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Validates track editor utility functions for flexible point-based tracks.
  * Usage: Runs in Vitest as part of the regular test suite.
  * Dependencies: track-editor-utils.

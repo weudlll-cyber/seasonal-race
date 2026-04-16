@@ -26,8 +26,14 @@
 - Update relevant docs in the same commit as code changes.
 - Avoid hard-coded values when configuration is possible.
 - Keep files modular, avoid redundancy, and remove dead code.
-- Ensure every source file has a descriptive header block.
+- Ensure every source file has a descriptive top header block.
+- Header minimum fields for TypeScript files:
+  - `File: <workspace-relative-path>`
+  - `Model: GPT-5.3-Codex`
+  - `Purpose: <short module responsibility description>`
+- Optional but recommended header fields: `Usage`, `Dependencies`.
 - Add inline comments where reasoning is not obvious.
+- Keep inline comments concise and intent-focused; avoid commentary for trivial assignments.
 
 ## Quality Gates
 

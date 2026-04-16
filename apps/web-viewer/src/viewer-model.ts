@@ -1,16 +1,9 @@
 /**
  * File: apps/web-viewer/src/viewer-model.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Drives the race simulation loop and maps engine state to viewer state.
- *          Decouples the race engine tick from the PixiJS render tick.
- * Usage:
- *   const model = createViewerModel(session, track)
- *   model.start()
- *   // In your animation loop: const state = model.getState()
+ * Usage: *   const model = createViewerModel(session, track)
  * Dependencies: race-engine session contracts, shared-types.
- * Edge cases:
- *   - Simulation ticks at a fixed 100ms step regardless of render frame rate.
- *   - After finalize() is called the model freezes — getState() keeps returning
- *     the last state so the camera can animate to overview smoothly.
  */
 
 import type { RaceSession } from '@sr/race-engine';

@@ -1,18 +1,9 @@
 /**
  * File: apps/web-viewer/src/scene.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Builds and manages the 9-layer PixiJS scene for a race.
- *          Each layer is a Container child of the returned world Container.
- *          The caller attaches the world Container to the PixiJS stage.
- * Usage:
- *   const scene = await buildScene(app, manifest, effectProfile, track)
- *   app.stage.addChild(scene.world)
- *   app.stage.addChild(scene.ui)   // UI is outside world so it ignores camera
+ * Usage: *   const scene = await buildScene(app, manifest, effectProfile, track)
  * Dependencies: pixi.js, @sr/shared-types.
- * Edge cases:
- *   - Missing textures fall back to a colored rectangle placeholder so the viewer
- *     always renders something even before real assets exist.
- *   - Environment TilingSprite scroll is driven by calling scene.update(dt) each frame.
- *   - Racer containers are keyed by participantId for fast per-tick updates.
  */
 
 import {

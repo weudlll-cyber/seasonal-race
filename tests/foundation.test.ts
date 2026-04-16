@@ -1,9 +1,9 @@
 /**
  * File: tests/foundation.test.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Verifies that Phase 1 foundation modules are wired and importable.
  * Usage: Runs in CI as baseline guard for workspace tooling.
  * Dependencies: Vitest and shared package placeholders.
- * Edge cases: Keep deterministic and side-effect free.
  */
 
 import { describe, expect, it } from 'vitest';

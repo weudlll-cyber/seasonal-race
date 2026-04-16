@@ -1,14 +1,9 @@
 /**
  * File: apps/web-viewer/src/camera.ts
+ * Model: GPT-5.3-Codex
  * Purpose: CameraController — moves and scales the world container each frame
- *          to follow the leading racer, zoom to pack density, and dramatize the finish.
  * Usage: Create one instance, call update(dt, state) every animation frame.
- *        Attach worldContainer as a child of the PixiJS stage.
  * Dependencies: pixi.js Container and Point.
- * Edge cases:
- *   - All transitions use lerp (linear interpolation) so no instant jumps.
- *   - The controller never reads from the DOM — viewport size is passed in on construction.
- *   - If leadProgress is 0 (no tick yet), camera stays at start position.
  */
 
 import type { Container } from 'pixi.js';
@@ -51,10 +46,11 @@ const DEFAULT_EXPECTED_DURATION_SECONDS = 75;
 
 /** Default intensity for scheduled mid-race cinematic zoom pulses. */
 const DEFAULT_PULSE_STRENGTH = 0.16;
+const DEFAULT_ZOOM_SCALE_MULTIPLIER = 1;
 
 /** Clamp bounds for safe camera zoom values. */
 const ZOOM_MIN = 0.62;
-const ZOOM_MAX = 2.05;
+const ZOOM_MAX = 2.9;
 
 export interface CameraRacerState {
   progress: number; // normalized [0,1]
@@ -152,8 +148,8 @@ export class CameraController {
       return {
         x: leader.position.x,
         y: leader.position.y,
-        scaleX: lerp(ZOOM_OVERVIEW, ZOOM_FOLLOW, blend),
-        scaleY: lerp(ZOOM_OVERVIEW, ZOOM_FOLLOW, blend)
+        scaleX: this.applyZoomScale(lerp(ZOOM_OVERVIEW, ZOOM_FOLLOW, blend), settings),
+        scaleY: this.applyZoomScale(lerp(ZOOM_OVERVIEW, ZOOM_FOLLOW, blend), settings)
       };
     }
 
@@ -162,8 +158,8 @@ export class CameraController {
       return {
         x: leader.position.x,
         y: leader.position.y,
-        scaleX: ZOOM_FINAL,
-        scaleY: ZOOM_FINAL
+        scaleX: this.applyZoomScale(ZOOM_FINAL, settings),
+        scaleY: this.applyZoomScale(ZOOM_FINAL, settings)
       };
     }
 
@@ -175,7 +171,7 @@ export class CameraController {
     // Runtime-aware cinematic pulses: default count is chosen by expected runtime,
     // but can be overridden via admin race config.
     const pulseZoom = this.computePulseZoom(state, settings);
-    const targetZoom = clamp(baseZoom + pulseZoom, ZOOM_MIN, ZOOM_MAX);
+    const targetZoom = this.applyZoomScale(baseZoom + pulseZoom, settings);
 
     // Follow the leader's position
     return {
@@ -212,8 +208,13 @@ export class CameraController {
       zoomPulseCount: settings?.zoomPulseCount ?? defaultPulseCount,
       zoomPulseStrength: settings?.zoomPulseStrength ?? DEFAULT_PULSE_STRENGTH,
       introOverviewHoldSeconds: settings?.introOverviewHoldSeconds ?? OVERVIEW_HOLD_SECONDS,
-      introTransitionSeconds: settings?.introTransitionSeconds ?? INTRO_TRANSITION_SECONDS
+      introTransitionSeconds: settings?.introTransitionSeconds ?? INTRO_TRANSITION_SECONDS,
+      zoomScaleMultiplier: settings?.zoomScaleMultiplier ?? DEFAULT_ZOOM_SCALE_MULTIPLIER
     };
+  }
+
+  private applyZoomScale(baseZoom: number, settings: Required<RaceCameraSettings>): number {
+    return clamp(baseZoom * settings.zoomScaleMultiplier, ZOOM_MIN, ZOOM_MAX);
   }
 
   private computePulseZoom(state: CameraState, settings: Required<RaceCameraSettings>): number {

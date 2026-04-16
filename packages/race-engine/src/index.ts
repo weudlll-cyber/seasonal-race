@@ -1,9 +1,9 @@
 /**
  * File: packages/race-engine/src/index.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Public exports for race-engine contracts and session orchestration.
  * Usage: Import engine interfaces and helpers from this module in other packages.
  * Dependencies: Session and RNG modules.
- * Edge cases: Keep exports backward compatible for extension packages.
  */
 
 export {

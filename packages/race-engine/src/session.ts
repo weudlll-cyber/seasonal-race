@@ -1,10 +1,11 @@
 /**
  * File: packages/race-engine/src/session.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Implements a deterministic-capable race session orchestration layer.
  * Usage: Create sessions through createRaceSession and advance ticks through advanceTick.
  * Dependencies: Shared contracts, RNG utilities, Web Crypto API (globalThis.crypto).
- * Edge cases: Adapter initialization must happen exactly once per session.
  */
+
 import type {
   Participant,
   RaceCameraSettings,

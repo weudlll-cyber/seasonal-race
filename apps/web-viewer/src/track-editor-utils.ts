@@ -1,11 +1,9 @@
 /**
  * File: apps/web-viewer/src/track-editor-utils.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Shared utility functions for interactive track editing and export.
  * Usage: Used by the PixiJS editor UI to build TrackDefinition JSON and preview movement.
  * Dependencies: Shared track point contract only.
- * Edge cases:
- *   - Handles empty and single-point tracks safely.
- *   - Clamps interpolation progress to [0,1].
  */
 
 import type { TrackDefinition, TrackPoint } from '../../../packages/shared-types/src/index.js';
