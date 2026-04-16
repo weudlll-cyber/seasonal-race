@@ -1,9 +1,9 @@
 /**
  * File: tests/race-engine-core.test.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Validates Phase-2 race engine core contracts and deterministic behavior.
  * Usage: Ensures session orchestration and registry contracts stay stable.
  * Dependencies: Vitest and race-engine modules.
- * Edge cases: Verifies seeded RNG repeatability and duplicate registry safeguards.
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';

@@ -1,11 +1,9 @@
 /**
  * File: tests/phase2-duck-adapter.test.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Validates duck-race adapter behavior and track-path interpolation utilities.
  * Usage: Run as part of the full test suite — covers determinism, position math, and lifecycle guards.
  * Dependencies: Vitest, race-engine, race-types, shared-types.
- * Edge cases:
- *   - Verifies that identical seeds produce identical race outcomes.
- *   - Verifies that interpolation edge cases (t=0, t=1, empty array) are handled safely.
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';

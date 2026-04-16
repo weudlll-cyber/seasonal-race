@@ -1,9 +1,9 @@
 /**
  * File: packages/shared-types/src/index.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Holds shared contracts consumed by apps and domain packages.
  * Usage: Import DTOs and identifiers from this package instead of duplicating shapes.
  * Dependencies: TypeScript only.
- * Edge cases: Keep backward compatibility for versioned API contracts.
  */
 
 /**
@@ -63,6 +63,8 @@ export interface RaceCameraSettings {
   introOverviewHoldSeconds?: number;
   /** Seconds for the slower intro transition from overview to leader follow. */
   introTransitionSeconds?: number;
+  /** Multiplies all camera zoom targets (use >1 for tighter spectator framing). */
+  zoomScaleMultiplier?: number;
 }
 
 export interface NameList {

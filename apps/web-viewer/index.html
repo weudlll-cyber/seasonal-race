@@ -8,29 +8,383 @@
     />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Seasonal Race — Live Viewer</title>
+    <title>Seasonal Race — Track Editor</title>
     <style>
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
-      body {
-        background: #000;
-        overflow: hidden;
-        width: 100vw;
-        height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+
+      :root {
+        --bg: #0b1219;
+        --panel: #132130;
+        --panel-2: #192b3f;
+        --text: #e6edf4;
+        --muted: #9db1c7;
+        --accent: #41d6b9;
+        --danger: #e87b7b;
       }
+
+      body {
+        background: radial-gradient(80% 120% at 10% 0%, #16324a 0%, var(--bg) 48%);
+        color: var(--text);
+        width: 100svw;
+        min-height: 100svh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .layout {
+        width: 100%;
+        min-height: 100svh;
+        display: grid;
+        grid-template-columns: minmax(320px, 380px) 1fr;
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .panel {
+        border: 1px solid #2a4058;
+        border-radius: 14px;
+        background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      h1 {
+        font-size: 1.2rem;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .inline-control {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .inline-control strong {
+        font-size: 0.9rem;
+      }
+
+      label {
+        font-size: 0.84rem;
+        color: var(--muted);
+      }
+
+      input,
+      select,
+      textarea,
+      button {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #35516d;
+        background: #0d1a28;
+        color: var(--text);
+        padding: 8px 9px;
+        font-size: 0.9rem;
+      }
+
+      textarea {
+        min-height: 180px;
+        resize: vertical;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      button {
+        cursor: pointer;
+        transition: filter 0.15s ease;
+      }
+
+      button:hover {
+        filter: brightness(1.15);
+      }
+
+      .primary {
+        background: #113d35;
+        border-color: #2a8e79;
+      }
+
+      .danger {
+        background: #3b1c1c;
+        border-color: #8e4040;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        font-size: 0.9rem;
+      }
+
+      .stats div {
+        border: 1px solid #2b4560;
+        border-radius: 8px;
+        padding: 8px;
+        background: #102131;
+      }
+
       #race-canvas {
+        border: 1px solid #2a4159;
+        border-radius: 14px;
+        position: relative;
         display: block;
+        overflow: hidden;
+        min-height: 720px;
+      }
+
+      #race-canvas canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      @media (max-width: 1100px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        #race-canvas {
+          min-height: 520px;
+        }
+      }
+
+      body.broadcast-mode {
+        overflow: hidden;
+      }
+
+      body.broadcast-mode .layout {
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding: 0;
+      }
+
+      body.broadcast-mode .panel {
+        display: none;
+      }
+
+      body.broadcast-mode #race-canvas {
+        border: 0;
+        border-radius: 0;
+        min-height: 100svh;
+        height: 100svh;
+      }
+
+      body.broadcast-mode #race-canvas canvas {
+        width: 100vw;
+        height: 100svh;
+      }
+
+      #broadcast-leaderboard {
+        position: absolute;
+        right: 12px;
+        top: 12px;
+        z-index: 20;
+        width: 230px;
+        max-height: 78vh;
+        overflow: auto;
+        border-radius: 10px;
+        border: 1px solid rgba(116, 176, 255, 0.6);
+        background: rgba(5, 18, 33, 0.84);
+        padding: 8px;
+        display: none;
+      }
+
+      body.broadcast-mode #broadcast-leaderboard {
+        display: block;
+      }
+
+      #broadcast-leaderboard h3 {
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+        color: #b7d5ff;
+      }
+
+      #broadcast-leaderboard ul {
+        list-style: none;
+        display: grid;
+        gap: 4px;
+      }
+
+      #broadcast-leaderboard li {
+        font-size: 0.8rem;
+        padding: 4px 6px;
+        border-radius: 6px;
+        background: rgba(18, 41, 68, 0.7);
+      }
+
+      #broadcast-leaderboard li.focus {
+        outline: 1px solid #ffe28a;
+        background: rgba(74, 58, 21, 0.75);
       }
     </style>
   </head>
   <body>
-    <div id="race-canvas"></div>
+    <main class="layout">
+      <aside class="panel">
+        <h1>Track Path Editor</h1>
+        <p class="muted">
+          Click the canvas to add points. Use more points for curvy tracks, fewer points for
+          straight tracks.
+        </p>
+
+        <div class="form-grid">
+          <label for="track-id-input" title="Unique id used later in selection and APIs"
+            >Track ID</label
+          >
+          <input
+            id="track-id-input"
+            value="custom-track"
+            title="Unique id used later in selection and APIs"
+          />
+
+          <label for="track-name-input" title="Readable display name shown to admins"
+            >Track Name</label
+          >
+          <input
+            id="track-name-input"
+            value="Custom Track"
+            title="Readable display name shown to admins"
+          />
+
+          <label for="effect-profile-input" title="Optional visuals profile for this track"
+            >Effect Profile ID (optional)</label
+          >
+          <input
+            id="effect-profile-input"
+            placeholder="duck-canal-v1"
+            title="Optional visuals profile for this track"
+          />
+
+          <label
+            for="background-image-input"
+            title="Load your background art and place points directly on top"
+            >Background Image (optional)</label
+          >
+          <input
+            id="background-image-input"
+            type="file"
+            accept="image/*"
+            title="Load your background art and place points directly on top"
+          />
+
+          <label for="lane-width-input" title="Controls side spacing of racers in replay mode"
+            >Replay Lane Width</label
+          >
+          <div class="inline-control" title="Controls side spacing of racers in replay mode">
+            <input id="lane-width-input" type="range" min="1" max="24" step="1" value="5" />
+            <strong id="lane-width-value">5 px</strong>
+          </div>
+          <label for="racer-count-input">Replay Racer Count</label>
+          <div
+            class="inline-control"
+            title="How many racers are simulated in replay test and broadcast preview (up to 100)"
+          >
+            <input id="racer-count-input" type="range" min="2" max="100" step="1" value="12" />
+            <strong id="racer-count-value">12</strong>
+          </div>
+
+          <label for="name-mode-select" title="How racer names are shown during replay/broadcast"
+            >Name Display Mode</label
+          >
+          <select id="name-mode-select" title="How racer names are shown during replay/broadcast">
+            <option value="leaders-focus">Leaders + Focus</option>
+            <option value="hover">Hover Only</option>
+            <option value="all">All</option>
+          </select>
+
+          <label for="focus-racer-input" title="Always keep this racer name visible and highlighted"
+            >Focus Racer Number</label
+          >
+          <div class="inline-control" title="Always keep this racer name visible and highlighted">
+            <input id="focus-racer-input" type="number" min="1" max="100" value="1" />
+            <strong id="focus-racer-label">D1</strong>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div>Points: <strong id="point-count-value">0</strong></div>
+          <div>Length: <strong id="track-length-value">0.00 px</strong></div>
+        </div>
+
+        <div class="actions">
+          <button id="preview-toggle-btn" class="primary" title="Play/pause racer movement">
+            Pause Preview
+          </button>
+          <button
+            id="smooth-toggle-btn"
+            title="Toggle curved visual interpolation for preview only"
+          >
+            Smoothing: On
+          </button>
+          <button id="replay-toggle-btn" title="Play multi-racer replay frames on this track">
+            Replay Test: Off
+          </button>
+          <button id="lane-boards-toggle-btn" title="Show lane board boundaries in replay modes">
+            Lane Boards: Off
+          </button>
+          <button
+            id="broadcast-toggle-btn"
+            title="Switch to player-like fullscreen camera perspective"
+          >
+            Broadcast View: Off
+          </button>
+          <button id="undo-btn" title="Remove the last added control point">Undo Point</button>
+          <button id="clear-image-btn" title="Remove loaded background image">
+            Clear Background
+          </button>
+          <button id="load-curvy-btn" title="Load a prebuilt curvy sample track">
+            Load Curvy Sample
+          </button>
+          <button id="load-straight-btn" title="Load a simple straight sample track">
+            Load Straight Sample
+          </button>
+          <button id="clear-btn" class="danger" title="Delete all points from canvas">
+            Clear Points
+          </button>
+          <button id="load-json-btn" title="Parse current JSON and redraw points on canvas">
+            Load JSON To Canvas
+          </button>
+        </div>
+
+        <p id="editor-help-text" class="muted"></p>
+
+        <label for="track-json-output" title="Editable TrackDefinition JSON">Track JSON</label>
+        <textarea id="track-json-output" title="Editable TrackDefinition JSON"></textarea>
+
+        <div class="actions">
+          <button id="copy-json-btn" class="primary" title="Copy JSON to clipboard">
+            Copy JSON
+          </button>
+          <button id="download-json-btn" class="primary" title="Download JSON file for reuse">
+            Download JSON
+          </button>
+        </div>
+      </aside>
+
+      <section id="race-canvas">
+        <aside id="broadcast-leaderboard" aria-live="polite">
+          <h3>Leaderboard</h3>
+          <ul id="leaderboard-list"></ul>
+        </aside>
+      </section>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

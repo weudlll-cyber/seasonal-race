@@ -1,9 +1,9 @@
 /**
  * File: apps/web-viewer/vite.config.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Vite build configuration for the web-viewer PixiJS app.
  * Usage: Run `pnpm dev` from this package to start the dev server on port 5173.
  * Dependencies: Vite.
- * Edge cases: Alias @sr/* maps to workspace packages for clean imports.
  */
 
 import { defineConfig } from 'vite';

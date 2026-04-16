@@ -1,13 +1,9 @@
 /**
  * File: packages/race-types/src/duck/duck-adapter.ts
+ * Model: GPT-5.3-Codex
  * Purpose: Duck-race adapter — simulates rubber ducks racing along a curved water track.
  * Usage: Instantiate DuckAdapter and pass to createRaceSession; call initialize() exactly once.
- *        initialize() fully resets state so an instance can be reused across sequential races.
  * Dependencies: race-engine RaceAdapter contracts, shared-types, track-path interpolation.
- * Edge cases:
- *   - tick() and finalize() throw if called before initialize().
- *   - finalize() assigns finish times to any duck that never crossed the line.
- *   - Deterministic seeds produce the same race outcome for identical participant lists.
  */
 
 import type {
