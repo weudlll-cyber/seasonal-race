@@ -17,13 +17,14 @@ interface StudioBackgroundControls {
 export interface StudioBackgroundControllerOptions {
   controls: StudioBackgroundControls;
   backgroundLayer: Container;
-  viewWidth: number;
-  viewHeight: number;
+  getViewportSize: () => { width: number; height: number };
   isBroadcastViewEnabled: () => boolean;
 }
 
 export interface StudioBackgroundController {
   getBackgroundSprite: () => Sprite | null;
+  getBackgroundDataUrl: () => string | null;
+  loadBackgroundFromDataUrl: (dataUrl: string) => Promise<void>;
   applyLayoutForCurrentView: () => void;
   clearBackground: () => void;
 }
@@ -31,10 +32,26 @@ export interface StudioBackgroundController {
 export function wireStudioBackgroundController(
   options: StudioBackgroundControllerOptions
 ): StudioBackgroundController {
-  const { controls, backgroundLayer, viewWidth, viewHeight, isBroadcastViewEnabled } = options;
+  const { controls, backgroundLayer, getViewportSize, isBroadcastViewEnabled } = options;
 
   let backgroundSprite: Sprite | null = null;
   let backgroundObjectUrl: string | null = null;
+  let backgroundDataUrl: string | null = null;
+
+  const mountBackgroundSprite = (sourceUrl: string, serializedDataUrl: string | null): Sprite => {
+    const sprite = Sprite.from(sourceUrl);
+    backgroundLayer.addChild(sprite);
+    backgroundSprite = sprite;
+    backgroundDataUrl = serializedDataUrl;
+    sprite.alpha = 0.95;
+
+    applyBackgroundLayout(sprite);
+    if (!sprite.texture.baseTexture.valid) {
+      sprite.texture.baseTexture.once('loaded', () => applyBackgroundLayout(sprite));
+    }
+
+    return sprite;
+  };
 
   const applyBackgroundLayout = (sprite: Sprite): void => {
     const w = sprite.texture.width;
@@ -44,8 +61,8 @@ export function wireStudioBackgroundController(
     const layout = computeBackgroundLayoutRect(
       w,
       h,
-      viewWidth,
-      viewHeight,
+      getViewportSize().width,
+      getViewportSize().height,
       isBroadcastViewEnabled()
     );
     sprite.scale.set(layout.w / w);
@@ -64,6 +81,8 @@ export function wireStudioBackgroundController(
       URL.revokeObjectURL(backgroundObjectUrl);
       backgroundObjectUrl = null;
     }
+
+    backgroundDataUrl = null;
   };
 
   controls.backgroundImageInput.addEventListener('change', async () => {
@@ -72,15 +91,14 @@ export function wireStudioBackgroundController(
 
     clearBackground();
     backgroundObjectUrl = URL.createObjectURL(file);
-    const sprite = Sprite.from(backgroundObjectUrl);
-    backgroundLayer.addChild(sprite);
-    backgroundSprite = sprite;
-    sprite.alpha = 0.95;
-
-    applyBackgroundLayout(sprite);
-    if (!sprite.texture.baseTexture.valid) {
-      sprite.texture.baseTexture.once('loaded', () => applyBackgroundLayout(sprite));
+    let serializedDataUrl: string | null = null;
+    try {
+      serializedDataUrl = await readFileAsDataUrl(file);
+    } catch {
+      serializedDataUrl = null;
     }
+
+    mountBackgroundSprite(backgroundObjectUrl, serializedDataUrl);
 
     controls.editorHelp.textContent =
       'Background image loaded. Click to place points, drag points to edit.';
@@ -94,6 +112,13 @@ export function wireStudioBackgroundController(
 
   return {
     getBackgroundSprite: () => backgroundSprite,
+    getBackgroundDataUrl: () => backgroundDataUrl,
+    loadBackgroundFromDataUrl: async (dataUrl: string) => {
+      clearBackground();
+      mountBackgroundSprite(dataUrl, dataUrl);
+      controls.backgroundImageInput.value = '';
+      controls.editorHelp.textContent = 'Background image restored from saved test preset.';
+    },
     applyLayoutForCurrentView: () => {
       if (backgroundSprite) {
         applyBackgroundLayout(backgroundSprite);
@@ -101,4 +126,19 @@ export function wireStudioBackgroundController(
     },
     clearBackground
   };
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        reject(new Error('Invalid data URL result'));
+        return;
+      }
+      resolve(reader.result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
 }

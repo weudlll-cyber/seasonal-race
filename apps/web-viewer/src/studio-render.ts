@@ -12,6 +12,13 @@ import { buildLaneBoardBounds } from './track-layout-helpers';
 import type { ReplayLeaderboardRow } from './replay-visual-policy';
 import type { EditorDom } from './studio-dom';
 
+export interface BoundaryEditorState {
+  mode: 'centerline' | 'boundaries';
+  activeSide: 'left' | 'right';
+  leftBoundaryPoints: TrackPoint[];
+  rightBoundaryPoints: TrackPoint[];
+}
+
 export function renderLeaderboardRows(
   leaderboardList: HTMLElement,
   rows: ReplayLeaderboardRow[]
@@ -33,7 +40,8 @@ export function redrawEditor(
   markerLayer: Graphics,
   smoothingEnabled: boolean,
   viewWidth: number,
-  viewHeight: number
+  viewHeight: number,
+  boundaryState?: BoundaryEditorState
 ): void {
   pathLayer.clear();
   markerLayer.clear();
@@ -45,19 +53,47 @@ export function redrawEditor(
   }
 
   const previewPath = smoothingEnabled ? buildSmoothedPreviewPath(points, 10) : points;
+  const boundaryMode = boundaryState?.mode === 'boundaries';
 
-  pathLayer.lineStyle(7, 0x43d6d1, 0.88);
-  pathLayer.moveTo(previewPath[0]!.x, previewPath[0]!.y);
-  for (let i = 1; i < previewPath.length; i += 1) {
-    pathLayer.lineTo(previewPath[i]!.x, previewPath[i]!.y);
+  if (boundaryMode) {
+    const left = boundaryState?.leftBoundaryPoints ?? [];
+    const right = boundaryState?.rightBoundaryPoints ?? [];
+    const activeLeft = boundaryState?.activeSide === 'left';
+
+    drawPath(
+      pathLayer,
+      left,
+      smoothingEnabled,
+      activeLeft ? 4 : 3,
+      0xffdf74,
+      activeLeft ? 0.96 : 0.8
+    );
+    drawPath(
+      pathLayer,
+      right,
+      smoothingEnabled,
+      activeLeft ? 3 : 4,
+      0xffdf74,
+      activeLeft ? 0.8 : 0.96
+    );
+    drawPath(pathLayer, previewPath, smoothingEnabled, 2, 0x43d6d1, 0.5);
+  } else {
+    drawPath(pathLayer, previewPath, false, 7, 0x43d6d1, 0.88);
   }
 
-  for (let i = 0; i < points.length; i += 1) {
-    const p = points[i]!;
+  const markerPoints = boundaryMode
+    ? boundaryState?.activeSide === 'left'
+      ? (boundaryState?.leftBoundaryPoints ?? [])
+      : (boundaryState?.rightBoundaryPoints ?? [])
+    : points;
+
+  for (let i = 0; i < markerPoints.length; i += 1) {
+    const p = markerPoints[i]!;
     const isStart = i === 0;
-    const isEnd = i === points.length - 1;
-    const color = isStart ? 0x47d147 : isEnd ? 0xe85d5d : 0xfff2a6;
-    const radius = isStart || isEnd ? 9 : 6;
+    const isCoastEnd = i === markerPoints.length - 1;
+    const isFinish = markerPoints.length >= 2 && i === markerPoints.length - 2;
+    const color = isStart ? 0x47d147 : isCoastEnd ? 0xe85d5d : isFinish ? 0xfff2a6 : 0x7fd3ff;
+    const radius = isStart || isFinish || isCoastEnd ? 9 : 6;
 
     markerLayer.beginFill(color);
     markerLayer.drawCircle(p.x, p.y, radius);
@@ -88,7 +124,56 @@ export function drawReplayLaneBoards(
   }
 }
 
-export function refreshExport(dom: EditorDom, points: TrackPoint[]): void {
+export function drawReplayBoundaryLines(
+  layer: Graphics,
+  leftBoundaryPoints: TrackPoint[],
+  rightBoundaryPoints: TrackPoint[]
+): void {
+  layer.clear();
+  if (leftBoundaryPoints.length < 2 || rightBoundaryPoints.length < 2) return;
+
+  layer.lineStyle(2.2, 0xfff26a, 0.92);
+  layer.moveTo(leftBoundaryPoints[0]!.x, leftBoundaryPoints[0]!.y);
+  for (let i = 1; i < leftBoundaryPoints.length; i += 1) {
+    layer.lineTo(leftBoundaryPoints[i]!.x, leftBoundaryPoints[i]!.y);
+  }
+
+  layer.lineStyle(2.2, 0xfff26a, 0.92);
+  layer.moveTo(rightBoundaryPoints[0]!.x, rightBoundaryPoints[0]!.y);
+  for (let i = 1; i < rightBoundaryPoints.length; i += 1) {
+    layer.lineTo(rightBoundaryPoints[i]!.x, rightBoundaryPoints[i]!.y);
+  }
+}
+
+export function drawReplayFinishGuides(
+  layer: Graphics,
+  finishPoint: TrackPoint,
+  finishNormal: TrackPoint,
+  coastEndPoint: TrackPoint,
+  halfWidth: number
+): void {
+  const lineHalf = Math.max(18, halfWidth + 14);
+  const fx1 = finishPoint.x - finishNormal.x * lineHalf;
+  const fy1 = finishPoint.y - finishNormal.y * lineHalf;
+  const fx2 = finishPoint.x + finishNormal.x * lineHalf;
+  const fy2 = finishPoint.y + finishNormal.y * lineHalf;
+
+  // Finish line in yellow.
+  layer.lineStyle(3, 0xfff26a, 0.95);
+  layer.moveTo(fx1, fy1);
+  layer.lineTo(fx2, fy2);
+
+  // Coast-zone endpoint in red.
+  layer.beginFill(0xe85d5d, 0.96);
+  layer.drawCircle(coastEndPoint.x, coastEndPoint.y, 7);
+  layer.endFill();
+}
+
+export function refreshExport(
+  dom: EditorDom,
+  points: TrackPoint[],
+  boundaryState?: BoundaryEditorState
+): void {
   const track = buildTrackDefinition(
     {
       id: dom.trackIdInput.value,
@@ -98,16 +183,46 @@ export function refreshExport(dom: EditorDom, points: TrackPoint[]): void {
     points
   );
 
-  dom.jsonOutput.value = JSON.stringify(track, null, 2);
+  const outputPayload: Record<string, unknown> = {
+    ...track
+  };
+  if (boundaryState?.mode === 'boundaries') {
+    outputPayload.editorPathMode = 'boundaries';
+    outputPayload.editorBoundaries = {
+      left: boundaryState.leftBoundaryPoints.map((p) => ({ x: p.x, y: p.y })),
+      right: boundaryState.rightBoundaryPoints.map((p) => ({ x: p.x, y: p.y }))
+    };
+  }
+
+  dom.jsonOutput.value = JSON.stringify(outputPayload, null, 2);
   dom.pointCountLabel.textContent = String(track.points.length);
   dom.trackLengthLabel.textContent = `${track.length.toFixed(2)} px`;
 
   const status =
-    track.points.length >= 2
-      ? 'Click to add points. Drag existing points to edit. Start is green, finish is red. Use replay, racer count, and lane width for fit checks (up to 100 racers).'
-      : 'Add at least 2 points to make a valid race path.';
+    track.points.length >= 3
+      ? boundaryState?.mode === 'boundaries'
+        ? 'Boundary mode active: edit left/right boundary lines and racers will run between them. Active side markers: start green, finish yellow, coast end red.'
+        : 'Click to add points. Drag existing points to edit. Start is green, finish is yellow, coast end is red. Use replay, racer count, and lane width for fit checks (up to 100 racers).'
+      : 'Add at least 3 points: start (green), finish (yellow), and coast end (red).';
 
   dom.editorHelp.textContent = status;
+}
+
+function drawPath(
+  layer: Graphics,
+  points: TrackPoint[],
+  smoothingEnabled: boolean,
+  width: number,
+  color: number,
+  alpha: number
+): void {
+  if (points.length < 2) return;
+  const renderPath = smoothingEnabled ? buildSmoothedPreviewPath(points, 10) : points;
+  layer.lineStyle(width, color, alpha);
+  layer.moveTo(renderPath[0]!.x, renderPath[0]!.y);
+  for (let i = 1; i < renderPath.length; i += 1) {
+    layer.lineTo(renderPath[i]!.x, renderPath[i]!.y);
+  }
 }
 
 function drawGrid(pathLayer: Graphics, viewWidth: number, viewHeight: number): void {

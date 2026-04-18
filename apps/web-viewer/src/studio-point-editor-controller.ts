@@ -83,13 +83,13 @@ export function wireStudioPointEditorController(options: StudioPointEditorContro
   });
 
   controls.clearButton.addEventListener('click', () => {
-    setPoints([]);
+    setPoints(clonePoints(sampleStraightPoints));
     onResetAndRender();
   });
 
   controls.undoButton.addEventListener('click', () => {
     const current = getPoints();
-    if (current.length === 0) return;
+    if (current.length <= 3) return;
     setPoints(current.slice(0, -1));
     onResetAndRender();
   });

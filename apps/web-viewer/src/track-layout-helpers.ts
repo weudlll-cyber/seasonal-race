@@ -62,8 +62,10 @@ export function mapTrackPointsToCurrentLayout(
   points: TrackPoint[],
   textureWidth: number,
   textureHeight: number,
-  viewportWidth: number,
-  viewportHeight: number,
+  authoredViewportWidth: number,
+  authoredViewportHeight: number,
+  targetViewportWidth: number,
+  targetViewportHeight: number,
   authoredCoverMode: boolean,
   targetCoverMode: boolean
 ): TrackPoint[] {
@@ -74,15 +76,15 @@ export function mapTrackPointsToCurrentLayout(
   const authoredLayout = computeBackgroundLayoutRect(
     textureWidth,
     textureHeight,
-    viewportWidth,
-    viewportHeight,
+    authoredViewportWidth,
+    authoredViewportHeight,
     authoredCoverMode
   );
   const targetLayout = computeBackgroundLayoutRect(
     textureWidth,
     textureHeight,
-    viewportWidth,
-    viewportHeight,
+    targetViewportWidth,
+    targetViewportHeight,
     targetCoverMode
   );
 

@@ -11,6 +11,8 @@ export interface ReplayVisualRacerState {
   id: string;
   index: number;
   progress: number;
+  rankScore?: number;
+  displayProgress?: number;
   hovered: boolean;
   visible: boolean;
 }
@@ -90,28 +92,33 @@ export function buildReplayVisualSnapshot(
   focusRacerNumber: number,
   leaderboardTopCount = 12
 ): ReplayVisualSnapshot {
-  const sortedRacers = [...racers].sort((a, b) => b.progress - a.progress);
+  const sortedRacers = [...racers].sort(
+    (a, b) =>
+      (b.rankScore ?? b.progress) - (a.rankScore ?? a.progress) ||
+      b.progress - a.progress ||
+      a.index - b.index
+  );
+  const sortedByProgress = [...racers].sort((a, b) => b.progress - a.progress || a.index - b.index);
   const focusId = `duck-${focusRacerNumber}`;
-  const leadersToShow = racers.length >= 70 ? 6 : racers.length >= 40 ? 8 : 10;
-  const leaderIds = new Set(sortedRacers.slice(0, leadersToShow).map((r) => r.id));
+  const leadersToShow = 5;
+  // Use live progress for label visibility so true on-track leaders always keep their names,
+  // and keep the selection strictly on top-5.
+  const leaderIds = new Set(sortedByProgress.slice(0, leadersToShow).map((r) => r.id));
 
   const labelDecisions = racers.map((racer) => {
     const isFocus = racer.id === focusId;
+    const isLeader = leaderIds.has(racer.id);
     const showByMode =
-      mode === 'all'
-        ? true
-        : mode === 'hover'
-          ? racer.hovered || isFocus
-          : leaderIds.has(racer.id) || isFocus;
+      mode === 'all' ? true : mode === 'hover' ? racer.hovered || isFocus : isLeader;
     const showLabel = racer.visible && showByMode;
 
     return {
       id: racer.id,
       showLabel,
       isFocus,
-      markerAlpha: isFocus ? 1 : 0.92,
-      scale: isFocus ? 1.18 : 1,
-      zIndex: isFocus ? 50 : showLabel ? 20 : 10
+      markerAlpha: isFocus ? 1 : isLeader ? 0.97 : 0.82,
+      scale: isFocus ? 1.18 : isLeader ? 1.07 : 1,
+      zIndex: isFocus ? 55 : isLeader ? 28 : showLabel ? 20 : 10
     };
   });
 
@@ -125,7 +132,7 @@ export function buildReplayVisualSnapshot(
       kind: 'racer',
       place: i + 1,
       racerIndex: racer.index,
-      progressPercent: Math.round(racer.progress * 100),
+      progressPercent: Math.round(clamp01(racer.displayProgress ?? racer.progress) * 100),
       isFocus: racer.id === focusId
     });
   }
@@ -137,7 +144,7 @@ export function buildReplayVisualSnapshot(
       kind: 'racer',
       place: focusRank + 1,
       racerIndex: focusRacer.index,
-      progressPercent: Math.round(focusRacer.progress * 100),
+      progressPercent: Math.round(clamp01(focusRacer.displayProgress ?? focusRacer.progress) * 100),
       isFocus: true
     });
   }
@@ -147,4 +154,8 @@ export function buildReplayVisualSnapshot(
     labelDecisions,
     leaderboardRows
   };
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }

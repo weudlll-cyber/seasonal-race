@@ -30,10 +30,10 @@ const BUNCH_THRESHOLD = 0.08;
 const FINAL_SPRINT_THRESHOLD = 0.88;
 
 /** Camera lerp speed — higher = snappier, lower = smoother. */
-const LERP_SPEED = 3.5;
+const LERP_SPEED = 1.05;
 
 /** Slower camera lerp during intro transition from overview to leader follow. */
-const INTRO_LERP_SPEED = 1.6;
+const INTRO_LERP_SPEED = 0.52;
 
 /** How many seconds the overview zoom is held at race start. */
 const OVERVIEW_HOLD_SECONDS = 2.0;
@@ -50,7 +50,7 @@ const DEFAULT_ZOOM_SCALE_MULTIPLIER = 1;
 
 /** Clamp bounds for safe camera zoom values. */
 const ZOOM_MIN = 0.62;
-const ZOOM_MAX = 2.9;
+const ZOOM_MAX = 5.2;
 
 export interface CameraRacerState {
   progress: number; // normalized [0,1]
