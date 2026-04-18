@@ -33,6 +33,10 @@ Ship the first end-to-end launch flow where Ops/Admin selects published content,
 - Return id, displayName, type, and metadata needed by UI selectors.
 - Add tests for success and invalid-file handling.
 
+Status: Completed.
+
+Next active focus: Priority 3 (Ops/Admin launch flow selectors wired to catalog ids).
+
 3. Ops/Admin Launch Flow
 
 - Add selectors in admin/ops surface for track id and racer list id.

@@ -27,5 +27,8 @@
     "prettier": "^3.8.2",
     "typescript": "^6.0.2",
     "vitest": "^4.1.4"
+  },
+  "dependencies": {
+    "fastify": "^5.8.5"
   }
 }

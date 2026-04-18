@@ -36,6 +36,17 @@
 - `race-types` adapters depend on `race-engine` contracts only.
 - No circular dependencies.
 
+## API Module Map
+
+- `apps/api/src/app.ts`
+  - Fastify app factory with versioned API route registration.
+  - Exposes read-only catalog endpoints for track and racer selection.
+- `apps/api/src/catalog.ts`
+  - File-backed content catalog loaders for manifests + referenced JSON files.
+  - Provides endpoint-ready metadata payloads (id/display/raceType + runtime metadata).
+- `apps/api/src/index.ts`
+  - API package entry exports app factory and stable API app id.
+
 ## Modularity Rules
 
 - New race types must be implemented as adapters, not core-engine edits.

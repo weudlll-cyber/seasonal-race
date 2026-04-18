@@ -13,10 +13,11 @@ The platform is split into five major concerns:
 ## Runtime Flow
 
 1. Admin configures players, race settings, and brand profile.
-2. API validates and starts a race session with a selected race-type adapter.
-3. Race engine runs deterministic or non-deterministic simulation ticks.
-4. State and events are streamed to viewer clients.
-5. Results and replay metadata are persisted.
+2. API exposes read-only content catalogs (`GET /api/v1/catalog/tracks`, `GET /api/v1/catalog/racers`) for selector UIs.
+3. API validates and starts a race session with a selected race-type adapter.
+4. Race engine runs deterministic or non-deterministic simulation ticks.
+5. State and events are streamed to viewer clients.
+6. Results and replay metadata are persisted.
 
 ## Race Engine Contract
 
