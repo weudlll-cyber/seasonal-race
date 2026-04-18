@@ -43,6 +43,10 @@ Next active focus: Priority 3 (Ops/Admin launch flow selectors wired to catalog 
 - Keep launch screen operation-only (no structural editing).
 - Start-race request must pass selected catalog ids.
 
+Status: Completed.
+
+Next active focus: Priority 4 (runtime viewer wiring to launched session data).
+
 4. Runtime Viewer Wiring
 
 - Use runtime surface as primary playback target for launched races.

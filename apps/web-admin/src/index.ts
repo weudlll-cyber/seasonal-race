@@ -6,4 +6,13 @@
  * Dependencies: Shared frontend contracts and branding types.
  */
 
+export {
+  buildStartRaceRequestBody,
+  createOpsLaunchSelectorModel,
+  type OpsLaunchSelectorModel,
+  type RacerCatalogOption,
+  type StartRaceRequestBody,
+  type TrackCatalogOption
+} from './ops-launch-model';
+
 export const webAdminAppId = 'seasonal-race-web-admin';

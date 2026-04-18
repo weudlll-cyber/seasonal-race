@@ -68,6 +68,97 @@ describe('api catalog endpoints', () => {
 
     await app.close();
   });
+
+  it('starts a race when selected track and racer ids are valid and race types match', async () => {
+    const app = buildApiApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/races/start',
+      payload: {
+        trackId: 'duck-canal-s-curve',
+        racerListId: 'duck-default',
+        seed: 'manual-seed'
+      }
+    });
+
+    expect(response.statusCode).toBe(201);
+    const body = response.json() as {
+      raceId: string;
+      raceType: string;
+      trackId: string;
+      racerListId: string;
+      seed: string;
+      status: string;
+    };
+
+    expect(body.raceId).toBe('race-1');
+    expect(body.raceType).toBe('duck');
+    expect(body.trackId).toBe('duck-canal-s-curve');
+    expect(body.racerListId).toBe('duck-default');
+    expect(body.seed).toBe('manual-seed');
+    expect(body.status).toBe('scheduled');
+
+    await app.close();
+  });
+
+  it('rejects start requests with missing ids', async () => {
+    const app = buildApiApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/races/start',
+      payload: {
+        trackId: '',
+        racerListId: 'duck-default'
+      }
+    });
+
+    expect(response.statusCode).toBe(400);
+    const body = response.json() as { error: string; message: string };
+    expect(body.error).toBe('INVALID_REQUEST');
+
+    await app.close();
+  });
+
+  it('rejects start requests when catalog ids are unknown', async () => {
+    const app = buildApiApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/races/start',
+      payload: {
+        trackId: 'unknown-track',
+        racerListId: 'duck-default'
+      }
+    });
+
+    expect(response.statusCode).toBe(404);
+    const body = response.json() as { error: string; message: string };
+    expect(body.error).toBe('CATALOG_ENTRY_NOT_FOUND');
+    expect(body.message).toMatch(/unknown-track/);
+
+    await app.close();
+  });
+
+  it('rejects start requests when track and racer list race types differ', async () => {
+    const app = buildApiApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/races/start',
+      payload: {
+        trackId: 'duck-canal-s-curve',
+        racerListId: 'horse-default'
+      }
+    });
+
+    expect(response.statusCode).toBe(400);
+    const body = response.json() as { error: string; message: string };
+    expect(body.error).toBe('RACE_TYPE_MISMATCH');
+
+    await app.close();
+  });
 });
 
 function createBrokenContentRoot(): string {

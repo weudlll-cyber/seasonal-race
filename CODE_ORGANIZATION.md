@@ -40,12 +40,20 @@
 
 - `apps/api/src/app.ts`
   - Fastify app factory with versioned API route registration.
-  - Exposes read-only catalog endpoints for track and racer selection.
+  - Exposes read-only catalog endpoints and validated launch endpoint (`POST /api/v1/races/start`).
 - `apps/api/src/catalog.ts`
   - File-backed content catalog loaders for manifests + referenced JSON files.
   - Provides endpoint-ready metadata payloads (id/display/raceType + runtime metadata).
 - `apps/api/src/index.ts`
   - API package entry exports app factory and stable API app id.
+
+## Web Admin Module Map
+
+- `apps/web-admin/src/ops-launch-model.ts`
+  - Pure selector-model helpers for Ops launch flow.
+  - Resolves default/explicit track+racer selections and builds id-only start-race request payloads.
+- `apps/web-admin/src/index.ts`
+  - Web-admin package entry exports Ops launch helpers and stable web-admin app id.
 
 ## Modularity Rules
 

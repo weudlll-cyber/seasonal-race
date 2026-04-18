@@ -31,6 +31,8 @@
 - Starter content catalog is now established with tracked track files, racer lists, and manifests under `content/`.
 - Manifest and content JSON validation now enforces schema, duplicate-id checks, and minimum track-point counts.
 - API content-catalog endpoints are active for selection workflows (`/api/v1/catalog/tracks`, `/api/v1/catalog/racers`) with endpoint tests covering success and invalid-file handling.
+- API race launch endpoint is active (`/api/v1/races/start`) and enforces id-based selection with validation for required ids, existence, and track/racer race-type compatibility.
+- Ops/Admin launch selector model is now in place to default valid selections and generate id-only start-race request payloads.
 - Phase 2 started with deterministic RNG, race session orchestration, and modular extension contracts.
 - Web-viewer prototype is active: PixiJS scene renders a moving racer on an S-curve path with a cinematic `CameraController` (intro overview, slower intro transition, runtime-aware zoom pulses, and finish overview).
 - `RaceSessionConfig` supports optional `cameraSettings` overrides so admin-managed races can tune cinematic behavior without changing viewer code.
