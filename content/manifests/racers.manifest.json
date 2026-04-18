@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "racerLists": [
+    {
+      "id": "duck-default",
+      "displayName": "Duck Default Roster",
+      "raceType": "duck",
+      "file": "duck-default.json"
+    },
+    {
+      "id": "horse-default",
+      "displayName": "Horse Default Roster",
+      "raceType": "horse",
+      "file": "horse-default.json"
+    }
+  ]
+}

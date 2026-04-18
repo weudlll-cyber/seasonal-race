@@ -19,6 +19,7 @@
 - Versioned REST API under `/api/v1`.
 - Deterministic race simulation mode with reproducible seed.
 - CI quality gates with staged strictness (light, extended, full).
+- Content validation gate integrated in CI extended/full stages.
 - Core engine remains independent from UI, storage, and connector implementations.
 - Deployment process must be reproducible and idempotent.
 
@@ -27,6 +28,8 @@
 - Phase 1 tooling is active with TypeScript, ESLint, Prettier, and Vitest.
 - Minimal modular source boundaries exist for apps and core packages.
 - Foundation smoke test is in place and running in CI.
+- Starter content catalog is now established with tracked track files, racer lists, and manifests under `content/`.
+- Manifest and content JSON validation now enforces schema, duplicate-id checks, and minimum track-point counts.
 - Phase 2 started with deterministic RNG, race session orchestration, and modular extension contracts.
 - Web-viewer prototype is active: PixiJS scene renders a moving racer on an S-curve path with a cinematic `CameraController` (intro overview, slower intro transition, runtime-aware zoom pulses, and finish overview).
 - `RaceSessionConfig` supports optional `cameraSettings` overrides so admin-managed races can tune cinematic behavior without changing viewer code.

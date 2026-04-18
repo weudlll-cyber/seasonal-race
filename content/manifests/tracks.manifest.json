@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "tracks": [
+    {
+      "id": "duck-canal-s-curve",
+      "displayName": "Duck Canal S Curve",
+      "raceType": "duck",
+      "file": "duck-canal-s-curve.json"
+    },
+    {
+      "id": "horse-arena-oval",
+      "displayName": "Horse Arena Oval",
+      "raceType": "horse",
+      "file": "horse-arena-oval.json"
+    },
+    {
+      "id": "mixed-zigzag-demo",
+      "displayName": "Mixed Zigzag Demo",
+      "raceType": "rocket",
+      "file": "mixed-zigzag-demo.json"
+    }
+  ]
+}

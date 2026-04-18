@@ -30,7 +30,8 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 ## Quality Gates
 
 - `corepack pnpm run ci:light`: lint + formatting checks
-- `corepack pnpm run ci:extended`: light gate + typecheck + tests
+- `corepack pnpm run content:validate`: validates track/racer content JSON + manifests
+- `corepack pnpm run ci:extended`: light gate + content validation + typecheck + tests
 - `corepack pnpm run ci:full`: extended gate + dependency security checks
 
 ## Local Package Manager Setup
@@ -94,6 +95,8 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 
 - Project bootstrap and documentation baseline created.
 - Phase 1 foundation tooling is active (TypeScript, ESLint, Prettier, Vitest).
+- Content starter catalogs are now tracked under `content/tracks`, `content/racers`, and `content/manifests`.
+- Content manifests and referenced JSON files are now validated by `content:validate` and enforced in CI extended/full gates.
 - Minimal modular app/package skeletons are in place for API, viewer, admin, engine, race types, branding, and shared types.
 - Web viewer prototype is running with PixiJS: a sprite follows an S-curve track and a cinematic camera starts in overview mode, transitions into leader focus, applies runtime-aware zoom pulses, and returns to an end overview.
 - Race sessions can optionally provide `cameraSettings` to override cinematic defaults (expected duration, pulse count/strength, intro hold, intro transition).

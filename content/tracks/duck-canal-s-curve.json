@@ -1,0 +1,14 @@
+{
+  "id": "duck-canal-s-curve",
+  "name": "Duck Canal S Curve",
+  "length": 1200,
+  "effectProfileId": "duck-canal-default",
+  "points": [
+    { "x": 120, "y": 620 },
+    { "x": 360, "y": 520 },
+    { "x": 720, "y": 360 },
+    { "x": 1120, "y": 520 },
+    { "x": 1500, "y": 700 },
+    { "x": 1840, "y": 620 }
+  ]
+}

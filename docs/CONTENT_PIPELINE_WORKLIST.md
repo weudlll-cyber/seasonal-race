@@ -17,16 +17,16 @@ Purpose: Stop anytime and resume exactly from the next unchecked item.
 
 ## Phase 1 - Starter Content
 
-- [ ] Add 3 example tracks in content/tracks:
-  - [ ] duck-canal-s-curve.json
-  - [ ] horse-arena-oval.json
-  - [ ] mixed-zigzag-demo.json
-- [ ] Add 2 example racer lists in content/racers:
-  - [ ] duck-default.json
-  - [ ] horse-default.json
-- [ ] Add a content manifest in content/manifests:
-  - [ ] tracks.manifest.json
-  - [ ] racers.manifest.json
+- [x] Add 3 example tracks in content/tracks:
+  - [x] duck-canal-s-curve.json
+  - [x] horse-arena-oval.json
+  - [x] mixed-zigzag-demo.json
+- [x] Add 2 example racer lists in content/racers:
+  - [x] duck-default.json
+  - [x] horse-default.json
+- [x] Add a content manifest in content/manifests:
+  - [x] tracks.manifest.json
+  - [x] racers.manifest.json
 
 ## Phase 2 - Local Runtime Sync
 
@@ -36,7 +36,7 @@ Purpose: Stop anytime and resume exactly from the next unchecked item.
   - [ ] apps/web-viewer/public/content
 - [ ] Add package script shortcuts:
   - [ ] content:sync:local
-  - [ ] content:validate
+  - [x] content:validate
 
 ## Phase 3 - VPS Runtime Sync
 
@@ -51,10 +51,10 @@ Purpose: Stop anytime and resume exactly from the next unchecked item.
 
 ## Phase 4 - Validation and Safety
 
-- [ ] Add schema/type validation for content JSON files
-- [ ] Add CI check to fail on invalid content files
-- [ ] Add duplicate-id checks across manifests
-- [ ] Add minimum path checks (for track points)
+- [x] Add schema/type validation for content JSON files
+- [x] Add CI check to fail on invalid content files
+- [x] Add duplicate-id checks across manifests
+- [x] Add minimum path checks (for track points)
 
 ## Phase 5 - Selection Integration
 

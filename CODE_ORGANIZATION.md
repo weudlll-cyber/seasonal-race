@@ -16,7 +16,16 @@
 
 - End-to-end and cross-package integration tests.
 
-4. `docs/*`
+4. `content/*`
+
+- Git-tracked runtime content source (tracks, racer lists, manifests).
+- Validated by `content:validate` before PR merge.
+
+5. `scripts/*`
+
+- Operational automation scripts (quality gates, deployment, content validation/sync).
+
+6. `docs/*`
 
 - Source of truth for architecture, standards, and process.
 

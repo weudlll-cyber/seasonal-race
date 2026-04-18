@@ -10,12 +10,13 @@
   "scripts": {
     "lint": "eslint . --ext .ts",
     "format:check": "prettier --check .",
+    "content:validate": "node ./scripts/validate-content.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p apps/web-viewer/tsconfig.json --noEmit",
     "test": "vitest run",
     "security:deps": "corepack pnpm audit --audit-level high --ignore-registry-errors",
     "hygiene:merge": "corepack pnpm run lint && corepack pnpm run typecheck",
     "ci:light": "corepack pnpm run lint && corepack pnpm run format:check",
-    "ci:extended": "corepack pnpm run ci:light && corepack pnpm run typecheck && corepack pnpm run test",
+    "ci:extended": "corepack pnpm run ci:light && corepack pnpm run content:validate && corepack pnpm run typecheck && corepack pnpm run test",
     "ci:full": "corepack pnpm run ci:extended && corepack pnpm run hygiene:merge && corepack pnpm run security:deps"
   },
   "devDependencies": {

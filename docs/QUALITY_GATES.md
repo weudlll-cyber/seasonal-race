@@ -12,7 +12,12 @@ This project uses a strict, tiered gate model.
 2. Pull request gate (extended)
 
 - Command: `corepack pnpm run ci:extended`
-- Purpose: enforce lint/format + type safety + tests
+- Purpose: enforce lint/format + content validation + type safety + tests
+
+2a. Content validation gate
+
+- Command: `corepack pnpm run content:validate`
+- Purpose: validate content manifests and JSON entries (schema shape, duplicate ids, file references, minimum track points)
 
 2b. Merge hygiene gate (explicit)
 
@@ -28,6 +33,7 @@ This project uses a strict, tiered gate model.
 ## Rules
 
 - Do not open PR with a failing extended gate.
+- Do not bypass content validation failures.
 - Do not merge with a failing merge hygiene gate.
 - Do not merge with a failing full gate.
 - Update docs in the same change when behavior/contracts change.
