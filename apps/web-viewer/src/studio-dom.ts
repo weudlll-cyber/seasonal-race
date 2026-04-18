@@ -12,6 +12,8 @@ export interface EditorDom {
   trackNameInput: HTMLInputElement;
   effectProfileInput: HTMLInputElement;
   backgroundImageInput: HTMLInputElement;
+  trackEditModeSelect: HTMLSelectElement;
+  boundaryEditSideSelect: HTMLSelectElement;
   laneWidthInput: HTMLInputElement;
   laneWidthValue: HTMLElement;
   racerCountInput: HTMLInputElement;
@@ -35,6 +37,11 @@ export interface EditorDom {
   copyJsonButton: HTMLButtonElement;
   downloadJsonButton: HTMLButtonElement;
   loadJsonButton: HTMLButtonElement;
+  presetNameInput: HTMLInputElement;
+  presetSelect: HTMLSelectElement;
+  savePresetButton: HTMLButtonElement;
+  loadPresetButton: HTMLButtonElement;
+  deletePresetButton: HTMLButtonElement;
   editorHelp: HTMLElement;
   jsonOutput: HTMLTextAreaElement;
 }
@@ -61,6 +68,8 @@ export function resolveStudioDom(): EditorDom {
     trackNameInput,
     effectProfileInput: byId<HTMLInputElement>('effect-profile-input'),
     backgroundImageInput: byId<HTMLInputElement>('background-image-input'),
+    trackEditModeSelect: byId<HTMLSelectElement>('track-edit-mode-select'),
+    boundaryEditSideSelect: byId<HTMLSelectElement>('boundary-edit-side-select'),
     laneWidthInput: byId<HTMLInputElement>('lane-width-input'),
     laneWidthValue: byId<HTMLElement>('lane-width-value'),
     racerCountInput: byId<HTMLInputElement>('racer-count-input'),
@@ -84,6 +93,11 @@ export function resolveStudioDom(): EditorDom {
     copyJsonButton: byId<HTMLButtonElement>('copy-json-btn'),
     downloadJsonButton: byId<HTMLButtonElement>('download-json-btn'),
     loadJsonButton: byId<HTMLButtonElement>('load-json-btn'),
+    presetNameInput: byId<HTMLInputElement>('preset-name-input'),
+    presetSelect: byId<HTMLSelectElement>('preset-select'),
+    savePresetButton: byId<HTMLButtonElement>('save-preset-btn'),
+    loadPresetButton: byId<HTMLButtonElement>('load-preset-btn'),
+    deletePresetButton: byId<HTMLButtonElement>('delete-preset-btn'),
     editorHelp: byId<HTMLElement>('editor-help-text'),
     jsonOutput: byId<HTMLTextAreaElement>('track-json-output')
   };

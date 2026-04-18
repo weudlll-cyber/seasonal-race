@@ -108,6 +108,44 @@
         gap: 8px;
       }
 
+      .preset-grid {
+        display: grid;
+        gap: 8px;
+      }
+
+      .preset-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+      }
+
+      .preset-row button {
+        width: auto;
+        min-width: 92px;
+      }
+
+      .advanced-json {
+        border: 1px solid #2b4560;
+        border-radius: 8px;
+        background: #102131;
+        padding: 8px;
+      }
+
+      .advanced-meta {
+        border: 1px solid #2b4560;
+        border-radius: 8px;
+        background: #102131;
+        padding: 8px;
+      }
+
+      .advanced-json summary,
+      .advanced-meta summary {
+        cursor: pointer;
+        color: var(--muted);
+        font-size: 0.84rem;
+        margin-bottom: 8px;
+      }
+
       button {
         cursor: pointer;
         transition: filter 0.15s ease;
@@ -187,8 +225,8 @@
       }
 
       body.broadcast-mode #race-canvas canvas {
-        width: 100vw;
-        height: 100svh;
+        width: 100vw !important;
+        height: 100svh !important;
       }
 
       #broadcast-leaderboard {
@@ -245,32 +283,35 @@
         </p>
 
         <div class="form-grid">
-          <label for="track-id-input" title="Unique id used later in selection and APIs"
-            >Track ID</label
-          >
-          <input
-            id="track-id-input"
-            value="custom-track"
-            title="Unique id used later in selection and APIs"
-          />
+          <details class="advanced-meta">
+            <summary>Track Metadata (optional)</summary>
+            <label for="track-id-input" title="Unique id used later in selection and APIs"
+              >Track ID</label
+            >
+            <input
+              id="track-id-input"
+              value="custom-track"
+              title="Unique id used later in selection and APIs"
+            />
 
-          <label for="track-name-input" title="Readable display name shown to admins"
-            >Track Name</label
-          >
-          <input
-            id="track-name-input"
-            value="Custom Track"
-            title="Readable display name shown to admins"
-          />
+            <label for="track-name-input" title="Readable display name shown to admins"
+              >Track Name</label
+            >
+            <input
+              id="track-name-input"
+              value="Custom Track"
+              title="Readable display name shown to admins"
+            />
 
-          <label for="effect-profile-input" title="Optional visuals profile for this track"
-            >Effect Profile ID (optional)</label
-          >
-          <input
-            id="effect-profile-input"
-            placeholder="duck-canal-v1"
-            title="Optional visuals profile for this track"
-          />
+            <label for="effect-profile-input" title="Optional visuals profile for this track"
+              >Effect Profile ID (optional)</label
+            >
+            <input
+              id="effect-profile-input"
+              placeholder="duck-canal-v1"
+              title="Optional visuals profile for this track"
+            />
+          </details>
 
           <label
             for="background-image-input"
@@ -283,6 +324,32 @@
             accept="image/*"
             title="Load your background art and place points directly on top"
           />
+
+          <label
+            for="track-edit-mode-select"
+            title="Choose whether you edit one centerline or two boundary lines"
+            >Track Edit Mode</label
+          >
+          <select
+            id="track-edit-mode-select"
+            title="Choose whether you edit one centerline or two boundary lines"
+          >
+            <option value="centerline">Centerline + Lane Width</option>
+            <option value="boundaries">Two Boundary Lines</option>
+          </select>
+
+          <label
+            for="boundary-edit-side-select"
+            title="When boundary mode is active, choose which side you edit"
+            >Boundary Side To Edit</label
+          >
+          <select
+            id="boundary-edit-side-select"
+            title="When boundary mode is active, choose which side you edit"
+          >
+            <option value="left">Left Boundary</option>
+            <option value="right">Right Boundary</option>
+          </select>
 
           <label for="lane-width-input" title="Controls side spacing of racers in replay mode"
             >Replay Lane Width</label
@@ -358,24 +425,56 @@
           <button id="clear-btn" class="danger" title="Delete all points from canvas">
             Clear Points
           </button>
-          <button id="load-json-btn" title="Parse current JSON and redraw points on canvas">
-            Load JSON To Canvas
+        </div>
+
+        <div class="preset-grid">
+          <label for="preset-name-input" title="Name for this full test setup"
+            >Test Preset Name</label
+          >
+          <div class="preset-row">
+            <input
+              id="preset-name-input"
+              placeholder="for example: zoom-test-1"
+              title="Name for this full test setup"
+            />
+            <button id="save-preset-btn" class="primary" title="Save current setup by name">
+              Save
+            </button>
+          </div>
+
+          <label for="preset-select" title="Choose an existing saved test setup"
+            >Saved Presets</label
+          >
+          <div class="preset-row">
+            <select id="preset-select" title="Choose an existing saved test setup"></select>
+            <button id="load-preset-btn" class="primary" title="Load selected test setup">
+              Load
+            </button>
+          </div>
+          <button id="delete-preset-btn" class="danger" title="Delete selected saved preset">
+            Delete Selected Preset
           </button>
         </div>
 
         <p id="editor-help-text" class="muted"></p>
 
-        <label for="track-json-output" title="Editable TrackDefinition JSON">Track JSON</label>
-        <textarea id="track-json-output" title="Editable TrackDefinition JSON"></textarea>
+        <details class="advanced-json">
+          <summary>Advanced JSON (optional)</summary>
+          <label for="track-json-output" title="Editable TrackDefinition JSON">Track JSON</label>
+          <textarea id="track-json-output" title="Editable TrackDefinition JSON"></textarea>
 
-        <div class="actions">
-          <button id="copy-json-btn" class="primary" title="Copy JSON to clipboard">
-            Copy JSON
-          </button>
-          <button id="download-json-btn" class="primary" title="Download JSON file for reuse">
-            Download JSON
-          </button>
-        </div>
+          <div class="actions" style="margin-top: 8px">
+            <button id="load-json-btn" title="Parse current JSON and redraw points on canvas">
+              Load JSON To Canvas
+            </button>
+            <button id="copy-json-btn" class="primary" title="Copy JSON to clipboard">
+              Copy JSON
+            </button>
+            <button id="download-json-btn" class="primary" title="Download JSON file for reuse">
+              Download JSON
+            </button>
+          </div>
+        </details>
       </aside>
 
       <section id="race-canvas">

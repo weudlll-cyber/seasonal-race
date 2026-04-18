@@ -43,7 +43,7 @@ describe('replay visual policy', () => {
     expect(layout.halfWidth).toBeGreaterThan(0);
   });
 
-  it('keeps focus racer visible in leaders-focus mode and appends focus row in leaderboard', () => {
+  it('keeps leaders-focus labels strict top-5 and appends focus row in leaderboard', () => {
     const racers: ReplayVisualRacerState[] = [
       { id: 'duck-1', index: 0, progress: 0.95, hovered: false, visible: true },
       { id: 'duck-2', index: 1, progress: 0.9, hovered: false, visible: true },
@@ -63,7 +63,7 @@ describe('replay visual policy', () => {
     const snapshot = buildReplayVisualSnapshot(racers, 'leaders-focus', 13, 12);
     const focusDecision = snapshot.labelDecisions.find((decision) => decision.id === 'duck-13');
 
-    expect(focusDecision?.showLabel).toBe(true);
+    expect(focusDecision?.showLabel).toBe(false);
     expect(focusDecision?.isFocus).toBe(true);
     expect(snapshot.leaderboardRows[snapshot.leaderboardRows.length - 2]?.kind).toBe('separator');
     expect(snapshot.leaderboardRows[snapshot.leaderboardRows.length - 1]).toMatchObject({
@@ -86,5 +86,40 @@ describe('replay visual policy', () => {
 
     expect(duck1?.showLabel).toBe(false);
     expect(duck2?.showLabel).toBe(true);
+  });
+
+  it('keeps leaderboard percentage clamped while rankScore controls ordering', () => {
+    const racers: ReplayVisualRacerState[] = [
+      {
+        id: 'duck-1',
+        index: 0,
+        progress: 1,
+        rankScore: 1.7,
+        displayProgress: 1,
+        hovered: false,
+        visible: true
+      },
+      {
+        id: 'duck-2',
+        index: 1,
+        progress: 1,
+        rankScore: 1.6,
+        displayProgress: 2.4,
+        hovered: false,
+        visible: true
+      }
+    ];
+
+    const snapshot = buildReplayVisualSnapshot(racers, 'leaders-focus', 1, 2);
+    expect(snapshot.leaderboardRows[0]).toMatchObject({
+      kind: 'racer',
+      racerIndex: 0,
+      progressPercent: 100
+    });
+    expect(snapshot.leaderboardRows[1]).toMatchObject({
+      kind: 'racer',
+      racerIndex: 1,
+      progressPercent: 100
+    });
   });
 });

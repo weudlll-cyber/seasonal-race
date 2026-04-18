@@ -30,6 +30,10 @@ jobs:
       - name: Light gate
         run: pnpm ci:light
 
+      - name: Merge hygiene gate
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        run: pnpm hygiene:merge
+
       - name: Extended gate
         if: github.event_name == 'pull_request'
         run: pnpm ci:extended

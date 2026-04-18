@@ -31,7 +31,17 @@ describe('track layout helpers', () => {
   it('maps track points between authored and target layout modes', () => {
     const points = [{ x: 500, y: 500 }];
 
-    const mapped = mapTrackPointsToCurrentLayout(points, 2000, 1000, 1000, 1000, false, true);
+    const mapped = mapTrackPointsToCurrentLayout(
+      points,
+      2000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      false,
+      true
+    );
     expect(mapped[0]).toEqual({ x: 500, y: 500 });
 
     const topInContain = [{ x: 500, y: 250 }];
@@ -41,10 +51,30 @@ describe('track layout helpers', () => {
       1000,
       1000,
       1000,
+      1000,
+      1000,
       false,
       true
     );
     expect(mappedTop[0]?.y).toBe(0);
+  });
+
+  it('maps points correctly from editor viewport to broadcast viewport', () => {
+    const topInEditorContain = [{ x: 580, y: 70 }];
+    const mapped = mapTrackPointsToCurrentLayout(
+      topInEditorContain,
+      2000,
+      1000,
+      1160,
+      720,
+      1600,
+      720,
+      false,
+      true
+    );
+
+    // Cover layout can extend beyond viewport bounds; expected y is negative overflow here.
+    expect(mapped[0]?.y).toBeCloseTo(-40, 6);
   });
 
   it('builds lane board bounds for valid paths', () => {

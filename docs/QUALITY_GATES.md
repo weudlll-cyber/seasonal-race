@@ -14,6 +14,11 @@ This project uses a strict, tiered gate model.
 - Command: `corepack pnpm run ci:extended`
 - Purpose: enforce lint/format + type safety + tests
 
+2b. Merge hygiene gate (explicit)
+
+- Command: `corepack pnpm run hygiene:merge`
+- Purpose: explicit pre-merge hygiene validation (lint + typecheck) as a dedicated required CI step
+
 3. Merge/release gate (full)
 
 - Command: `corepack pnpm run ci:full`
@@ -23,6 +28,7 @@ This project uses a strict, tiered gate model.
 ## Rules
 
 - Do not open PR with a failing extended gate.
+- Do not merge with a failing merge hygiene gate.
 - Do not merge with a failing full gate.
 - Update docs in the same change when behavior/contracts change.
 - Before every push, run the full gate and a manual source-hygiene review.
@@ -30,6 +36,7 @@ This project uses a strict, tiered gate model.
 ## Mandatory Pre-Push Checklist
 
 - Run: `corepack pnpm run ci:full`
+- Run: `corepack pnpm run hygiene:merge`
 - Verify no high/critical dependency findings remain unresolved.
 - Confirm no unnecessary dead code, debug leftovers, or duplicate logic were introduced.
 - Confirm touched source files include clear file headers and meaningful inline comments where logic is non-obvious.
