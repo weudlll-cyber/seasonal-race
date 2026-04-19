@@ -11,6 +11,7 @@ import {
   resolveRuntimeApiBase,
   resolveRuntimeRaceId
 } from './runtime-bootstrap-client';
+import { mapRuntimeTrackPointsToViewport, sampleRuntimeTrackPosition } from './runtime-track';
 
 const VIEW_WIDTH = 1160;
 const VIEW_HEIGHT = 720;
@@ -35,10 +36,6 @@ export async function startRuntimeApp(): Promise<void> {
   app.stage.addChild(world);
 
   const lane = new Graphics();
-  lane.lineStyle(6, 0x3ec4e0, 0.9);
-  lane.moveTo(90, 610);
-  lane.bezierCurveTo(260, 420, 520, 380, 720, 210);
-  lane.bezierCurveTo(830, 120, 980, 150, 1080, 80);
   world.addChild(lane);
 
   const racer = new Graphics();
@@ -57,64 +54,54 @@ export async function startRuntimeApp(): Promise<void> {
   label.position.set(24, 18);
   app.stage.addChild(label);
 
+  let runtimeTrackPoints = mapRuntimeTrackPointsToViewport([], VIEW_WIDTH, VIEW_HEIGHT);
+  drawTrackLane(lane, runtimeTrackPoints);
+  let lapDurationMs = 55_000;
+
   const raceId = resolveRuntimeRaceId(window.location.search);
   if (raceId) {
     const apiBase = resolveRuntimeApiBase(window.location.search);
     try {
       const bootstrap = await fetchRuntimeBootstrap(raceId, apiBase);
-      label.text = `Runtime Race ${bootstrap.raceId} | ${bootstrap.raceType} | winners: ${bootstrap.launch.winnerCount} | duration: ${bootstrap.launch.durationMs}ms`;
+      runtimeTrackPoints = mapRuntimeTrackPointsToViewport(
+        bootstrap.track.points,
+        VIEW_WIDTH,
+        VIEW_HEIGHT
+      );
+      drawTrackLane(lane, runtimeTrackPoints);
+      lapDurationMs = Math.max(5_000, bootstrap.launch.durationMs);
+
+      label.text = `Runtime Race ${bootstrap.raceId} | ${bootstrap.raceType} | racers: ${bootstrap.racerList.racerCount} | winners: ${bootstrap.launch.winnerCount} | duration: ${lapDurationMs}ms`;
     } catch (error) {
       label.text = `Runtime bootstrap failed: ${error instanceof Error ? error.message : 'unknown error'}`;
     }
   }
 
-  let t = 0;
+  let elapsedMs = 0;
   app.ticker.add((delta) => {
-    t += (delta / 60) * 0.16;
-    if (t > 1) t -= 1;
+    elapsedMs += (delta / 60) * 1000;
+    const loopProgress = (elapsedMs % lapDurationMs) / lapDurationMs;
 
-    const p = sampleBezierPath(t);
+    const p = sampleRuntimeTrackPosition(runtimeTrackPoints, loopProgress);
     racer.position.set(p.x, p.y);
   });
 }
 
-function sampleBezierPath(t: number): { x: number; y: number } {
-  if (t < 0.5) {
-    const local = t * 2;
-    return cubicBezier(
-      { x: 90, y: 610 },
-      { x: 260, y: 420 },
-      { x: 520, y: 380 },
-      { x: 720, y: 210 },
-      local
-    );
+function drawTrackLane(lane: Graphics, points: Array<{ x: number; y: number }>): void {
+  lane.clear();
+  lane.lineStyle(6, 0x3ec4e0, 0.9);
+
+  const first = points[0];
+  if (!first) {
+    return;
   }
 
-  const local = (t - 0.5) * 2;
-  return cubicBezier(
-    { x: 720, y: 210 },
-    { x: 830, y: 120 },
-    { x: 980, y: 150 },
-    { x: 1080, y: 80 },
-    local
-  );
-}
-
-function cubicBezier(
-  p0: { x: number; y: number },
-  p1: { x: number; y: number },
-  p2: { x: number; y: number },
-  p3: { x: number; y: number },
-  t: number
-): { x: number; y: number } {
-  const u = 1 - t;
-  const tt = t * t;
-  const uu = u * u;
-  const uuu = uu * u;
-  const ttt = tt * t;
-
-  return {
-    x: uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x,
-    y: uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y
-  };
+  lane.moveTo(first.x, first.y);
+  for (let index = 1; index < points.length; index += 1) {
+    const point = points[index];
+    if (!point) {
+      continue;
+    }
+    lane.lineTo(point.x, point.y);
+  }
 }
