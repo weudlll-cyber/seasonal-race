@@ -34,14 +34,12 @@ const Z_AMBIENT = 2;
 const Z_OBSTACLES = 3;
 const Z_RACERS = 4;
 const Z_RACER_TRAILS = 5;
-const Z_BURSTS = 6;
 const Z_FINISH_LINE = 7;
 
 // ─── Placeholder colors used when real assets are not yet available ──────────
 
 const PLACEHOLDER_BG = 0x1a6b3c; // dark green water background
 const PLACEHOLDER_ENV = 0x2288bb; // blue water surface
-const PLACEHOLDER_RACER = 0xffdd00; // yellow duck placeholder
 const PLACEHOLDER_FINISH = 0xffffff; // white finish line
 
 export interface RacerView {
@@ -157,7 +155,7 @@ export async function buildScene(
       // https://pixijs.io/examples/examples/assets/spritesheet/bunnies.json
       // https://pixijs.io/examples/examples/assets/spritesheet/bunnies.png
       const atlasUrl = 'https://pixijs.io/examples/examples/assets/spritesheet/bunnies.json';
-      const atlas = await Assets.load(atlasUrl);
+      await Assets.load(atlasUrl);
       // The atlas contains frames: 'bunny1', 'bunny2', 'bunny3', 'bunny4'
       const frames = ['bunny1', 'bunny2', 'bunny3', 'bunny4'].map((name) => Texture.from(name));
       const anim = new AnimatedSprite(frames);

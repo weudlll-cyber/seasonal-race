@@ -1872,7 +1872,6 @@ export async function startStudioApp(): Promise<void> {
 
     let renderLeftBoundaryPoints: TrackPoint[] | null = null;
     let renderRightBoundaryPoints: TrackPoint[] | null = null;
-    let boundaryFinishPoint: TrackPoint | null = null;
     let boundaryCoastPoint: TrackPoint | null = null;
     let raceCenterline: TrackPoint[] | null = null;
 
@@ -1910,8 +1909,6 @@ export async function startStudioApp(): Promise<void> {
             )
           : rightBoundaryPoints;
 
-      const leftFinishControl = mappedLeft[mappedLeft.length - 2]!;
-      const rightFinishControl = mappedRight[mappedRight.length - 2]!;
       const leftCoastControl = mappedLeft[mappedLeft.length - 1]!;
       const rightCoastControl = mappedRight[mappedRight.length - 1]!;
 
@@ -1921,10 +1918,6 @@ export async function startStudioApp(): Promise<void> {
       const raceLeft = mappedLeft.slice(0, -1);
       const raceRight = mappedRight.slice(0, -1);
 
-      boundaryFinishPoint = {
-        x: round3((leftFinishControl.x + rightFinishControl.x) * 0.5),
-        y: round3((leftFinishControl.y + rightFinishControl.y) * 0.5)
-      };
       boundaryCoastPoint = {
         x: round3((leftCoastControl.x + rightCoastControl.x) * 0.5),
         y: round3((leftCoastControl.y + rightCoastControl.y) * 0.5)
