@@ -41,6 +41,7 @@ export interface BuildStartRaceRequestOptions {
   durationMs?: number;
   winnerCount?: number;
   brandingProfileId?: string;
+  trackOrientation?: 'left-to-right' | 'top-to-bottom';
   options?: Record<string, string | number | boolean>;
 }
 
@@ -109,12 +110,17 @@ export function buildStartRaceRequestBody(
     body.brandingProfileId = brandingId.trim();
   }
 
-  if (
-    launchOptions.options !== undefined &&
-    typeof launchOptions.options === 'object' &&
-    launchOptions.options !== null
-  ) {
-    body.options = launchOptions.options;
+  const optionBag: Record<string, string | number | boolean> = {
+    ...(launchOptions.options ?? {})
+  };
+
+  const normalizedOrientation = normalizeTrackOrientation(launchOptions.trackOrientation);
+  if (normalizedOrientation !== null) {
+    optionBag.trackOrientation = normalizedOrientation;
+  }
+
+  if (Object.keys(optionBag).length > 0) {
+    body.options = optionBag;
   }
 
   return body;
@@ -127,6 +133,16 @@ function resolveOptionalSelection(requestedValue?: string): string | null {
 
   const normalized = requestedValue.trim();
   return normalized.length > 0 ? normalized : null;
+}
+
+function normalizeTrackOrientation(
+  value: BuildStartRaceRequestOptions['trackOrientation']
+): 'left-to-right' | 'top-to-bottom' | null {
+  if (value === 'left-to-right' || value === 'top-to-bottom') {
+    return value;
+  }
+
+  return null;
 }
 
 function resolveTrackSelection(

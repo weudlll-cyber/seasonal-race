@@ -34,6 +34,7 @@
 - API content-catalog endpoints are active for selection workflows (`/api/v1/catalog/tracks`, `/api/v1/catalog/racers`) with endpoint tests covering success and invalid-file handling.
 - API race launch endpoint is active (`/api/v1/races/start`) and enforces id-based selection with validation for required ids, existence, and track/racer race-type compatibility.
 - Ops/Admin launch selector model is now in place to default valid selections and generate id-only start-race request payloads.
+- Ops/Admin launch helpers now support an explicit `trackOrientation` launch option that is mapped into launch `options.trackOrientation` for runtime direction control.
 - Launch configuration contracts are now centralized in shared types (`race-launch`) and API option resolution is modularized, so future starter features can be added as new option resolvers instead of route rewrites.
 - Runtime bootstrap endpoint is now active (`/api/v1/races/:raceId/runtime-bootstrap`) and provides launched race config plus track/racer metadata for viewer startup.
 - Runtime viewer wiring now resolves race id from URL and consumes runtime bootstrap payload through a dedicated runtime client helper.

@@ -108,6 +108,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Launch endpoint now supports modular starter options (`durationMs`, `winnerCount`, `brandingProfileId`, and extensible `options`) via shared contracts and option-resolver modules.
 - Minimal modular app/package skeletons are in place for API, viewer, admin, engine, race types, branding, and shared types.
 - Web-admin now includes an Ops launch selector model that defaults valid id selections and builds id-only launch payloads for API calls.
+- Web-admin launch request helpers now include an explicit `trackOrientation` option that maps into launch `options.trackOrientation` for runtime direction control.
 - Runtime viewer now includes a bootstrap client that resolves race id from URL and loads launch+track+racer payload for real race startup flow.
 - Runtime playback now maps bootstrap track points to viewport geometry and uses launch duration for live runtime movement timing.
 - Runtime playback now supports orientation variants (`left-to-right` default, `top-to-bottom`) via URL query (`orientation`) and launch options (`options.trackOrientation`).

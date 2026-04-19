@@ -83,4 +83,23 @@ describe('ops launch model', () => {
 
     expect(body.brandingProfileId).toBe('brand-event-special');
   });
+
+  it('maps track orientation launch option into options payload', () => {
+    const model = createOpsLaunchSelectorModel(tracks, racers, {
+      trackId: 'duck-canal-s-curve',
+      racerListId: 'duck-default'
+    });
+
+    const body = buildStartRaceRequestBody(model, {
+      trackOrientation: 'top-to-bottom',
+      options: {
+        weather: 'clear'
+      }
+    });
+
+    expect(body.options).toEqual({
+      weather: 'clear',
+      trackOrientation: 'top-to-bottom'
+    });
+  });
 });
