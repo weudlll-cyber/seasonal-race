@@ -66,7 +66,7 @@
   - Pure selector-model helpers for Ops launch flow.
   - Resolves default/explicit track+racer selections and builds id-only start-race request payloads.
 - `apps/web-admin/src/index.ts`
-  - Web-admin package entry exports Ops launch helpers and stable web-admin app id.
+  - Web-admin package entry exports Ops launch helpers, orientation option metadata for UI dropdowns, and stable web-admin app id.
 
 ## Modularity Rules
 
@@ -93,6 +93,9 @@
 - `apps/web-viewer/src/studio-editor-helpers.ts`
   - Small pure editor helpers (rounding, view clamping, nearest-point hit testing).
   - Unit-testable utility layer for pointer editing behavior.
+- `apps/web-viewer/src/studio-generators.ts`
+  - Auto-generation helpers for dev workflows (track templates and sprite-sheet generation from source image).
+  - Keeps generator logic isolated from studio surface orchestration.
 - `apps/web-viewer/src/studio-point-editor-controller.ts`
   - Owns stage pointer editing flow and preset point-button wiring for studio authoring.
   - Keeps event-heavy point-edit logic out of the studio surface orchestrator.
@@ -112,6 +115,9 @@
   - Runtime race surface entry isolated from studio authoring controls.
   - Serves as dedicated integration point for real game playback logic.
   - Consumes runtime bootstrap payload when `raceId` is provided in URL query.
+- `apps/web-viewer/src/admin-app.ts`
+  - Dedicated admin launch surface (`?mode=admin`) with catalog fetch, id selectors, orientation control, payload preview, and race start actions.
+  - Reuses web-admin launch model helpers so UI launch requests stay contract-aligned with API/runtime flow.
 - `apps/web-viewer/src/runtime-bootstrap-client.ts`
   - URL/query helpers + API fetch wrapper for runtime bootstrap payload loading.
 - `apps/web-viewer/src/runtime-track.ts`

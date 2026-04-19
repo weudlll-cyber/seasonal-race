@@ -19,4 +19,8 @@ describe('app surface dispatcher', () => {
     expect(resolveAppSurface('?mode=runtime')).toBe('runtime');
     expect(resolveAppSurface('?mode=studio')).toBe('studio');
   });
+
+  it('selects admin for explicit admin mode', () => {
+    expect(resolveAppSurface('?mode=admin')).toBe('admin');
+  });
 });

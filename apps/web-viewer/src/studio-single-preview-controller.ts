@@ -29,6 +29,7 @@ export interface StudioSinglePreviewTickOptions {
   appScreenWidth: number;
   appScreenHeight: number;
   backgroundSprite: Sprite | null;
+  applyEditorViewTransform?: () => void;
 }
 
 export interface StudioSinglePreviewTickResult {
@@ -53,7 +54,8 @@ export function tickStudioSinglePreviewMode(
     world,
     appScreenWidth,
     appScreenHeight,
-    backgroundSprite
+    backgroundSprite,
+    applyEditorViewTransform
   } = options;
 
   let previewProgress = options.previewProgress;
@@ -100,7 +102,11 @@ export function tickStudioSinglePreviewMode(
       clampWorldToBackground(world, backgroundSprite, appScreenWidth, appScreenHeight);
     }
   } else {
-    resetWorldTransform(world);
+    if (applyEditorViewTransform) {
+      applyEditorViewTransform();
+    } else {
+      resetWorldTransform(world);
+    }
   }
 
   return {

@@ -12,6 +12,18 @@ export interface TrackCatalogOption {
   raceType: string;
 }
 
+export type TrackOrientation = 'left-to-right' | 'top-to-bottom';
+
+export interface TrackOrientationOption {
+  value: TrackOrientation;
+  label: string;
+}
+
+export const TRACK_ORIENTATION_OPTIONS: TrackOrientationOption[] = [
+  { value: 'left-to-right', label: 'Left to Right' },
+  { value: 'top-to-bottom', label: 'Top to Bottom' }
+];
+
 export interface RacerCatalogOption {
   id: string;
   displayName: string;
@@ -24,6 +36,7 @@ export interface OpsLaunchSelectorModel {
   selectedTrackId: string | null;
   selectedRacerListId: string | null;
   selectedBrandingProfileId: string | null;
+  selectedTrackOrientation: TrackOrientation;
 }
 
 export interface StartRaceRequestBody {
@@ -41,6 +54,7 @@ export interface BuildStartRaceRequestOptions {
   durationMs?: number;
   winnerCount?: number;
   brandingProfileId?: string;
+  trackOrientation?: TrackOrientation;
   options?: Record<string, string | number | boolean>;
 }
 
@@ -51,6 +65,7 @@ export function createOpsLaunchSelectorModel(
     trackId?: string;
     racerListId?: string;
     brandingProfileId?: string;
+    trackOrientation?: TrackOrientation;
   }
 ): OpsLaunchSelectorModel {
   const selectedTrackId = resolveTrackSelection(tracks, currentSelection?.trackId);
@@ -67,7 +82,8 @@ export function createOpsLaunchSelectorModel(
     racers,
     selectedTrackId,
     selectedRacerListId,
-    selectedBrandingProfileId: resolveOptionalSelection(currentSelection?.brandingProfileId)
+    selectedBrandingProfileId: resolveOptionalSelection(currentSelection?.brandingProfileId),
+    selectedTrackOrientation: normalizeTrackOrientation(currentSelection?.trackOrientation)
   };
 }
 
@@ -109,12 +125,21 @@ export function buildStartRaceRequestBody(
     body.brandingProfileId = brandingId.trim();
   }
 
-  if (
-    launchOptions.options !== undefined &&
-    typeof launchOptions.options === 'object' &&
-    launchOptions.options !== null
-  ) {
-    body.options = launchOptions.options;
+  const optionBag: Record<string, string | number | boolean> = {
+    ...(launchOptions.options ?? {})
+  };
+
+  const hasExplicitOrientation = launchOptions.trackOrientation !== undefined;
+  const normalizedOrientation = hasExplicitOrientation
+    ? normalizeTrackOrientation(launchOptions.trackOrientation)
+    : model.selectedTrackOrientation;
+
+  if (hasExplicitOrientation || normalizedOrientation !== 'left-to-right') {
+    optionBag.trackOrientation = normalizedOrientation;
+  }
+
+  if (Object.keys(optionBag).length > 0) {
+    body.options = optionBag;
   }
 
   return body;
@@ -127,6 +152,16 @@ function resolveOptionalSelection(requestedValue?: string): string | null {
 
   const normalized = requestedValue.trim();
   return normalized.length > 0 ? normalized : null;
+}
+
+function normalizeTrackOrientation(
+  value: BuildStartRaceRequestOptions['trackOrientation']
+): TrackOrientation {
+  if (value === 'left-to-right' || value === 'top-to-bottom') {
+    return value;
+  }
+
+  return 'left-to-right';
 }
 
 function resolveTrackSelection(

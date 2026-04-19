@@ -62,6 +62,30 @@ export function rotateTrackPointsForOrientation(
   });
 }
 
+export function rotateTrackPointsBetweenOrientations(
+  points: TrackPoint[],
+  from: TrackOrientation,
+  to: TrackOrientation,
+  center?: TrackOrientationCenter
+): TrackPoint[] {
+  if (from === to || points.length === 0) {
+    return points.map((point) => ({ x: point.x, y: point.y }));
+  }
+
+  const resolvedCenter = center ?? computeTrackOrientationCenter(points);
+
+  if (from === 'left-to-right' && to === 'top-to-bottom') {
+    return rotateTrackPointsForOrientation(points, 'top-to-bottom', resolvedCenter);
+  }
+
+  // Inverse of +90deg is -90deg. Apply 3x +90deg to avoid duplicate inverse math.
+  let rotated = points.map((point) => ({ x: point.x, y: point.y }));
+  for (let i = 0; i < 3; i += 1) {
+    rotated = rotateTrackPointsForOrientation(rotated, 'top-to-bottom', resolvedCenter);
+  }
+  return rotated;
+}
+
 export function computeTrackOrientationCenter(points: TrackPoint[]): TrackOrientationCenter {
   if (points.length === 0) {
     return { x: 0, y: 0 };

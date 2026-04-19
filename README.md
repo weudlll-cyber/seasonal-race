@@ -108,6 +108,8 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Launch endpoint now supports modular starter options (`durationMs`, `winnerCount`, `brandingProfileId`, and extensible `options`) via shared contracts and option-resolver modules.
 - Minimal modular app/package skeletons are in place for API, viewer, admin, engine, race types, branding, and shared types.
 - Web-admin now includes an Ops launch selector model that defaults valid id selections and builds id-only launch payloads for API calls.
+- Web-admin launch request helpers now include an explicit `trackOrientation` option that maps into launch `options.trackOrientation` for runtime direction control.
+- Web-admin launch model now also exposes dropdown-ready orientation options and a default selected orientation state for UI wiring.
 - Runtime viewer now includes a bootstrap client that resolves race id from URL and loads launch+track+racer payload for real race startup flow.
 - Runtime playback now maps bootstrap track points to viewport geometry and uses launch duration for live runtime movement timing.
 - Runtime playback now supports orientation variants (`left-to-right` default, `top-to-bottom`) via URL query (`orientation`) and launch options (`options.trackOrientation`).
@@ -115,6 +117,13 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Race sessions can optionally provide `cameraSettings` to override cinematic defaults (expected duration, pulse count/strength, intro hold, intro transition).
 - Web viewer includes an interactive track path editor: click-to-place variable point counts, live path preview, and TrackDefinition JSON copy/download for fast creation of many track layouts.
 - Studio preview now supports a track orientation selector for quick visual direction comparison (`left-to-right` vs `top-to-bottom`) without changing core track content.
+- Studio sidebar is now compact and definition-first: core track authoring controls stay visible while replay/preset/advanced blocks are collapsed by default to reduce scrolling.
+- Switching studio track orientation now rotates the editable curve/boundary geometry directly, so left-to-right/top-to-bottom changes immediately adapt the authored path itself.
+- Studio editor now includes precision zoom controls (wheel + slider + reset) so boundary points can be placed accurately on detailed map areas.
+- Studio dev tools now include one-click auto track templates (S-curve, oval, zigzag, river bend) with configurable control-point count.
+- Studio dev tools now include automatic racer-pack generation from a single uploaded 2D image, producing multiple racer variants with deterministic recoloring + pattern overlays for clear visual differentiation in races.
+- Racer pack controls now include one-click presets (`Minimal`, `Balanced`, `Max Contrast`) for fast setup without manual slider tuning.
+- Studio replay racers now render from the generated racer-pack look (with automatic fallback pack generation), so in-editor race visuals stay aligned with exported sprite-pack styling.
 - Track editor supports background image import, drag-to-edit points, and optional smooth-preview mode for curved route visualization.
 - Track editor now supports named test presets (save/load/delete in local browser storage) so multiple setup variants can be restored quickly between iterations.
 - Track metadata fields and JSON editing are now placed in optional advanced sections, keeping the default authoring flow focused on visual controls only.
@@ -158,6 +167,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Camera reset/background-bound clamping is now centralized in `world-transform-utils` to keep view behavior consistent across surfaces.
 - Viewer entrypoint now uses a thin bootstrap `main.ts`, while studio authoring logic is hosted in `studio-app.ts` for cleaner multi-surface evolution.
 - Bootstrap dispatch now supports explicit surface mode via URL (`?mode=studio` default, `?mode=runtime` for runtime entry).
+- Bootstrap dispatch now supports a dedicated admin launch surface via URL (`?mode=admin`) with catalog loading, request preview, and race-start controls.
 - Runtime entry logic now exists in `runtime-app.ts` as a dedicated, isolated surface for real game playback evolution.
 - Studio orchestration is now further modularized with dedicated DOM, render, and editor-helper modules to keep `studio-app.ts` focused on flow composition.
 - Studio point-edit interactions (stage pointer events + preset buttons) are now isolated in `studio-point-editor-controller.ts` to reduce event wiring noise in `studio-app.ts`.

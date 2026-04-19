@@ -34,9 +34,16 @@ import { wireStudioUiControlsController } from './studio-ui-controls-controller'
 import {
   computeTrackOrientationCenter,
   normalizeTrackOrientation,
-  rotateTrackPointsForOrientation,
+  rotateTrackPointsBetweenOrientations,
   type TrackOrientation
 } from './track-orientation.js';
+import {
+  generateRacerSpritePackFromImage,
+  generateTrackTemplate,
+  type GeneratedRacerSpritePack,
+  type GeneratedRacerSpritePackMeta,
+  type TrackTemplateKind
+} from './studio-generators';
 
 const VIEW_WIDTH = 1160;
 const VIEW_HEIGHT = 720;
@@ -63,6 +70,9 @@ const DEFAULT_REPLAY_RACER_COUNT = 12;
 const STUDIO_TEST_PRESET_STORAGE_KEY = 'seasonal-race:studio-test-presets:v2';
 const STUDIO_PRESET_BACKGROUND_DB = 'seasonal-race-studio-preset-assets';
 const STUDIO_PRESET_BACKGROUND_STORE = 'backgrounds';
+const MIN_EDITOR_ZOOM = 1;
+const MAX_EDITOR_ZOOM = 4;
+const DEFAULT_RUNTIME_PACK_FRAME_COUNT = 10;
 
 type TrackEditMode = 'centerline' | 'boundaries';
 type BoundarySide = 'left' | 'right';
@@ -88,6 +98,7 @@ interface StudioTestPreset {
   laneBoardsVisible: boolean;
   backgroundImageDataUrl?: string;
   hasBackgroundImage?: boolean;
+  editorGeometryMode?: 'geometry-rotated-v1';
 }
 
 interface StudioTestPresetStore {
@@ -137,7 +148,6 @@ export async function startStudioApp(): Promise<void> {
   runner.visible = false;
   runnerLayer.addChild(runner);
 
-  const replayPalette = [0xf8f08a, 0xff9b6a, 0x6ad6ff, 0xa8f58f, 0xd7a8ff, 0xffe0ff, 0xb9f6ff];
   let replayRacerCount = DEFAULT_REPLAY_RACER_COUNT;
   let replayRacers: StudioReplayRacerView[] = [];
 
@@ -166,6 +176,11 @@ export async function startStudioApp(): Promise<void> {
     200,
     replayRunId
   );
+  let generatedSpriteSheetDataUrl: string | null = null;
+  let generatedSpriteSheetMeta: GeneratedRacerSpritePackMeta | null = null;
+  let generatedRacerPack: GeneratedRacerSpritePack | null = null;
+  let fallbackRuntimeRacerPack: GeneratedRacerSpritePack | null = null;
+  let fallbackRuntimeRacerPackKey = '';
 
   dom.laneWidthInput.value = String(laneWidthPx);
   dom.laneWidthValue.textContent = `${laneWidthPx} px`;
@@ -179,6 +194,28 @@ export async function startStudioApp(): Promise<void> {
   dom.trackOrientationSelect.value = trackOrientation;
   dom.boundaryEditSideSelect.value = boundaryEditSide;
   dom.boundaryEditSideSelect.disabled = true;
+  let editorZoom = 1;
+  let editorViewCenterX = VIEW_WIDTH * 0.5;
+  let editorViewCenterY = VIEW_HEIGHT * 0.5;
+  dom.editorZoomInput.value = String(Math.round(editorZoom * 100));
+  dom.editorZoomValue.textContent = `${Math.round(editorZoom * 100)}%`;
+  dom.trackTemplatePointsValue.textContent = dom.trackTemplatePointsInput.value;
+  dom.spriteFrameCountValue.textContent = dom.spriteFrameCountInput.value;
+  dom.spriteVariantCountValue.textContent = dom.spriteVariantCountInput.value;
+  dom.downloadSpriteSheetButton.disabled = true;
+  dom.downloadSpriteMetaButton.disabled = true;
+
+  const applyGeneratorPreset = (
+    frameCount: number,
+    racerVariantCount: number,
+    label: 'Minimal' | 'Balanced' | 'Max Contrast'
+  ): void => {
+    dom.spriteFrameCountInput.value = String(frameCount);
+    dom.spriteVariantCountInput.value = String(racerVariantCount);
+    dom.spriteFrameCountValue.textContent = String(frameCount);
+    dom.spriteVariantCountValue.textContent = String(racerVariantCount);
+    dom.editorHelp.textContent = `Generator preset applied: ${label}.`;
+  };
 
   function getCenterlinePoints(): TrackPoint[] {
     if (
@@ -279,7 +316,8 @@ export async function startStudioApp(): Promise<void> {
       playingPreview,
       smoothingEnabled,
       replayModeEnabled,
-      laneBoardsVisible
+      laneBoardsVisible,
+      editorGeometryMode: 'geometry-rotated-v1'
     };
     const backgroundDataUrl = backgroundController.getBackgroundDataUrl();
     if (backgroundDataUrl) {
@@ -369,7 +407,8 @@ export async function startStudioApp(): Promise<void> {
 
       points = parsed.points.map((p) => ({ x: round3(Number(p.x)), y: round3(Number(p.y)) }));
       trackEditMode = parsed.trackEditMode === 'boundaries' ? 'boundaries' : 'centerline';
-      trackOrientation = normalizeTrackOrientation(parsed.trackOrientation);
+      const nextOrientation = normalizeTrackOrientation(parsed.trackOrientation);
+      trackOrientation = nextOrientation;
       boundaryEditSide = parsed.boundaryEditSide === 'right' ? 'right' : 'left';
       leftBoundaryPoints = Array.isArray(parsed.leftBoundaryPoints)
         ? parsed.leftBoundaryPoints.map((p) => ({ x: round3(Number(p.x)), y: round3(Number(p.y)) }))
@@ -383,6 +422,35 @@ export async function startStudioApp(): Promise<void> {
       if (trackEditMode === 'boundaries') {
         ensureBoundaryPointsFromCenterline();
         points = buildCenterlineFromBoundaries(leftBoundaryPoints, rightBoundaryPoints);
+      }
+
+      if (
+        nextOrientation === 'top-to-bottom' &&
+        parsed.editorGeometryMode !== 'geometry-rotated-v1'
+      ) {
+        const orientationCenter = computeTrackOrientationCenter(points);
+        points = rotateTrackPointsBetweenOrientations(
+          points,
+          'left-to-right',
+          'top-to-bottom',
+          orientationCenter
+        );
+        if (leftBoundaryPoints.length >= 3) {
+          leftBoundaryPoints = rotateTrackPointsBetweenOrientations(
+            leftBoundaryPoints,
+            'left-to-right',
+            'top-to-bottom',
+            orientationCenter
+          );
+        }
+        if (rightBoundaryPoints.length >= 3) {
+          rightBoundaryPoints = rotateTrackPointsBetweenOrientations(
+            rightBoundaryPoints,
+            'left-to-right',
+            'top-to-bottom',
+            orientationCenter
+          );
+        }
       }
       dom.trackIdInput.value =
         (parsed.trackId ?? DEFAULT_EDITOR_TRACK_ID).trim() || DEFAULT_EDITOR_TRACK_ID;
@@ -516,6 +584,7 @@ export async function startStudioApp(): Promise<void> {
     }
 
     const ids = createRacerIds(replayRacerCount);
+    const runtimeRacerPack = getRuntimeRacerPack(replayRacerCount);
     const markerRadius =
       replayRacerCount >= 90 ? 4 : replayRacerCount >= 70 ? 5 : replayRacerCount >= 45 ? 6 : 9;
     const labelFontSize =
@@ -523,9 +592,11 @@ export async function startStudioApp(): Promise<void> {
 
     replayRacers = ids.map((id, index) => {
       const racer = new Container();
+      const bodySprite = createRacerSpriteFromPack(runtimeRacerPack, index, markerRadius * 2.6);
+      racer.addChild(bodySprite);
 
       const marker = new Graphics();
-      marker.beginFill(replayPalette[index % replayPalette.length]!);
+      marker.beginFill(0xffffff, 0.01);
       marker.drawCircle(0, 0, markerRadius);
       marker.endFill();
       racer.addChild(marker);
@@ -575,6 +646,7 @@ export async function startStudioApp(): Promise<void> {
         index,
         sprite: racer,
         marker,
+        bodySprite,
         labelBg,
         labelText,
         progress: 0,
@@ -616,6 +688,132 @@ export async function startStudioApp(): Promise<void> {
     singlePreviewElapsedSeconds = 0;
   };
 
+  const downloadTextFile = (filename: string, content: string): void => {
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadDataUrl = (filename: string, dataUrl: string): void => {
+    const anchor = document.createElement('a');
+    anchor.href = dataUrl;
+    anchor.download = filename;
+    anchor.click();
+  };
+
+  const loadImageFromFile = (file: File): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(image);
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Could not load selected image.'));
+      };
+      image.src = url;
+    });
+
+  const buildDefaultRacerSourceImage = (): HTMLCanvasElement => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Canvas 2D context unavailable for default racer source.');
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(32, 35, 18, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.ellipse(41, 29, 9, 8, -0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#eaf3ff';
+    ctx.fillRect(22, 23, 12, 6);
+
+    ctx.fillStyle = '#111d2b';
+    ctx.beginPath();
+    ctx.arc(45, 27, 1.9, 0, Math.PI * 2);
+    ctx.fill();
+
+    return canvas;
+  };
+
+  const getRuntimeRacerPack = (requiredRacerCount: number): GeneratedRacerSpritePack => {
+    if (generatedRacerPack) {
+      return generatedRacerPack;
+    }
+
+    const key = `${requiredRacerCount}`;
+    if (fallbackRuntimeRacerPack && fallbackRuntimeRacerPackKey === key) {
+      return fallbackRuntimeRacerPack;
+    }
+
+    const defaultSourceImage = buildDefaultRacerSourceImage();
+    fallbackRuntimeRacerPack = generateRacerSpritePackFromImage(
+      defaultSourceImage,
+      defaultSourceImage.width,
+      defaultSourceImage.height,
+      {
+        frameCount: DEFAULT_RUNTIME_PACK_FRAME_COUNT,
+        racerVariantCount: requiredRacerCount,
+        frameDurationMs: 90,
+        outputScale: 1,
+        paddingPx: 6
+      }
+    );
+    fallbackRuntimeRacerPackKey = key;
+    return fallbackRuntimeRacerPack;
+  };
+
+  const createRacerSpriteFromPack = (
+    pack: GeneratedRacerSpritePack,
+    racerIndex: number,
+    desiredSize: number
+  ): Sprite => {
+    const variantCount = Math.max(1, pack.meta.racerVariantCount);
+    const variantIndex = racerIndex % variantCount;
+    const frameMetaIndex = variantIndex * pack.meta.frameCount;
+    const frame = pack.meta.frames[frameMetaIndex]!;
+
+    const frameCanvas = document.createElement('canvas');
+    frameCanvas.width = frame.width;
+    frameCanvas.height = frame.height;
+    const frameCtx = frameCanvas.getContext('2d');
+    if (!frameCtx) {
+      throw new Error('Canvas 2D context unavailable for runtime racer sprite extraction.');
+    }
+
+    frameCtx.drawImage(
+      pack.sheetCanvas,
+      frame.x,
+      frame.y,
+      frame.width,
+      frame.height,
+      0,
+      0,
+      frame.width,
+      frame.height
+    );
+
+    const sprite = Sprite.from(frameCanvas);
+    sprite.anchor.set(0.5);
+    const scale = desiredSize / Math.max(frame.width, frame.height);
+    sprite.scale.set(Math.max(0.2, scale));
+    return sprite;
+  };
+
   wireStudioPointEditorController({
     app,
     controls: {
@@ -630,6 +828,10 @@ export async function startStudioApp(): Promise<void> {
     sampleStraightPoints: SAMPLE_STRAIGHT_POINTS,
     getPoints: getEditablePoints,
     setPoints: setEditablePoints,
+    mapScreenToWorldPoint: (x, y) => ({
+      x: (x - world.position.x) / editorZoom,
+      y: (y - world.position.y) / editorZoom
+    }),
     isBroadcastViewEnabled: () => broadcastViewEnabled,
     onResetAndRender: () => {
       resetReplayPreviewState();
@@ -711,7 +913,33 @@ export async function startStudioApp(): Promise<void> {
       nameDisplayMode = toNameDisplayMode(value);
     },
     onTrackOrientationChanged: (value) => {
-      trackOrientation = normalizeTrackOrientation(value);
+      const nextOrientation = normalizeTrackOrientation(value);
+      if (nextOrientation !== trackOrientation) {
+        const orientationCenter = computeTrackOrientationCenter(points);
+        points = rotateTrackPointsBetweenOrientations(
+          points,
+          trackOrientation,
+          nextOrientation,
+          orientationCenter
+        );
+        if (leftBoundaryPoints.length >= 3) {
+          leftBoundaryPoints = rotateTrackPointsBetweenOrientations(
+            leftBoundaryPoints,
+            trackOrientation,
+            nextOrientation,
+            orientationCenter
+          );
+        }
+        if (rightBoundaryPoints.length >= 3) {
+          rightBoundaryPoints = rotateTrackPointsBetweenOrientations(
+            rightBoundaryPoints,
+            trackOrientation,
+            nextOrientation,
+            orientationCenter
+          );
+        }
+        trackOrientation = nextOrientation;
+      }
       renderPointsChanged();
     },
     onFocusRacerInput: (value) => {
@@ -758,6 +986,206 @@ export async function startStudioApp(): Promise<void> {
     }
     syncUiFromState();
     renderPointsChanged();
+  });
+
+  const updateEditorZoomUi = (): void => {
+    const percent = Math.round(editorZoom * 100);
+    dom.editorZoomInput.value = String(percent);
+    dom.editorZoomValue.textContent = `${percent}%`;
+  };
+
+  const applyEditorViewTransform = (): void => {
+    world.scale.set(editorZoom);
+    world.position.set(
+      app.screen.width * 0.5 - editorViewCenterX * editorZoom,
+      app.screen.height * 0.5 - editorViewCenterY * editorZoom
+    );
+  };
+
+  const resetEditorView = (): void => {
+    editorZoom = 1;
+    editorViewCenterX = VIEW_WIDTH * 0.5;
+    editorViewCenterY = VIEW_HEIGHT * 0.5;
+    updateEditorZoomUi();
+    if (!broadcastViewEnabled) {
+      applyEditorViewTransform();
+    }
+  };
+
+  const setEditorZoomAroundScreenPoint = (
+    nextZoom: number,
+    screenX: number,
+    screenY: number
+  ): void => {
+    const clampedZoom = Math.max(MIN_EDITOR_ZOOM, Math.min(MAX_EDITOR_ZOOM, nextZoom));
+    if (Math.abs(clampedZoom - editorZoom) < 0.0001) {
+      return;
+    }
+
+    const worldX = (screenX - world.position.x) / editorZoom;
+    const worldY = (screenY - world.position.y) / editorZoom;
+
+    editorZoom = clampedZoom;
+    editorViewCenterX = worldX - (screenX - app.screen.width * 0.5) / editorZoom;
+    editorViewCenterY = worldY - (screenY - app.screen.height * 0.5) / editorZoom;
+
+    updateEditorZoomUi();
+    if (!broadcastViewEnabled) {
+      applyEditorViewTransform();
+    }
+  };
+
+  dom.editorZoomInput.addEventListener('input', () => {
+    const nextZoom = Number(dom.editorZoomInput.value) / 100;
+    setEditorZoomAroundScreenPoint(nextZoom, app.screen.width * 0.5, app.screen.height * 0.5);
+  });
+
+  dom.zoomResetButton.addEventListener('click', () => {
+    resetEditorView();
+    dom.editorHelp.textContent = 'Editor zoom reset to 100%.';
+  });
+
+  const editorCanvas = app.view as HTMLCanvasElement | undefined;
+  if (editorCanvas) {
+    editorCanvas.addEventListener(
+      'wheel',
+      (event: WheelEvent) => {
+        if (broadcastViewEnabled) {
+          return;
+        }
+
+        event.preventDefault();
+        const zoomFactor = event.deltaY > 0 ? 0.92 : 1.08;
+        setEditorZoomAroundScreenPoint(editorZoom * zoomFactor, event.offsetX, event.offsetY);
+      },
+      { passive: false }
+    );
+  }
+
+  dom.trackTemplatePointsInput.addEventListener('input', () => {
+    dom.trackTemplatePointsValue.textContent = dom.trackTemplatePointsInput.value;
+  });
+
+  dom.spriteFrameCountInput.addEventListener('input', () => {
+    dom.spriteFrameCountValue.textContent = dom.spriteFrameCountInput.value;
+  });
+
+  dom.spriteVariantCountInput.addEventListener('input', () => {
+    dom.spriteVariantCountValue.textContent = dom.spriteVariantCountInput.value;
+  });
+
+  dom.spritePresetMinimalButton.addEventListener('click', () => {
+    applyGeneratorPreset(8, 8, 'Minimal');
+  });
+
+  dom.spritePresetBalancedButton.addEventListener('click', () => {
+    applyGeneratorPreset(10, 12, 'Balanced');
+  });
+
+  dom.spritePresetMaxContrastButton.addEventListener('click', () => {
+    applyGeneratorPreset(16, 24, 'Max Contrast');
+  });
+
+  dom.generateTrackTemplateButton.addEventListener('click', () => {
+    const kind = dom.trackTemplateSelect.value as TrackTemplateKind;
+    const controlPointCount = Number(dom.trackTemplatePointsInput.value);
+
+    let generatedPoints = generateTrackTemplate({
+      kind,
+      controlPointCount,
+      width: VIEW_WIDTH,
+      height: VIEW_HEIGHT,
+      margin: 80
+    });
+
+    if (trackOrientation === 'top-to-bottom') {
+      const center = computeTrackOrientationCenter(generatedPoints);
+      generatedPoints = rotateTrackPointsBetweenOrientations(
+        generatedPoints,
+        'left-to-right',
+        'top-to-bottom',
+        center
+      );
+    }
+
+    if (trackEditMode === 'boundaries') {
+      const generatedBoundaryPair = buildBoundaryPairFromCenterline(
+        generatedPoints,
+        laneWidthPx * 8
+      );
+      leftBoundaryPoints = generatedBoundaryPair.left;
+      rightBoundaryPoints = generatedBoundaryPair.right;
+      points = buildCenterlineFromBoundaries(leftBoundaryPoints, rightBoundaryPoints);
+    } else {
+      points = generatedPoints;
+    }
+
+    resetReplayPreviewState();
+    renderPointsChanged();
+    dom.editorHelp.textContent = `Generated ${kind} template with ${controlPointCount} control points.`;
+  });
+
+  dom.generateSpriteSheetButton.addEventListener('click', async () => {
+    const file = dom.spriteSourceImageInput.files?.[0] ?? null;
+    if (!file) {
+      dom.editorHelp.textContent = 'Select a sprite source image first.';
+      return;
+    }
+
+    dom.generateSpriteSheetButton.disabled = true;
+    try {
+      const image = await loadImageFromFile(file);
+      const frameCount = Number(dom.spriteFrameCountInput.value);
+      const racerVariantCount = Number(dom.spriteVariantCountInput.value);
+      const generated = generateRacerSpritePackFromImage(
+        image,
+        image.naturalWidth,
+        image.naturalHeight,
+        {
+          frameCount,
+          racerVariantCount,
+          frameDurationMs: 90,
+          outputScale: 1,
+          paddingPx: 10
+        }
+      );
+
+      generatedSpriteSheetDataUrl = generated.sheetDataUrl;
+      generatedSpriteSheetMeta = generated.meta;
+      generatedRacerPack = generated;
+      dom.spriteSheetPreview.src = generated.sheetDataUrl;
+      dom.downloadSpriteSheetButton.disabled = false;
+      dom.downloadSpriteMetaButton.disabled = false;
+      dom.editorHelp.textContent = `Racer pack generated: ${generated.meta.racerVariantCount} variants x ${generated.meta.frameCount} frames.`;
+      rebuildReplayRacers();
+    } catch (error) {
+      generatedSpriteSheetDataUrl = null;
+      generatedSpriteSheetMeta = null;
+      generatedRacerPack = null;
+      dom.downloadSpriteSheetButton.disabled = true;
+      dom.downloadSpriteMetaButton.disabled = true;
+      dom.editorHelp.textContent =
+        error instanceof Error ? error.message : 'Sprite generation failed.';
+    } finally {
+      dom.generateSpriteSheetButton.disabled = false;
+    }
+  });
+
+  dom.downloadSpriteSheetButton.addEventListener('click', () => {
+    if (!generatedSpriteSheetDataUrl) {
+      return;
+    }
+    downloadDataUrl('generated-racer-pack.png', generatedSpriteSheetDataUrl);
+  });
+
+  dom.downloadSpriteMetaButton.addEventListener('click', () => {
+    if (!generatedSpriteSheetMeta) {
+      return;
+    }
+    downloadTextFile(
+      'generated-racer-pack.meta.json',
+      JSON.stringify(generatedSpriteSheetMeta, null, 2)
+    );
   });
 
   dom.boundaryEditSideSelect.addEventListener('change', () => {
@@ -866,6 +1294,32 @@ export async function startStudioApp(): Promise<void> {
 
       trackOrientation = normalizeTrackOrientation(parsed.editorTrackOrientation);
 
+      if (trackOrientation === 'top-to-bottom') {
+        const orientationCenter = computeTrackOrientationCenter(points);
+        points = rotateTrackPointsBetweenOrientations(
+          points,
+          'left-to-right',
+          'top-to-bottom',
+          orientationCenter
+        );
+        if (leftBoundaryPoints.length >= 3) {
+          leftBoundaryPoints = rotateTrackPointsBetweenOrientations(
+            leftBoundaryPoints,
+            'left-to-right',
+            'top-to-bottom',
+            orientationCenter
+          );
+        }
+        if (rightBoundaryPoints.length >= 3) {
+          rightBoundaryPoints = rotateTrackPointsBetweenOrientations(
+            rightBoundaryPoints,
+            'left-to-right',
+            'top-to-bottom',
+            orientationCenter
+          );
+        }
+      }
+
       if (parsed.id) dom.trackIdInput.value = parsed.id;
       if (parsed.name) dom.trackNameInput.value = parsed.name;
       resetReplayPreviewState();
@@ -892,7 +1346,11 @@ export async function startStudioApp(): Promise<void> {
         rr.sprite.visible = false;
       }
       laneBoardLayer.clear();
-      resetWorldTransform(world);
+      if (broadcastViewEnabled) {
+        resetWorldTransform(world);
+      } else {
+        applyEditorViewTransform();
+      }
       return;
     }
 
@@ -990,47 +1448,6 @@ export async function startStudioApp(): Promise<void> {
       raceCenterline = buildCenterlineFromBoundaries(raceLeftSmoothed, raceRightSmoothed);
     }
 
-    if (trackOrientation === 'top-to-bottom') {
-      const rotationCenter = computeTrackOrientationCenter(renderPoints);
-      renderPoints = rotateTrackPointsForOrientation(
-        renderPoints,
-        trackOrientation,
-        rotationCenter
-      );
-
-      if (renderLeftBoundaryPoints) {
-        renderLeftBoundaryPoints = rotateTrackPointsForOrientation(
-          renderLeftBoundaryPoints,
-          trackOrientation,
-          rotationCenter
-        );
-      }
-
-      if (renderRightBoundaryPoints) {
-        renderRightBoundaryPoints = rotateTrackPointsForOrientation(
-          renderRightBoundaryPoints,
-          trackOrientation,
-          rotationCenter
-        );
-      }
-
-      if (boundaryCoastPoint) {
-        boundaryCoastPoint = rotateTrackPointsForOrientation(
-          [boundaryCoastPoint],
-          trackOrientation,
-          rotationCenter
-        )[0]!;
-      }
-
-      if (raceCenterline) {
-        raceCenterline = rotateTrackPointsForOrientation(
-          raceCenterline,
-          trackOrientation,
-          rotationCenter
-        );
-      }
-    }
-
     const previewPath = smoothingEnabled
       ? buildSmoothedPreviewPath(renderPoints, 10)
       : renderPoints;
@@ -1101,7 +1518,8 @@ export async function startStudioApp(): Promise<void> {
       world,
       appScreenWidth: app.screen.width,
       appScreenHeight: app.screen.height,
-      backgroundSprite
+      backgroundSprite,
+      applyEditorViewTransform
     });
     previewProgress = singleTick.previewProgress;
     singlePreviewElapsedSeconds = singleTick.singlePreviewElapsedSeconds;
@@ -1120,9 +1538,11 @@ export async function startStudioApp(): Promise<void> {
     backgroundController.applyLayoutForCurrentView();
     if (!broadcastViewEnabled) {
       dom.leaderboardList.innerHTML = '';
-      resetWorldTransform(world);
+      applyEditorViewTransform();
     }
   }
+
+  resetEditorView();
 }
 
 function loadPresetStore(): StudioTestPresetStore {

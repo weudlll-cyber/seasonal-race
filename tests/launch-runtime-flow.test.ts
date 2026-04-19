@@ -39,6 +39,7 @@ describe('launch to runtime bootstrap flow', () => {
       seed: 'flow-seed-1',
       durationMs: 62_000,
       winnerCount: 2,
+      trackOrientation: 'top-to-bottom',
       options: {
         streamOverlay: true,
         cameraProfile: 'tight'
@@ -72,6 +73,7 @@ describe('launch to runtime bootstrap flow', () => {
     expect(startBody.winnerCount).toBe(2);
     expect(startBody.brandingProfileId).toBe('brand-flow-check');
     expect(startBody.seed).toBe('flow-seed-1');
+    expect(startBody.options.trackOrientation).toBe('top-to-bottom');
 
     const runtimeBootstrapResponse = await app.inject({
       method: 'GET',
