@@ -30,7 +30,8 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 ## Quality Gates
 
 - `corepack pnpm run ci:light`: lint + formatting checks
-- `corepack pnpm run ci:extended`: light gate + typecheck + tests
+- `corepack pnpm run content:validate`: validates track/racer content JSON + manifests
+- `corepack pnpm run ci:extended`: light gate + content validation + typecheck + tests
 - `corepack pnpm run ci:full`: extended gate + dependency security checks
 
 ## Local Package Manager Setup
@@ -94,7 +95,19 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 
 - Project bootstrap and documentation baseline created.
 - Phase 1 foundation tooling is active (TypeScript, ESLint, Prettier, Vitest).
+- Content starter catalogs are now tracked under `content/tracks`, `content/racers`, and `content/manifests`.
+- Content manifests and referenced JSON files are now validated by `content:validate` and enforced in CI extended/full gates.
+- API now exposes read-only catalog endpoints for Phase 3 selection flow:
+  - `GET /api/v1/catalog/tracks`
+  - `GET /api/v1/catalog/racers`
+- API now exposes a launch endpoint that accepts catalog ids only and validates track/racer compatibility:
+  - `POST /api/v1/races/start`
+- API now exposes runtime bootstrap payload for launched races:
+  - `GET /api/v1/races/:raceId/runtime-bootstrap`
+- Launch endpoint now supports modular starter options (`durationMs`, `winnerCount`, `brandingProfileId`, and extensible `options`) via shared contracts and option-resolver modules.
 - Minimal modular app/package skeletons are in place for API, viewer, admin, engine, race types, branding, and shared types.
+- Web-admin now includes an Ops launch selector model that defaults valid id selections and builds id-only launch payloads for API calls.
+- Runtime viewer now includes a bootstrap client that resolves race id from URL and loads launch+track+racer payload for real race startup flow.
 - Web viewer prototype is running with PixiJS: a sprite follows an S-curve track and a cinematic camera starts in overview mode, transitions into leader focus, applies runtime-aware zoom pulses, and returns to an end overview.
 - Race sessions can optionally provide `cameraSettings` to override cinematic defaults (expected duration, pulse count/strength, intro hold, intro transition).
 - Web viewer includes an interactive track path editor: click-to-place variable point counts, live path preview, and TrackDefinition JSON copy/download for fast creation of many track layouts.

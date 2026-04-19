@@ -1,0 +1,17 @@
+{
+  "id": "horse-arena-oval",
+  "name": "Horse Arena Oval",
+  "length": 1400,
+  "effectProfileId": "horse-arena-default",
+  "points": [
+    { "x": 240, "y": 540 },
+    { "x": 420, "y": 360 },
+    { "x": 900, "y": 280 },
+    { "x": 1380, "y": 360 },
+    { "x": 1620, "y": 540 },
+    { "x": 1380, "y": 720 },
+    { "x": 900, "y": 800 },
+    { "x": 420, "y": 720 },
+    { "x": 240, "y": 540 }
+  ]
+}

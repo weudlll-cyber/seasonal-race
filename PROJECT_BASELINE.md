@@ -19,6 +19,7 @@
 - Versioned REST API under `/api/v1`.
 - Deterministic race simulation mode with reproducible seed.
 - CI quality gates with staged strictness (light, extended, full).
+- Content validation gate integrated in CI extended/full stages.
 - Core engine remains independent from UI, storage, and connector implementations.
 - Deployment process must be reproducible and idempotent.
 
@@ -27,6 +28,15 @@
 - Phase 1 tooling is active with TypeScript, ESLint, Prettier, and Vitest.
 - Minimal modular source boundaries exist for apps and core packages.
 - Foundation smoke test is in place and running in CI.
+- Starter content catalog is now established with tracked track files, racer lists, and manifests under `content/`.
+- Manifest and content JSON validation now enforces schema, duplicate-id checks, and minimum track-point counts.
+- API content-catalog endpoints are active for selection workflows (`/api/v1/catalog/tracks`, `/api/v1/catalog/racers`) with endpoint tests covering success and invalid-file handling.
+- API race launch endpoint is active (`/api/v1/races/start`) and enforces id-based selection with validation for required ids, existence, and track/racer race-type compatibility.
+- Ops/Admin launch selector model is now in place to default valid selections and generate id-only start-race request payloads.
+- Launch configuration contracts are now centralized in shared types (`race-launch`) and API option resolution is modularized, so future starter features can be added as new option resolvers instead of route rewrites.
+- Runtime bootstrap endpoint is now active (`/api/v1/races/:raceId/runtime-bootstrap`) and provides launched race config plus track/racer metadata for viewer startup.
+- Runtime viewer wiring now resolves race id from URL and consumes runtime bootstrap payload through a dedicated runtime client helper.
+- Contract regression coverage now includes a full launch-to-runtime path test (admin launch model -> API start -> runtime bootstrap payload consistency assertions).
 - Phase 2 started with deterministic RNG, race session orchestration, and modular extension contracts.
 - Web-viewer prototype is active: PixiJS scene renders a moving racer on an S-curve path with a cinematic `CameraController` (intro overview, slower intro transition, runtime-aware zoom pulses, and finish overview).
 - `RaceSessionConfig` supports optional `cameraSettings` overrides so admin-managed races can tune cinematic behavior without changing viewer code.

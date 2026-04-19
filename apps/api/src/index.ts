@@ -1,9 +1,11 @@
 /**
  * File: apps/api/src/index.ts
  * Model: GPT-5.3-Codex
- * Purpose: Defines the API application bootstrap placeholder for Phase 1.
- * Usage: Imported by future API runtime entrypoint wiring.
- * Dependencies: Shared contracts from packages/shared-types.
+ * Purpose: Exposes API module identity and app factory entrypoints.
+ * Usage: Imported by tests and future API runtime process bootstrap.
+ * Dependencies: API app builder module.
  */
+
+export { buildApiApp, type BuildApiAppOptions } from './app';
 
 export const apiAppId = 'seasonal-race-api';

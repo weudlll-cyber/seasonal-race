@@ -254,3 +254,18 @@ export interface EffectProfileProvider {
   readonly providerId: string;
   getEffectProfile(id: string): Promise<EffectProfile>;
 }
+
+export {
+  DEFAULT_RACE_LAUNCH_CONSTRAINTS,
+  type LaunchFeatureMap,
+  type LaunchOptionPrimitive,
+  type RaceLaunchConstraints,
+  type RaceLaunchRequest,
+  type RaceLaunchResolvedConfig
+} from './race-launch';
+
+export {
+  type RuntimeBootstrapPayload,
+  type RuntimeBootstrapRacerList,
+  type RuntimeBootstrapTrack
+} from './runtime-bootstrap';
