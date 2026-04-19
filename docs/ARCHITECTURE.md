@@ -67,6 +67,7 @@ The viewer now includes an interactive track editor workflow:
 - import a background track image and mark points directly on top
 - optional smoothing toggle for curved preview while preserving explicit point export
 - broadcast preview toggle with cinematic camera follow/zoom to validate final spectator perspective
+- orientation toggle for preview direction (`left-to-right` and `top-to-bottom`) to compare race flow variants quickly
 - fullscreen broadcast layout for player-like framing (editor chrome hidden)
 - broadcast camera is clamped to background bounds to avoid black void areas around the track
 - replay lane-fit controls: lane offsets along track normal + adjustable lane width for water/track adherence

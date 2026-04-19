@@ -31,6 +31,12 @@ import { tickStudioReplayMode, type StudioReplayRacerView } from './studio-repla
 import { tickStudioSinglePreviewMode } from './studio-single-preview-controller';
 import { wireStudioBackgroundController } from './studio-background-controller';
 import { wireStudioUiControlsController } from './studio-ui-controls-controller';
+import {
+  computeTrackOrientationCenter,
+  normalizeTrackOrientation,
+  rotateTrackPointsForOrientation,
+  type TrackOrientation
+} from './track-orientation.js';
 
 const VIEW_WIDTH = 1160;
 const VIEW_HEIGHT = 720;
@@ -68,6 +74,7 @@ interface StudioTestPreset {
   effectProfileId: string;
   points: TrackPoint[];
   trackEditMode?: TrackEditMode;
+  trackOrientation?: TrackOrientation;
   boundaryEditSide?: BoundarySide;
   leftBoundaryPoints?: TrackPoint[];
   rightBoundaryPoints?: TrackPoint[];
@@ -138,6 +145,7 @@ export async function startStudioApp(): Promise<void> {
   let leftBoundaryPoints: TrackPoint[] = [];
   let rightBoundaryPoints: TrackPoint[] = [];
   let trackEditMode: TrackEditMode = 'centerline';
+  let trackOrientation: TrackOrientation = 'left-to-right';
   let boundaryEditSide: BoundarySide = 'left';
   let playingPreview = true;
   let smoothingEnabled = true;
@@ -168,6 +176,7 @@ export async function startStudioApp(): Promise<void> {
   dom.focusRacerInput.value = String(focusRacerNumber);
   dom.focusRacerLabel.textContent = `D${focusRacerNumber}`;
   dom.trackEditModeSelect.value = trackEditMode;
+  dom.trackOrientationSelect.value = trackOrientation;
   dom.boundaryEditSideSelect.value = boundaryEditSide;
   dom.boundaryEditSideSelect.disabled = true;
 
@@ -230,6 +239,7 @@ export async function startStudioApp(): Promise<void> {
 
   const syncUiFromState = (): void => {
     dom.trackEditModeSelect.value = trackEditMode;
+    dom.trackOrientationSelect.value = trackOrientation;
     dom.boundaryEditSideSelect.value = boundaryEditSide;
     dom.boundaryEditSideSelect.disabled = trackEditMode !== 'boundaries';
 
@@ -258,6 +268,7 @@ export async function startStudioApp(): Promise<void> {
       effectProfileId: dom.effectProfileInput.value.trim(),
       points: points.map((p) => ({ x: round3(p.x), y: round3(p.y) })),
       trackEditMode,
+      trackOrientation,
       boundaryEditSide,
       leftBoundaryPoints: leftBoundaryPoints.map((p) => ({ x: round3(p.x), y: round3(p.y) })),
       rightBoundaryPoints: rightBoundaryPoints.map((p) => ({ x: round3(p.x), y: round3(p.y) })),
@@ -358,6 +369,7 @@ export async function startStudioApp(): Promise<void> {
 
       points = parsed.points.map((p) => ({ x: round3(Number(p.x)), y: round3(Number(p.y)) }));
       trackEditMode = parsed.trackEditMode === 'boundaries' ? 'boundaries' : 'centerline';
+      trackOrientation = normalizeTrackOrientation(parsed.trackOrientation);
       boundaryEditSide = parsed.boundaryEditSide === 'right' ? 'right' : 'left';
       leftBoundaryPoints = Array.isArray(parsed.leftBoundaryPoints)
         ? parsed.leftBoundaryPoints.map((p) => ({ x: round3(Number(p.x)), y: round3(Number(p.y)) }))
@@ -647,6 +659,7 @@ export async function startStudioApp(): Promise<void> {
       racerCountInput: dom.racerCountInput,
       racerCountValue: dom.racerCountValue,
       nameModeSelect: dom.nameModeSelect,
+      trackOrientationSelect: dom.trackOrientationSelect,
       focusRacerInput: dom.focusRacerInput,
       focusRacerLabel: dom.focusRacerLabel,
       laneBoardsToggleButton: dom.laneBoardsToggleButton,
@@ -696,6 +709,10 @@ export async function startStudioApp(): Promise<void> {
     },
     onNameModeChanged: (value) => {
       nameDisplayMode = toNameDisplayMode(value);
+    },
+    onTrackOrientationChanged: (value) => {
+      trackOrientation = normalizeTrackOrientation(value);
+      renderPointsChanged();
     },
     onFocusRacerInput: (value) => {
       focusRacerNumber = normalizeFocusRacerNumber(value, replayRacerCount);
@@ -819,6 +836,7 @@ export async function startStudioApp(): Promise<void> {
           left?: TrackPoint[];
           right?: TrackPoint[];
         };
+        editorTrackOrientation?: string;
       };
       if (!Array.isArray(parsed.points) || parsed.points.length < 3) {
         throw new Error('points array missing');
@@ -845,6 +863,8 @@ export async function startStudioApp(): Promise<void> {
       } else {
         trackEditMode = 'centerline';
       }
+
+      trackOrientation = normalizeTrackOrientation(parsed.editorTrackOrientation);
 
       if (parsed.id) dom.trackIdInput.value = parsed.id;
       if (parsed.name) dom.trackNameInput.value = parsed.name;
@@ -968,6 +988,47 @@ export async function startStudioApp(): Promise<void> {
         ? buildSmoothedPreviewPath(raceRight, 10)
         : raceRight;
       raceCenterline = buildCenterlineFromBoundaries(raceLeftSmoothed, raceRightSmoothed);
+    }
+
+    if (trackOrientation === 'top-to-bottom') {
+      const rotationCenter = computeTrackOrientationCenter(renderPoints);
+      renderPoints = rotateTrackPointsForOrientation(
+        renderPoints,
+        trackOrientation,
+        rotationCenter
+      );
+
+      if (renderLeftBoundaryPoints) {
+        renderLeftBoundaryPoints = rotateTrackPointsForOrientation(
+          renderLeftBoundaryPoints,
+          trackOrientation,
+          rotationCenter
+        );
+      }
+
+      if (renderRightBoundaryPoints) {
+        renderRightBoundaryPoints = rotateTrackPointsForOrientation(
+          renderRightBoundaryPoints,
+          trackOrientation,
+          rotationCenter
+        );
+      }
+
+      if (boundaryCoastPoint) {
+        boundaryCoastPoint = rotateTrackPointsForOrientation(
+          [boundaryCoastPoint],
+          trackOrientation,
+          rotationCenter
+        )[0]!;
+      }
+
+      if (raceCenterline) {
+        raceCenterline = rotateTrackPointsForOrientation(
+          raceCenterline,
+          trackOrientation,
+          rotationCenter
+        );
+      }
     }
 
     const previewPath = smoothingEnabled

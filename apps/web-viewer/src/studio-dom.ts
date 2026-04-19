@@ -13,6 +13,7 @@ export interface EditorDom {
   effectProfileInput: HTMLInputElement;
   backgroundImageInput: HTMLInputElement;
   trackEditModeSelect: HTMLSelectElement;
+  trackOrientationSelect: HTMLSelectElement;
   boundaryEditSideSelect: HTMLSelectElement;
   laneWidthInput: HTMLInputElement;
   laneWidthValue: HTMLElement;
@@ -69,6 +70,7 @@ export function resolveStudioDom(): EditorDom {
     effectProfileInput: byId<HTMLInputElement>('effect-profile-input'),
     backgroundImageInput: byId<HTMLInputElement>('background-image-input'),
     trackEditModeSelect: byId<HTMLSelectElement>('track-edit-mode-select'),
+    trackOrientationSelect: byId<HTMLSelectElement>('track-orientation-select'),
     boundaryEditSideSelect: byId<HTMLSelectElement>('boundary-edit-side-select'),
     laneWidthInput: byId<HTMLInputElement>('lane-width-input'),
     laneWidthValue: byId<HTMLElement>('lane-width-value'),

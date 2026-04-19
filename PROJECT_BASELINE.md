@@ -47,6 +47,7 @@
 - Track authoring workflow is active in the web-viewer: variable point-count path editor with live preview and TrackDefinition JSON export (copy/download + JSON reload).
 - Track editor now supports background-image-assisted point placement, drag-to-edit points, and preview smoothing toggle for fast curve tuning.
 - Track editor now supports named saved test presets (local browser storage) that restore points plus replay/editor controls for fast repeated validation cycles.
+- Studio track preview now supports orientation switching (`left-to-right` and `top-to-bottom`) for race-direction variability tests.
 - Track metadata and raw JSON controls are now optional advanced sections so default test workflow stays lightweight.
 - Track editor now supports a broadcast preview mode (camera follow and zoom rides) to evaluate the same perspective players will see during races.
 - Broadcast preview is now fullscreen and high-DPI for player-like visual validation.

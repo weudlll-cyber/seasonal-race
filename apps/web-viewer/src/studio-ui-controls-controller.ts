@@ -14,6 +14,7 @@ interface StudioUiControls {
   racerCountInput: HTMLInputElement;
   racerCountValue: HTMLElement;
   nameModeSelect: HTMLSelectElement;
+  trackOrientationSelect: HTMLSelectElement;
   focusRacerInput: HTMLInputElement;
   focusRacerLabel: HTMLElement;
   laneBoardsToggleButton: HTMLButtonElement;
@@ -34,6 +35,7 @@ export interface StudioUiControlsControllerOptions {
   onLaneWidthChanged: (value: number) => void;
   onRacerCountChanged: (value: number) => void;
   onNameModeChanged: (value: string) => void;
+  onTrackOrientationChanged: (value: string) => void;
   onFocusRacerInput: (value: number) => number;
   getLaneBoardsVisible: () => boolean;
   setLaneBoardsVisible: (value: boolean) => void;
@@ -56,6 +58,7 @@ export function wireStudioUiControlsController(options: StudioUiControlsControll
     onLaneWidthChanged,
     onRacerCountChanged,
     onNameModeChanged,
+    onTrackOrientationChanged,
     onFocusRacerInput,
     getLaneBoardsVisible,
     setLaneBoardsVisible,
@@ -103,6 +106,10 @@ export function wireStudioUiControlsController(options: StudioUiControlsControll
 
   controls.nameModeSelect.addEventListener('change', () => {
     onNameModeChanged(controls.nameModeSelect.value);
+  });
+
+  controls.trackOrientationSelect.addEventListener('change', () => {
+    onTrackOrientationChanged(controls.trackOrientationSelect.value);
   });
 
   controls.focusRacerInput.addEventListener('input', () => {

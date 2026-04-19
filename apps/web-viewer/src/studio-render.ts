@@ -194,6 +194,12 @@ export function refreshExport(
     };
   }
 
+  const selectedOrientation =
+    dom.trackOrientationSelect.value === 'top-to-bottom' ? 'top-to-bottom' : 'left-to-right';
+  if (selectedOrientation !== 'left-to-right') {
+    outputPayload.editorTrackOrientation = selectedOrientation;
+  }
+
   dom.jsonOutput.value = JSON.stringify(outputPayload, null, 2);
   dom.pointCountLabel.textContent = String(track.points.length);
   dom.trackLengthLabel.textContent = `${track.length.toFixed(2)} px`;
