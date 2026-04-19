@@ -3,6 +3,7 @@
 ## Scope Baseline
 
 - Core race types in initial scope: Duck, Horse, Rocket.
+- Viewer visual baseline for MVP is top-down (bird-eye) broadcast presentation; frontal/side camera rendering is out of MVP scope.
 - Brand system applies to all race types.
 - Admin panel manages players, presets, race settings, and brand profiles.
 - Extensibility model must support low-friction race-type additions.
@@ -38,6 +39,7 @@
 - Runtime viewer wiring now resolves race id from URL and consumes runtime bootstrap payload through a dedicated runtime client helper.
 - Runtime viewer playback now renders movement on bootstrap-provided track geometry (viewport-mapped) and drives lap timing from launch duration.
 - Contract regression coverage now includes a full launch-to-runtime path test (admin launch model -> API start -> runtime bootstrap payload consistency assertions).
+- Visual MVP requirement and optional polish split is now documented in `docs/VISUAL_MVP_CHECKLIST.md`.
 - Phase 2 started with deterministic RNG, race session orchestration, and modular extension contracts.
 - Web-viewer prototype is active: PixiJS scene renders a moving racer on an S-curve path with a cinematic `CameraController` (intro overview, slower intro transition, runtime-aware zoom pulses, and finish overview).
 - `RaceSessionConfig` supports optional `cameraSettings` overrides so admin-managed races can tune cinematic behavior without changing viewer code.
