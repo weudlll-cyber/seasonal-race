@@ -38,6 +38,12 @@ Race session orchestration is provided through `createRaceSession(...)` and incl
 
 ## Visual Strategy
 
+### MVP Viewpoint Decision
+
+- Top-down (bird-eye) presentation is the locked MVP camera direction.
+- Frontal/side cinematic racer views are explicitly post-MVP.
+- See `docs/VISUAL_MVP_CHECKLIST.md` for required vs optional visual scope.
+
 ### Design goal
 
 The races should feel **broadcast-quality** — not a game but a live event.

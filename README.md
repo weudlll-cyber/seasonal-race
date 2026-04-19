@@ -49,6 +49,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Final target environment is a VPS.
 - Deployment must be reproducible with a single install command based on hardened defaults.
 - See `docs/VPS_DEPLOYMENT.md` for rollout and hardening details.
+- Visual MVP scope and asset minimums are documented in `docs/VISUAL_MVP_CHECKLIST.md`.
 
 ## Replay Preview Notes
 
