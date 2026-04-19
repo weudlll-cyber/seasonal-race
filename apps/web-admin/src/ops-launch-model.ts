@@ -23,18 +23,35 @@ export interface OpsLaunchSelectorModel {
   racers: RacerCatalogOption[];
   selectedTrackId: string | null;
   selectedRacerListId: string | null;
+  selectedBrandingProfileId: string | null;
 }
 
 export interface StartRaceRequestBody {
   trackId: string;
   racerListId: string;
+  durationMs?: number;
+  winnerCount?: number;
+  brandingProfileId?: string;
   seed?: string;
+  options?: Record<string, string | number | boolean>;
+}
+
+export interface BuildStartRaceRequestOptions {
+  seed?: string;
+  durationMs?: number;
+  winnerCount?: number;
+  brandingProfileId?: string;
+  options?: Record<string, string | number | boolean>;
 }
 
 export function createOpsLaunchSelectorModel(
   tracks: TrackCatalogOption[],
   racers: RacerCatalogOption[],
-  currentSelection?: { trackId?: string; racerListId?: string }
+  currentSelection?: {
+    trackId?: string;
+    racerListId?: string;
+    brandingProfileId?: string;
+  }
 ): OpsLaunchSelectorModel {
   const selectedTrackId = resolveTrackSelection(tracks, currentSelection?.trackId);
   const selectedTrack = tracks.find((track) => track.id === selectedTrackId);
@@ -49,13 +66,14 @@ export function createOpsLaunchSelectorModel(
     tracks,
     racers,
     selectedTrackId,
-    selectedRacerListId
+    selectedRacerListId,
+    selectedBrandingProfileId: resolveOptionalSelection(currentSelection?.brandingProfileId)
   };
 }
 
 export function buildStartRaceRequestBody(
   model: OpsLaunchSelectorModel,
-  seed?: string
+  launchOptions: BuildStartRaceRequestOptions = {}
 ): StartRaceRequestBody {
   if (model.selectedTrackId === null) {
     throw new Error('Cannot build launch request: no track is selected.');
@@ -70,11 +88,45 @@ export function buildStartRaceRequestBody(
     racerListId: model.selectedRacerListId
   };
 
-  if (typeof seed === 'string' && seed.trim().length > 0) {
-    body.seed = seed.trim();
+  if (typeof launchOptions.seed === 'string' && launchOptions.seed.trim().length > 0) {
+    body.seed = launchOptions.seed.trim();
+  }
+
+  if (typeof launchOptions.durationMs === 'number' && Number.isFinite(launchOptions.durationMs)) {
+    body.durationMs = launchOptions.durationMs;
+  }
+
+  if (typeof launchOptions.winnerCount === 'number' && Number.isFinite(launchOptions.winnerCount)) {
+    body.winnerCount = launchOptions.winnerCount;
+  }
+
+  const brandingId =
+    typeof launchOptions.brandingProfileId === 'string'
+      ? launchOptions.brandingProfileId
+      : model.selectedBrandingProfileId;
+
+  if (typeof brandingId === 'string' && brandingId.trim().length > 0) {
+    body.brandingProfileId = brandingId.trim();
+  }
+
+  if (
+    launchOptions.options !== undefined &&
+    typeof launchOptions.options === 'object' &&
+    launchOptions.options !== null
+  ) {
+    body.options = launchOptions.options;
   }
 
   return body;
+}
+
+function resolveOptionalSelection(requestedValue?: string): string | null {
+  if (typeof requestedValue !== 'string') {
+    return null;
+  }
+
+  const normalized = requestedValue.trim();
+  return normalized.length > 0 ? normalized : null;
 }
 
 function resolveTrackSelection(

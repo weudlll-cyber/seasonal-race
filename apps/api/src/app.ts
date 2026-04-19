@@ -10,7 +10,15 @@ import path from 'node:path';
 
 import Fastify, { type FastifyInstance } from 'fastify';
 
+import type {
+  RaceLaunchResolvedConfig,
+  RaceLaunchRequest
+} from '../../../packages/shared-types/src/index';
 import { loadRacerCatalog, loadTrackCatalog } from './catalog';
+import {
+  resolveRaceLaunchOptions,
+  type RaceLaunchValidationErrorCode
+} from './race-launch-options';
 
 export interface BuildApiAppOptions {
   contentRoot?: string;
@@ -22,23 +30,8 @@ interface ApiErrorBody {
 }
 
 interface StartRaceValidationErrorBody {
-  error: 'INVALID_REQUEST' | 'CATALOG_ENTRY_NOT_FOUND' | 'RACE_TYPE_MISMATCH';
+  error: RaceLaunchValidationErrorCode;
   message: string;
-}
-
-interface StartRaceRequestBody {
-  trackId?: unknown;
-  racerListId?: unknown;
-  seed?: unknown;
-}
-
-interface StartRaceResponseBody {
-  raceId: string;
-  raceType: string;
-  trackId: string;
-  racerListId: string;
-  seed: string;
-  status: 'scheduled';
 }
 
 const defaultContentRoot = path.resolve(process.cwd(), 'content');
@@ -75,7 +68,7 @@ export function buildApiApp(options: BuildApiAppOptions = {}): FastifyInstance {
   });
 
   app.post('/api/v1/races/start', async (request, reply) => {
-    const body = (request.body ?? {}) as StartRaceRequestBody;
+    const body = (request.body ?? {}) as Partial<RaceLaunchRequest>;
     const trackId = typeof body.trackId === 'string' ? body.trackId.trim() : '';
     const racerListId = typeof body.racerListId === 'string' ? body.racerListId.trim() : '';
 
@@ -117,19 +110,35 @@ export function buildApiApp(options: BuildApiAppOptions = {}): FastifyInstance {
         return reply.status(400).send(mismatchError);
       }
 
+      const resolvedOptions = resolveRaceLaunchOptions({
+        input: body,
+        racerCount: selectedRacerList.racerCount,
+        autoSeed: `auto-seed-${raceSequence + 1}`
+      });
+
+      if (!resolvedOptions.ok) {
+        const optionsError: StartRaceValidationErrorBody = {
+          error: resolvedOptions.code,
+          message: resolvedOptions.message
+        };
+        return reply.status(400).send(optionsError);
+      }
+
       raceSequence += 1;
       const raceId = `race-${raceSequence}`;
-      const seed =
-        typeof body.seed === 'string' && body.seed.trim().length > 0
-          ? body.seed.trim()
-          : `auto-seed-${raceSequence}`;
 
-      const responseBody: StartRaceResponseBody = {
+      const responseBody: RaceLaunchResolvedConfig = {
         raceId,
         raceType: selectedTrack.raceType,
         trackId: selectedTrack.id,
         racerListId: selectedRacerList.id,
-        seed,
+        durationMs: resolvedOptions.value.durationMs,
+        winnerCount: resolvedOptions.value.winnerCount,
+        ...(resolvedOptions.value.brandingProfileId
+          ? { brandingProfileId: resolvedOptions.value.brandingProfileId }
+          : {}),
+        seed: resolvedOptions.value.seed,
+        options: resolvedOptions.value.options,
         status: 'scheduled'
       };
 

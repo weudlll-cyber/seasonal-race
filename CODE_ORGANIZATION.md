@@ -44,8 +44,17 @@
 - `apps/api/src/catalog.ts`
   - File-backed content catalog loaders for manifests + referenced JSON files.
   - Provides endpoint-ready metadata payloads (id/display/raceType + runtime metadata).
+- `apps/api/src/race-launch-options.ts`
+  - Modular launch-option resolver pipeline used by start-race endpoint validation.
+  - Designed for additive extension: add new starter options by adding resolver units, not by rewriting route logic.
 - `apps/api/src/index.ts`
   - API package entry exports app factory and stable API app id.
+
+## Shared Launch Contracts
+
+- `packages/shared-types/src/race-launch.ts`
+  - Shared launch request/resolved config contracts and baseline constraints.
+  - Keeps API/admin/runtime launch option vocabulary consistent across modules.
 
 ## Web Admin Module Map
 

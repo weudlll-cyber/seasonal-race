@@ -78,7 +78,15 @@ describe('api catalog endpoints', () => {
       payload: {
         trackId: 'duck-canal-s-curve',
         racerListId: 'duck-default',
-        seed: 'manual-seed'
+        seed: 'manual-seed',
+        durationMs: 60_000,
+        winnerCount: 2,
+        brandingProfileId: 'brand-spring-2026',
+        options: {
+          weather: 'rain',
+          intensity: 3,
+          noCollisions: false
+        }
       }
     });
 
@@ -88,7 +96,11 @@ describe('api catalog endpoints', () => {
       raceType: string;
       trackId: string;
       racerListId: string;
+      durationMs: number;
+      winnerCount: number;
+      brandingProfileId?: string;
       seed: string;
+      options: Record<string, string | number | boolean>;
       status: string;
     };
 
@@ -96,7 +108,15 @@ describe('api catalog endpoints', () => {
     expect(body.raceType).toBe('duck');
     expect(body.trackId).toBe('duck-canal-s-curve');
     expect(body.racerListId).toBe('duck-default');
+    expect(body.durationMs).toBe(60_000);
+    expect(body.winnerCount).toBe(2);
+    expect(body.brandingProfileId).toBe('brand-spring-2026');
     expect(body.seed).toBe('manual-seed');
+    expect(body.options).toEqual({
+      weather: 'rain',
+      intensity: 3,
+      noCollisions: false
+    });
     expect(body.status).toBe('scheduled');
 
     await app.close();
@@ -156,6 +176,71 @@ describe('api catalog endpoints', () => {
     expect(response.statusCode).toBe(400);
     const body = response.json() as { error: string; message: string };
     expect(body.error).toBe('RACE_TYPE_MISMATCH');
+
+    await app.close();
+  });
+
+  it('rejects start requests when duration is out of supported range', async () => {
+    const app = buildApiApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/races/start',
+      payload: {
+        trackId: 'duck-canal-s-curve',
+        racerListId: 'duck-default',
+        durationMs: 1_000
+      }
+    });
+
+    expect(response.statusCode).toBe(400);
+    const body = response.json() as { error: string; message: string };
+    expect(body.error).toBe('INVALID_OPTION_RANGE');
+    expect(body.message).toMatch(/durationMs/);
+
+    await app.close();
+  });
+
+  it('rejects start requests when winnerCount exceeds racer list size', async () => {
+    const app = buildApiApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/races/start',
+      payload: {
+        trackId: 'duck-canal-s-curve',
+        racerListId: 'duck-default',
+        winnerCount: 99
+      }
+    });
+
+    expect(response.statusCode).toBe(400);
+    const body = response.json() as { error: string; message: string };
+    expect(body.error).toBe('INVALID_OPTION_RANGE');
+    expect(body.message).toMatch(/winnerCount/);
+
+    await app.close();
+  });
+
+  it('rejects start requests when options contain unsupported value types', async () => {
+    const app = buildApiApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/races/start',
+      payload: {
+        trackId: 'duck-canal-s-curve',
+        racerListId: 'duck-default',
+        options: {
+          nested: { bad: true }
+        }
+      }
+    });
+
+    expect(response.statusCode).toBe(400);
+    const body = response.json() as { error: string; message: string };
+    expect(body.error).toBe('INVALID_REQUEST');
+    expect(body.message).toMatch(/options\.nested/);
 
     await app.close();
   });

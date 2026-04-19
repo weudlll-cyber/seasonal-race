@@ -102,6 +102,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
   - `GET /api/v1/catalog/racers`
 - API now exposes a launch endpoint that accepts catalog ids only and validates track/racer compatibility:
   - `POST /api/v1/races/start`
+- Launch endpoint now supports modular starter options (`durationMs`, `winnerCount`, `brandingProfileId`, and extensible `options`) via shared contracts and option-resolver modules.
 - Minimal modular app/package skeletons are in place for API, viewer, admin, engine, race types, branding, and shared types.
 - Web-admin now includes an Ops launch selector model that defaults valid id selections and builds id-only launch payloads for API calls.
 - Web viewer prototype is running with PixiJS: a sprite follows an S-curve track and a cinematic camera starts in overview mode, transitions into leader focus, applies runtime-aware zoom pulses, and returns to an end overview.

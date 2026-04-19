@@ -36,15 +36,31 @@ describe('ops launch model', () => {
   it('keeps valid explicit selection and builds launch request body', () => {
     const model = createOpsLaunchSelectorModel(tracks, racers, {
       trackId: 'horse-arena-oval',
-      racerListId: 'horse-default'
+      racerListId: 'horse-default',
+      brandingProfileId: 'brand-neon'
     });
 
-    const body = buildStartRaceRequestBody(model, '  seed-42  ');
+    const body = buildStartRaceRequestBody(model, {
+      seed: '  seed-42  ',
+      durationMs: 50_000,
+      winnerCount: 2,
+      options: {
+        weather: 'fog',
+        boostPads: true
+      }
+    });
 
     expect(body).toEqual({
       trackId: 'horse-arena-oval',
       racerListId: 'horse-default',
-      seed: 'seed-42'
+      seed: 'seed-42',
+      durationMs: 50_000,
+      winnerCount: 2,
+      brandingProfileId: 'brand-neon',
+      options: {
+        weather: 'fog',
+        boostPads: true
+      }
     });
   });
 
@@ -52,5 +68,19 @@ describe('ops launch model', () => {
     const model = createOpsLaunchSelectorModel([], []);
 
     expect(() => buildStartRaceRequestBody(model)).toThrow(/no track is selected/i);
+  });
+
+  it('allows overriding branding id from launch options for future extension workflows', () => {
+    const model = createOpsLaunchSelectorModel(tracks, racers, {
+      trackId: 'duck-canal-s-curve',
+      racerListId: 'duck-default',
+      brandingProfileId: 'brand-default'
+    });
+
+    const body = buildStartRaceRequestBody(model, {
+      brandingProfileId: 'brand-event-special'
+    });
+
+    expect(body.brandingProfileId).toBe('brand-event-special');
   });
 });

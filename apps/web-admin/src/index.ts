@@ -9,6 +9,7 @@
 export {
   buildStartRaceRequestBody,
   createOpsLaunchSelectorModel,
+  type BuildStartRaceRequestOptions,
   type OpsLaunchSelectorModel,
   type RacerCatalogOption,
   type StartRaceRequestBody,

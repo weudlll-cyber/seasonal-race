@@ -47,6 +47,8 @@ Status: Completed.
 
 Next active focus: Priority 4 (runtime viewer wiring to launched session data).
 
+Implementation note locked for future work: launch options must remain modular and additive (shared contracts + isolated option resolvers) so new starter features can be added without rewriting the route/controller core.
+
 4. Runtime Viewer Wiring
 
 - Use runtime surface as primary playback target for launched races.

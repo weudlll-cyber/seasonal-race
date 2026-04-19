@@ -14,8 +14,8 @@ The platform is split into five major concerns:
 
 1. Admin configures players, race settings, and brand profile.
 2. API exposes read-only content catalogs (`GET /api/v1/catalog/tracks`, `GET /api/v1/catalog/racers`) for selector UIs.
-3. Ops/Admin submits id-only launch payload (`trackId`, `racerListId`, optional `seed`) to `POST /api/v1/races/start`.
-4. API validates ids (required fields, catalog existence, race-type compatibility) and starts a race session with the selected race-type adapter.
+3. Ops/Admin submits id-based launch payload (`trackId`, `racerListId`) plus modular starter options (`durationMs`, `winnerCount`, `brandingProfileId`, and extensible `options`) to `POST /api/v1/races/start`.
+4. API validates ids and modular options through a dedicated option-resolver layer, then starts a race session with the selected race-type adapter.
 5. Race engine runs deterministic or non-deterministic simulation ticks.
 6. State and events are streamed to viewer clients.
 7. Results and replay metadata are persisted.
