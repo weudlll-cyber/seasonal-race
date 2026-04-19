@@ -9,10 +9,13 @@
 export {
   buildStartRaceRequestBody,
   createOpsLaunchSelectorModel,
+  TRACK_ORIENTATION_OPTIONS,
   type BuildStartRaceRequestOptions,
   type OpsLaunchSelectorModel,
   type RacerCatalogOption,
   type StartRaceRequestBody,
+  type TrackOrientation,
+  type TrackOrientationOption,
   type TrackCatalogOption
 } from './ops-launch-model';
 

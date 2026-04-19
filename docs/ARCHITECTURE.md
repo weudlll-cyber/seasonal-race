@@ -85,10 +85,10 @@ The viewer now includes an interactive track editor workflow:
 ### Planned App Roles
 
 - Studio app (planned): authoring for tracks, racers, presets, and internal design settings with draft/validate/publish workflow
-- Ops app (planned): race launch and operations with selectable published assets and runtime parameters only (no structural edits)
+- Ops app (active in web-viewer admin surface): race launch and operations with selectable published assets and runtime parameters only (no structural edits)
 - Viewer app (active): race rendering/broadcast playback that consumes published content and shared runtime policies
 - Entrypoint pattern: keep `main.ts` thin as surface dispatcher/bootstrap and place feature logic into dedicated surface modules (for example `studio-app.ts`)
-- Current dispatch contract: `?mode=studio` (default) or `?mode=runtime` selected by `app-surface-dispatcher`
+- Current dispatch contract: `?mode=studio` (default), `?mode=runtime`, or `?mode=admin` selected by `app-surface-dispatcher`
 
 The **background art** is a wide scene image (wider than 1920px) that represents the whole
 track from bird's eye perspective. The camera pans and zooms into the part of the

@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildStartRaceRequestBody,
   createOpsLaunchSelectorModel,
+  TRACK_ORIENTATION_OPTIONS,
   type RacerCatalogOption,
   type TrackCatalogOption
 } from '../apps/web-admin/src/ops-launch-model';
@@ -31,6 +32,14 @@ describe('ops launch model', () => {
 
     expect(model.selectedTrackId).toBe('duck-canal-s-curve');
     expect(model.selectedRacerListId).toBe('duck-default');
+    expect(model.selectedTrackOrientation).toBe('left-to-right');
+  });
+
+  it('exposes orientation options for dropdown rendering', () => {
+    expect(TRACK_ORIENTATION_OPTIONS).toEqual([
+      { value: 'left-to-right', label: 'Left to Right' },
+      { value: 'top-to-bottom', label: 'Top to Bottom' }
+    ]);
   });
 
   it('keeps valid explicit selection and builds launch request body', () => {
@@ -101,5 +110,16 @@ describe('ops launch model', () => {
       weather: 'clear',
       trackOrientation: 'top-to-bottom'
     });
+  });
+
+  it('uses model-selected track orientation when launch options omit orientation', () => {
+    const model = createOpsLaunchSelectorModel(tracks, racers, {
+      trackId: 'duck-canal-s-curve',
+      racerListId: 'duck-default',
+      trackOrientation: 'top-to-bottom'
+    });
+
+    const body = buildStartRaceRequestBody(model);
+    expect(body.options?.trackOrientation).toBe('top-to-bottom');
   });
 });

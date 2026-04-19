@@ -25,6 +25,7 @@ export interface StudioPointEditorControllerOptions {
   sampleStraightPoints: TrackPoint[];
   getPoints: () => TrackPoint[];
   setPoints: (nextPoints: TrackPoint[]) => void;
+  mapScreenToWorldPoint?: (x: number, y: number) => { x: number; y: number };
   isBroadcastViewEnabled: () => boolean;
   onResetAndRender: () => void;
   onRenderOnly: () => void;
@@ -40,6 +41,7 @@ export function wireStudioPointEditorController(options: StudioPointEditorContro
     sampleStraightPoints,
     getPoints,
     setPoints,
+    mapScreenToWorldPoint,
     isBroadcastViewEnabled,
     onResetAndRender,
     onRenderOnly
@@ -50,14 +52,16 @@ export function wireStudioPointEditorController(options: StudioPointEditorContro
   app.stage.on('pointerdown', (event) => {
     if (isBroadcastViewEnabled()) return;
 
-    const p = event.global;
-    const index = findNearestPointIndex(getPoints(), p.x, p.y, 14);
+    const local = mapScreenToWorldPoint
+      ? mapScreenToWorldPoint(event.global.x, event.global.y)
+      : event.global;
+    const index = findNearestPointIndex(getPoints(), local.x, local.y, 14);
     if (index !== -1) {
       draggingIndex = index;
       return;
     }
 
-    setPoints([...getPoints(), clampToView(p.x, p.y, viewWidth, viewHeight)]);
+    setPoints([...getPoints(), clampToView(local.x, local.y, viewWidth, viewHeight)]);
     onResetAndRender();
   });
 
@@ -67,9 +71,11 @@ export function wireStudioPointEditorController(options: StudioPointEditorContro
 
     const current = getPoints();
     if (draggingIndex < 0 || draggingIndex >= current.length) return;
-    const p = event.global;
+    const local = mapScreenToWorldPoint
+      ? mapScreenToWorldPoint(event.global.x, event.global.y)
+      : event.global;
     const nextPoints = [...current];
-    nextPoints[draggingIndex] = clampToView(p.x, p.y, viewWidth, viewHeight);
+    nextPoints[draggingIndex] = clampToView(local.x, local.y, viewWidth, viewHeight);
     setPoints(nextPoints);
     onRenderOnly();
   });

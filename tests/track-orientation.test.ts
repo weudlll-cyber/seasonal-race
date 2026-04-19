@@ -12,6 +12,7 @@ import {
   computeTrackOrientationCenter,
   normalizeTrackOrientation,
   resolveTrackOrientationFromSearch,
+  rotateTrackPointsBetweenOrientations,
   rotateTrackPointsForOrientation
 } from '../apps/web-viewer/src/track-orientation';
 
@@ -60,5 +61,26 @@ describe('track orientation helpers', () => {
     const rotated = rotateTrackPointsForOrientation(points, 'top-to-bottom', center);
     expect(rotated[0]?.x).toBeCloseTo(30, 6);
     expect(rotated[0]?.y).toBeCloseTo(10, 6);
+  });
+
+  it('rotates between orientations and preserves geometry on round-trip', () => {
+    const points = [
+      { x: 80, y: 630 },
+      { x: 220, y: 500 },
+      { x: 360, y: 280 },
+      { x: 520, y: 140 }
+    ];
+
+    const rotated = rotateTrackPointsBetweenOrientations(points, 'left-to-right', 'top-to-bottom');
+    const restored = rotateTrackPointsBetweenOrientations(
+      rotated,
+      'top-to-bottom',
+      'left-to-right'
+    );
+
+    for (let i = 0; i < points.length; i += 1) {
+      expect(restored[i]?.x).toBeCloseTo(points[i]!.x, 6);
+      expect(restored[i]?.y).toBeCloseTo(points[i]!.y, 6);
+    }
   });
 });

@@ -5,10 +5,18 @@
  * Usage: Called from main bootstrap to select studio or runtime mode.
  */
 
-export type AppSurface = 'studio' | 'runtime';
+export type AppSurface = 'studio' | 'runtime' | 'admin';
 
 export function resolveAppSurface(search: string): AppSurface {
   const params = new URLSearchParams(search);
   const mode = params.get('mode');
-  return mode === 'runtime' ? 'runtime' : 'studio';
+  if (mode === 'runtime') {
+    return 'runtime';
+  }
+
+  if (mode === 'admin') {
+    return 'admin';
+  }
+
+  return 'studio';
 }
