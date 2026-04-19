@@ -25,16 +25,24 @@ export interface EditorDom {
   trackTemplatePointsInput: HTMLInputElement;
   trackTemplatePointsValue: HTMLElement;
   generateTrackTemplateButton: HTMLButtonElement;
+  surfaceRaceTypeSelect: HTMLSelectElement;
+  surfaceCategorySelect: HTMLSelectElement;
+  surfaceSizeClassSelect: HTMLSelectElement;
+  surfaceProfileSelect: HTMLSelectElement;
+  trackPreviewSizeInput: HTMLInputElement;
+  trackPreviewSizeValue: HTMLElement;
   spriteSourceImageInput: HTMLInputElement;
   spriteFrameCountInput: HTMLInputElement;
   spriteFrameCountValue: HTMLElement;
   spriteVariantCountInput: HTMLInputElement;
   spriteVariantCountValue: HTMLElement;
-  spritePresetMinimalButton: HTMLButtonElement;
-  spritePresetBalancedButton: HTMLButtonElement;
-  spritePresetMaxContrastButton: HTMLButtonElement;
+  spritePresetMinimalButton: HTMLButtonElement | null;
+  spritePresetBalancedButton: HTMLButtonElement | null;
+  spritePresetMaxContrastButton: HTMLButtonElement | null;
+  spriteGenerationWarning: HTMLElement;
   generateSpriteSheetButton: HTMLButtonElement;
   spriteSheetPreview: HTMLImageElement;
+  spritePackAnimPreviewCanvas: HTMLCanvasElement;
   downloadSpriteSheetButton: HTMLButtonElement;
   downloadSpriteMetaButton: HTMLButtonElement;
   nameModeSelect: HTMLSelectElement;
@@ -73,6 +81,11 @@ export function resolveStudioDom(): EditorDom {
     return node as T;
   };
 
+  const byIdOptional = <T extends HTMLElement>(id: string): T | null => {
+    const node = document.getElementById(id);
+    return node ? (node as T) : null;
+  };
+
   const trackIdInput = byId<HTMLInputElement>('track-id-input');
   if (!trackIdInput.value.trim()) {
     trackIdInput.value = DEFAULT_EDITOR_TRACK_ID;
@@ -101,16 +114,26 @@ export function resolveStudioDom(): EditorDom {
     trackTemplatePointsInput: byId<HTMLInputElement>('track-template-points-input'),
     trackTemplatePointsValue: byId<HTMLElement>('track-template-points-value'),
     generateTrackTemplateButton: byId<HTMLButtonElement>('generate-track-template-btn'),
+    surfaceRaceTypeSelect: byId<HTMLSelectElement>('surface-race-type-select'),
+    surfaceCategorySelect: byId<HTMLSelectElement>('surface-category-select'),
+    surfaceSizeClassSelect: byId<HTMLSelectElement>('surface-size-class-select'),
+    surfaceProfileSelect: byId<HTMLSelectElement>('surface-profile-select'),
+    trackPreviewSizeInput: byId<HTMLInputElement>('track-preview-size-input'),
+    trackPreviewSizeValue: byId<HTMLElement>('track-preview-size-value'),
     spriteSourceImageInput: byId<HTMLInputElement>('sprite-source-image-input'),
     spriteFrameCountInput: byId<HTMLInputElement>('sprite-frame-count-input'),
     spriteFrameCountValue: byId<HTMLElement>('sprite-frame-count-value'),
     spriteVariantCountInput: byId<HTMLInputElement>('sprite-variant-count-input'),
     spriteVariantCountValue: byId<HTMLElement>('sprite-variant-count-value'),
-    spritePresetMinimalButton: byId<HTMLButtonElement>('sprite-preset-minimal-btn'),
-    spritePresetBalancedButton: byId<HTMLButtonElement>('sprite-preset-balanced-btn'),
-    spritePresetMaxContrastButton: byId<HTMLButtonElement>('sprite-preset-max-contrast-btn'),
+    spritePresetMinimalButton: byIdOptional<HTMLButtonElement>('sprite-preset-minimal-btn'),
+    spritePresetBalancedButton: byIdOptional<HTMLButtonElement>('sprite-preset-balanced-btn'),
+    spritePresetMaxContrastButton: byIdOptional<HTMLButtonElement>(
+      'sprite-preset-max-contrast-btn'
+    ),
+    spriteGenerationWarning: byId<HTMLElement>('sprite-generation-warning'),
     generateSpriteSheetButton: byId<HTMLButtonElement>('generate-sprite-sheet-btn'),
     spriteSheetPreview: byId<HTMLImageElement>('sprite-sheet-preview'),
+    spritePackAnimPreviewCanvas: byId<HTMLCanvasElement>('sprite-pack-anim-preview'),
     downloadSpriteSheetButton: byId<HTMLButtonElement>('download-sprite-sheet-btn'),
     downloadSpriteMetaButton: byId<HTMLButtonElement>('download-sprite-meta-btn'),
     nameModeSelect: byId<HTMLSelectElement>('name-mode-select'),

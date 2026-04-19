@@ -185,6 +185,16 @@
         image-rendering: pixelated;
       }
 
+      .sprite-preview canvas {
+        margin-top: 6px;
+        width: 100%;
+        max-width: 100%;
+        border: 1px solid #2b4560;
+        border-radius: 8px;
+        background: #071522;
+        image-rendering: pixelated;
+      }
+
       button {
         cursor: pointer;
         transition: filter 0.15s ease;
@@ -285,6 +295,10 @@
       body.broadcast-mode #race-canvas canvas {
         width: 100vw !important;
         height: 100svh !important;
+      }
+
+      body.broadcast-mode #sprite-pack-overlay {
+        display: none !important;
       }
 
       #broadcast-leaderboard {
@@ -554,6 +568,82 @@
                 Generate Track Template
               </button>
             </div>
+
+            <div class="field-span-2 section-card" style="margin-top: 4px">
+              <div class="form-grid">
+                <div>
+                  <label for="surface-race-type-select">Surface Race Type</label>
+                  <select id="surface-race-type-select">
+                    <option value="auto" selected>Auto (from Track/Effect)</option>
+                    <option value="duck">Duck</option>
+                    <option value="horse">Horse</option>
+                    <option value="rocket">Rocket</option>
+                    <option value="ship">Ship</option>
+                    <option value="elephant">Elephant / Heavy Animal</option>
+                    <option value="generic">Generic</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="surface-category-select">Racer Category</label>
+                  <select id="surface-category-select">
+                    <option value="auto" selected>Auto (from Race Type)</option>
+                    <option value="bird">Bird</option>
+                    <option value="hoof-animal">Hoof Animal</option>
+                    <option value="heavy-animal">Heavy Animal</option>
+                    <option value="ship">Ship</option>
+                    <option value="rocket">Rocket</option>
+                    <option value="generic">Generic</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="surface-size-class-select">Effect Size Class</label>
+                  <select id="surface-size-class-select">
+                    <option value="auto" selected>Auto (from Racer Count)</option>
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                    <option value="huge">Huge</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="surface-profile-select">Surface Profile</label>
+                  <select id="surface-profile-select">
+                    <option value="auto" selected>Auto (Resolver)</option>
+                    <option value="water-calm">Water Calm</option>
+                    <option value="water-choppy">Water Choppy</option>
+                    <option value="sand-dry">Sand Dry</option>
+                    <option value="sand-wet">Sand Wet</option>
+                    <option value="snow-powder">Snow Powder</option>
+                    <option value="ash-track">Ash Track</option>
+                    <option value="space-plasma">Space Plasma</option>
+                    <option value="grass-mud">Grass Mud</option>
+                    <option value="neon-grid">Neon Grid</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="track-preview-size-input">Track Preview Sprite Size</label>
+                  <div class="inline-control">
+                    <input
+                      id="track-preview-size-input"
+                      type="range"
+                      min="16"
+                      max="96"
+                      step="1"
+                      value="34"
+                    />
+                    <strong id="track-preview-size-value">34 px</strong>
+                  </div>
+                </div>
+              </div>
+              <p class="muted" style="margin-top: 8px">
+                Use these selectors to force preview behavior directly in studio (instead of relying only on
+                auto-detection).
+              </p>
+            </div>
           </div>
 
           <div class="form-grid" style="margin-top: 10px">
@@ -596,11 +686,14 @@
               <label>Generator Presets</label>
               <div class="actions">
                 <button id="sprite-preset-minimal-btn" type="button">Minimal</button>
-                <button id="sprite-preset-balanced-btn" type="button" class="primary">
+                <button id="sprite-preset-balanced-btn" type="button">
                   Balanced
                 </button>
                 <button id="sprite-preset-max-contrast-btn" type="button">Max Contrast</button>
               </div>
+              <p id="sprite-generation-warning" class="muted" style="margin-top: 8px">
+                Select a source image to see generation-size guidance.
+              </p>
             </div>
 
             <div class="field-span-2">
@@ -611,6 +704,12 @@
 
             <div class="field-span-2 sprite-preview">
               <img id="sprite-sheet-preview" alt="Generated sprite sheet preview" />
+              <canvas
+                id="sprite-pack-anim-preview"
+                width="420"
+                height="220"
+                aria-label="Animated racer sprite preview"
+              ></canvas>
             </div>
 
             <div>
@@ -684,8 +783,23 @@
           <input
             id="effect-profile-input"
             placeholder="duck-canal-v1"
+            list="effect-profile-suggestions"
             title="Optional visuals profile for this track"
           />
+          <datalist id="effect-profile-suggestions">
+            <option value="water-calm"></option>
+            <option value="water-choppy"></option>
+            <option value="sand-dry"></option>
+            <option value="sand-wet"></option>
+            <option value="snow-powder"></option>
+            <option value="ash-track"></option>
+            <option value="space-plasma"></option>
+            <option value="grass-mud"></option>
+            <option value="neon-grid"></option>
+            <option value="duck-canal-v1"></option>
+            <option value="horse-arena-v1"></option>
+            <option value="rocket-nebula-v1"></option>
+          </datalist>
         </details>
 
         <details class="advanced-json">

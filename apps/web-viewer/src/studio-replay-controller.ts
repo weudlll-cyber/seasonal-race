@@ -38,6 +38,8 @@ export interface StudioReplayRacerView {
   sprite: Container;
   marker: Graphics;
   bodySprite?: Sprite;
+  bodyBaseScaleX?: number;
+  bodyBaseScaleY?: number;
   labelBg: Graphics;
   labelText: Text;
   progress: number;

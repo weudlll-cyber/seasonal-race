@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   generateRacerVariantDescriptors,
+  resolveSafeSpriteSheetOutputScale,
   generateTrackTemplate
 } from '../apps/web-viewer/src/studio-generators';
 
@@ -53,5 +54,19 @@ describe('studio generators', () => {
     expect(new Set(variants.map((variant) => variant.racerId)).size).toBe(12);
     expect(new Set(variants.map((variant) => variant.tintHex)).size).toBeGreaterThanOrEqual(8);
     expect(new Set(variants.map((variant) => variant.pattern)).size).toBeGreaterThanOrEqual(4);
+  });
+
+  it('downscales output scale to fit canvas limits for heavy max-contrast sheets', () => {
+    const scale = resolveSafeSpriteSheetOutputScale({
+      sourceWidth: 4096,
+      sourceHeight: 4096,
+      requestedOutputScale: 1,
+      padding: 10,
+      frameCount: 16,
+      variantCount: 24
+    });
+
+    expect(scale).toBeGreaterThan(0.04);
+    expect(scale).toBeLessThan(1);
   });
 });

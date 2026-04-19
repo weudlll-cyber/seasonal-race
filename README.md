@@ -122,8 +122,24 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Studio editor now includes precision zoom controls (wheel + slider + reset) so boundary points can be placed accurately on detailed map areas.
 - Studio dev tools now include one-click auto track templates (S-curve, oval, zigzag, river bend) with configurable control-point count.
 - Studio dev tools now include automatic racer-pack generation from a single uploaded 2D image, producing multiple racer variants with deterministic recoloring + pattern overlays for clear visual differentiation in races.
+- Generated sprite-pack frames no longer include baked ground-shadow overlays, preventing mirrored/reflection artifacts in on-track preview.
+- Racer-pack tinting now preserves more source-image detail, so duck/animal identity remains recognizable instead of turning into flat color blobs.
 - Racer pack controls now include one-click presets (`Minimal`, `Balanced`, `Max Contrast`) for fast setup without manual slider tuning.
+- Max-contrast sprite generation now auto-downscales output when needed to stay within browser canvas limits, preventing blank/broken preview sheets on large source images.
+- Generator UI now shows a live pre-generate warning line indicating whether current settings fit at 100% scale or will be auto-scaled.
 - Studio replay racers now render from the generated racer-pack look (with automatic fallback pack generation), so in-editor race visuals stay aligned with exported sprite-pack styling.
+- Surface effects are now driven by an extensible profile + category model (`surface-effects`): water, sand, snow, ash, space, mud, and neon profiles can be selected/derived without changing core racer movement code.
+- Surface profiles now differ not only by color but also by spray dynamics (launch force, turbulence, vertical kick, and cadence feel), creating clearer behavior differences such as splashy water vs heavier sand spray.
+- Surface profiles now also use profile-specific particle shapes (for example bubbles/spray for water, flatter dust for sand, flakes for snow, embers for ash, plasma streaks for space) so differences are visible instantly.
+- Studio now exposes direct surface selectors (race type, racer category, size class, and profile) so effect behavior can be forced visibly during tests instead of relying only on auto detection.
+- Studio now includes a track-preview sprite-size slider so single-preview visuals can be tuned quickly during authoring.
+- The same studio track-preview size slider now applies to both generated racer-pack sprites and the fallback preview runner, so size changes are always immediately visible.
+- Replay/broadcast preview now also preserves this slider base-scale (it is no longer overwritten by per-frame label emphasis scaling).
+- Emission intensity now scales by racer category and size class (small/medium/large/huge), so ducks emit lighter wake while heavier categories (e.g. elephant-like classes) emit denser trails.
+- Studio and runtime surfaces now share the same effect setup resolver, making it easier to add new race worlds (for example: world-space plasma, ice/snow powder, ash track, desert sand) via profile IDs.
+- Runtime racer motion now supports category-specific pose styles (glide/gallop/stomp/sail/thrust), so horse-like categories visibly animate differently from duck/ship/rocket styles.
+- Category emission cadence now mirrors movement style (for example horse/hoof gallop = burst-burst-pause spray rhythm, heavy stomp = intermittent heavy bursts, ship = smooth wave-modulated wake).
+- Runtime game mode now auto-scales racer sprite size from racer count to keep readability stable across small and large races.
 - Track editor supports background image import, drag-to-edit points, and optional smooth-preview mode for curved route visualization.
 - Track editor now supports named test presets (save/load/delete in local browser storage) so multiple setup variants can be restored quickly between iterations.
 - Track metadata fields and JSON editing are now placed in optional advanced sections, keeping the default authoring flow focused on visual controls only.
