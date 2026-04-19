@@ -36,6 +36,7 @@
 - Launch configuration contracts are now centralized in shared types (`race-launch`) and API option resolution is modularized, so future starter features can be added as new option resolvers instead of route rewrites.
 - Runtime bootstrap endpoint is now active (`/api/v1/races/:raceId/runtime-bootstrap`) and provides launched race config plus track/racer metadata for viewer startup.
 - Runtime viewer wiring now resolves race id from URL and consumes runtime bootstrap payload through a dedicated runtime client helper.
+- Contract regression coverage now includes a full launch-to-runtime path test (admin launch model -> API start -> runtime bootstrap payload consistency assertions).
 - Phase 2 started with deterministic RNG, race session orchestration, and modular extension contracts.
 - Web-viewer prototype is active: PixiJS scene renders a moving racer on an S-curve path with a cinematic `CameraController` (intro overview, slower intro transition, runtime-aware zoom pulses, and finish overview).
 - `RaceSessionConfig` supports optional `cameraSettings` overrides so admin-managed races can tune cinematic behavior without changing viewer code.

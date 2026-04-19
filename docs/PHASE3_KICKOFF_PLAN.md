@@ -66,6 +66,8 @@ Next active focus: Priority 5 (contract and regression coverage for full launch-
 - Keep deterministic mode regression tests active.
 - Keep ci:full green on every phase PR.
 
+Status: Completed.
+
 ## Definition of Done for Phase 3 Slice 1
 
 - Ops/Admin can launch with selected track+racer catalog ids.
