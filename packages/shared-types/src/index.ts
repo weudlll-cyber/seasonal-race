@@ -263,3 +263,9 @@ export {
   type RaceLaunchRequest,
   type RaceLaunchResolvedConfig
 } from './race-launch';
+
+export {
+  type RuntimeBootstrapPayload,
+  type RuntimeBootstrapRacerList,
+  type RuntimeBootstrapTrack
+} from './runtime-bootstrap';

@@ -6,6 +6,11 @@
  */
 
 import { Application, Container, Graphics, Text } from 'pixi.js';
+import {
+  fetchRuntimeBootstrap,
+  resolveRuntimeApiBase,
+  resolveRuntimeRaceId
+} from './runtime-bootstrap-client';
 
 const VIEW_WIDTH = 1160;
 const VIEW_HEIGHT = 720;
@@ -51,6 +56,17 @@ export async function startRuntimeApp(): Promise<void> {
   });
   label.position.set(24, 18);
   app.stage.addChild(label);
+
+  const raceId = resolveRuntimeRaceId(window.location.search);
+  if (raceId) {
+    const apiBase = resolveRuntimeApiBase(window.location.search);
+    try {
+      const bootstrap = await fetchRuntimeBootstrap(raceId, apiBase);
+      label.text = `Runtime Race ${bootstrap.raceId} | ${bootstrap.raceType} | winners: ${bootstrap.launch.winnerCount} | duration: ${bootstrap.launch.durationMs}ms`;
+    } catch (error) {
+      label.text = `Runtime bootstrap failed: ${error instanceof Error ? error.message : 'unknown error'}`;
+    }
+  }
 
   let t = 0;
   app.ticker.add((delta) => {

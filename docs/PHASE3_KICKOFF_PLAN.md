@@ -55,6 +55,10 @@ Implementation note locked for future work: launch options must remain modular a
 - Feed runtime app with session snapshots/events and shared visual policies.
 - Keep studio mode isolated for authoring only.
 
+Status: Completed for runtime bootstrap handoff (launch -> runtime metadata payload wiring).
+
+Next active focus: Priority 5 (contract and regression coverage for full launch-to-runtime flow).
+
 5. Contract and Regression Coverage
 
 - Add integration tests for launch flow:

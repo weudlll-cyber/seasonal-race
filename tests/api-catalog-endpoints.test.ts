@@ -244,6 +244,70 @@ describe('api catalog endpoints', () => {
 
     await app.close();
   });
+
+  it('returns runtime bootstrap payload for an existing started race', async () => {
+    const app = buildApiApp();
+
+    const startResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/races/start',
+      payload: {
+        trackId: 'duck-canal-s-curve',
+        racerListId: 'duck-default',
+        durationMs: 55_000,
+        winnerCount: 3,
+        options: {
+          streamOverlay: true
+        }
+      }
+    });
+
+    expect(startResponse.statusCode).toBe(201);
+    const startBody = startResponse.json() as { raceId: string };
+
+    const bootstrapResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/races/${startBody.raceId}/runtime-bootstrap`
+    });
+
+    expect(bootstrapResponse.statusCode).toBe(200);
+    const bootstrapBody = bootstrapResponse.json() as {
+      raceId: string;
+      raceType: string;
+      launch: { durationMs: number; winnerCount: number; options: Record<string, unknown> };
+      track: { id: string; pointCount: number; points: unknown[] };
+      racerList: { id: string; racerCount: number };
+    };
+
+    expect(bootstrapBody.raceId).toBe(startBody.raceId);
+    expect(bootstrapBody.raceType).toBe('duck');
+    expect(bootstrapBody.launch.durationMs).toBe(55_000);
+    expect(bootstrapBody.launch.winnerCount).toBe(3);
+    expect(bootstrapBody.launch.options).toEqual({ streamOverlay: true });
+    expect(bootstrapBody.track.id).toBe('duck-canal-s-curve');
+    expect(bootstrapBody.track.pointCount).toBeGreaterThanOrEqual(3);
+    expect(bootstrapBody.track.points.length).toBeGreaterThanOrEqual(3);
+    expect(bootstrapBody.racerList.id).toBe('duck-default');
+    expect(bootstrapBody.racerList.racerCount).toBeGreaterThanOrEqual(2);
+
+    await app.close();
+  });
+
+  it('returns 404 runtime bootstrap when race id does not exist', async () => {
+    const app = buildApiApp();
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/races/race-missing/runtime-bootstrap'
+    });
+
+    expect(response.statusCode).toBe(404);
+    const body = response.json() as { error: string; message: string };
+    expect(body.error).toBe('RACE_NOT_FOUND');
+    expect(body.message).toMatch(/race-missing/);
+
+    await app.close();
+  });
 });
 
 function createBrokenContentRoot(): string {

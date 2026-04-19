@@ -11,10 +11,11 @@ import path from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import type {
+  RaceLaunchRequest,
   RaceLaunchResolvedConfig,
-  RaceLaunchRequest
+  RuntimeBootstrapPayload
 } from '../../../packages/shared-types/src/index';
-import { loadRacerCatalog, loadTrackCatalog } from './catalog';
+import { loadRacerCatalog, loadRacerListById, loadTrackById, loadTrackCatalog } from './catalog';
 import {
   resolveRaceLaunchOptions,
   type RaceLaunchValidationErrorCode
@@ -34,6 +35,11 @@ interface StartRaceValidationErrorBody {
   message: string;
 }
 
+interface RuntimeBootstrapErrorBody {
+  error: 'RACE_NOT_FOUND';
+  message: string;
+}
+
 const defaultContentRoot = path.resolve(process.cwd(), 'content');
 
 function mapCatalogError(error: unknown): ApiErrorBody {
@@ -48,6 +54,7 @@ export function buildApiApp(options: BuildApiAppOptions = {}): FastifyInstance {
   const contentRoot = options.contentRoot ?? defaultContentRoot;
   const app = Fastify({ logger: false });
   let raceSequence = 0;
+  const runtimeBootstrapStore = new Map<string, RuntimeBootstrapPayload>();
 
   app.get('/api/v1/catalog/tracks', async (_, reply) => {
     try {
@@ -142,10 +149,55 @@ export function buildApiApp(options: BuildApiAppOptions = {}): FastifyInstance {
         status: 'scheduled'
       };
 
+      const runtimeTrack = loadTrackById(contentRoot, selectedTrack.id);
+      const runtimeRacerList = loadRacerListById(contentRoot, selectedRacerList.id);
+
+      if (!runtimeTrack || !runtimeRacerList) {
+        const catalogError: StartRaceValidationErrorBody = {
+          error: 'CATALOG_ENTRY_NOT_FOUND',
+          message: 'Unable to build runtime payload from selected catalog entries.'
+        };
+        return reply.status(404).send(catalogError);
+      }
+
+      runtimeBootstrapStore.set(raceId, {
+        raceId,
+        raceType: selectedTrack.raceType,
+        launch: responseBody,
+        track: {
+          id: runtimeTrack.id,
+          name: runtimeTrack.name,
+          length: runtimeTrack.length,
+          points: runtimeTrack.points,
+          pointCount: runtimeTrack.pointCount,
+          ...(runtimeTrack.effectProfileId ? { effectProfileId: runtimeTrack.effectProfileId } : {})
+        },
+        racerList: {
+          id: runtimeRacerList.id,
+          name: runtimeRacerList.name,
+          racerCount: runtimeRacerList.racerCount
+        }
+      });
+
       return reply.status(201).send(responseBody);
     } catch (error) {
       return reply.status(500).send(mapCatalogError(error));
     }
+  });
+
+  app.get('/api/v1/races/:raceId/runtime-bootstrap', async (request, reply) => {
+    const raceId = (request.params as { raceId?: string }).raceId ?? '';
+
+    const payload = runtimeBootstrapStore.get(raceId);
+    if (!payload) {
+      const notFound: RuntimeBootstrapErrorBody = {
+        error: 'RACE_NOT_FOUND',
+        message: `Race id not found: ${raceId}`
+      };
+      return reply.status(404).send(notFound);
+    }
+
+    return payload;
   });
 
   return app;

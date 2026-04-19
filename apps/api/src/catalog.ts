@@ -67,6 +67,14 @@ export interface RacerCatalogItem {
   racerCount: number;
 }
 
+export interface TrackCatalogRuntimeItem extends TrackCatalogItem {
+  points: Array<{ x: number; y: number }>;
+}
+
+export interface RacerCatalogRuntimeItem extends RacerCatalogItem {
+  names: string[];
+}
+
 function readJsonFile<T>(filePath: string): T {
   const raw = fs.readFileSync(filePath, 'utf8');
   return JSON.parse(raw) as T;
@@ -113,6 +121,43 @@ export function loadTrackCatalog(contentRoot: string): TrackCatalogItem[] {
   });
 }
 
+export function loadTrackById(
+  contentRoot: string,
+  trackId: string
+): TrackCatalogRuntimeItem | null {
+  const tracksManifestPath = path.join(contentRoot, 'manifests', 'tracks.manifest.json');
+  const manifest = readJsonFile<TracksManifestShape>(tracksManifestPath);
+
+  if (!Array.isArray(manifest.tracks)) {
+    throw new Error('Invalid tracks manifest: tracks must be an array.');
+  }
+
+  const entry = manifest.tracks.find((track) => track.id === trackId);
+  if (!entry) {
+    return null;
+  }
+
+  const trackFilePath = ensureContentFile(contentRoot, 'tracks', entry.file);
+  const trackFile = readJsonFile<TrackFileShape>(trackFilePath);
+
+  const runtimeItem: TrackCatalogRuntimeItem = {
+    id: entry.id,
+    displayName: entry.displayName,
+    raceType: entry.raceType,
+    file: entry.file,
+    name: trackFile.name,
+    length: trackFile.length,
+    pointCount: Array.isArray(trackFile.points) ? trackFile.points.length : 0,
+    points: Array.isArray(trackFile.points) ? trackFile.points : []
+  };
+
+  if (typeof trackFile.effectProfileId === 'string') {
+    runtimeItem.effectProfileId = trackFile.effectProfileId;
+  }
+
+  return runtimeItem;
+}
+
 export function loadRacerCatalog(contentRoot: string): RacerCatalogItem[] {
   const racersManifestPath = path.join(contentRoot, 'manifests', 'racers.manifest.json');
   const manifest = readJsonFile<RacersManifestShape>(racersManifestPath);
@@ -134,4 +179,34 @@ export function loadRacerCatalog(contentRoot: string): RacerCatalogItem[] {
       racerCount: Array.isArray(racerFile.names) ? racerFile.names.length : 0
     };
   });
+}
+
+export function loadRacerListById(
+  contentRoot: string,
+  racerListId: string
+): RacerCatalogRuntimeItem | null {
+  const racersManifestPath = path.join(contentRoot, 'manifests', 'racers.manifest.json');
+  const manifest = readJsonFile<RacersManifestShape>(racersManifestPath);
+
+  if (!Array.isArray(manifest.racerLists)) {
+    throw new Error('Invalid racers manifest: racerLists must be an array.');
+  }
+
+  const entry = manifest.racerLists.find((racerList) => racerList.id === racerListId);
+  if (!entry) {
+    return null;
+  }
+
+  const racerFilePath = ensureContentFile(contentRoot, 'racers', entry.file);
+  const racerFile = readJsonFile<RacerFileShape>(racerFilePath);
+
+  return {
+    id: entry.id,
+    displayName: entry.displayName,
+    raceType: entry.raceType,
+    file: entry.file,
+    name: racerFile.name,
+    racerCount: Array.isArray(racerFile.names) ? racerFile.names.length : 0,
+    names: Array.isArray(racerFile.names) ? racerFile.names : []
+  };
 }

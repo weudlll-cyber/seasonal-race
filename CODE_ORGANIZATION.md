@@ -47,6 +47,8 @@
 - `apps/api/src/race-launch-options.ts`
   - Modular launch-option resolver pipeline used by start-race endpoint validation.
   - Designed for additive extension: add new starter options by adding resolver units, not by rewriting route logic.
+- `apps/api/src/app.ts`
+  - Also stores launched race bootstrap records and serves runtime bootstrap payloads by race id.
 - `apps/api/src/index.ts`
   - API package entry exports app factory and stable API app id.
 
@@ -55,6 +57,8 @@
 - `packages/shared-types/src/race-launch.ts`
   - Shared launch request/resolved config contracts and baseline constraints.
   - Keeps API/admin/runtime launch option vocabulary consistent across modules.
+- `packages/shared-types/src/runtime-bootstrap.ts`
+  - Shared runtime bootstrap payload contract consumed by API and viewer runtime client.
 
 ## Web Admin Module Map
 
@@ -107,6 +111,9 @@
 - `apps/web-viewer/src/runtime-app.ts`
   - Runtime race surface entry isolated from studio authoring controls.
   - Serves as dedicated integration point for real game playback logic.
+  - Consumes runtime bootstrap payload when `raceId` is provided in URL query.
+- `apps/web-viewer/src/runtime-bootstrap-client.ts`
+  - URL/query helpers + API fetch wrapper for runtime bootstrap payload loading.
 - `apps/web-viewer/src/camera.ts`
   - `CameraController` for smooth world follow/zoom behavior.
   - Receives camera-ready race state and applies interpolated world transform.
