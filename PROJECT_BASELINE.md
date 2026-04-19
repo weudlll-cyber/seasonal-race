@@ -35,6 +35,7 @@
 - API race launch endpoint is active (`/api/v1/races/start`) and enforces id-based selection with validation for required ids, existence, and track/racer race-type compatibility.
 - Ops/Admin launch selector model is now in place to default valid selections and generate id-only start-race request payloads.
 - Ops/Admin launch helpers now support an explicit `trackOrientation` launch option that is mapped into launch `options.trackOrientation` for runtime direction control.
+- Ops/Admin launch model now includes UI-ready orientation option metadata plus default selected orientation state for upcoming launch dropdown controls.
 - Launch configuration contracts are now centralized in shared types (`race-launch`) and API option resolution is modularized, so future starter features can be added as new option resolvers instead of route rewrites.
 - Runtime bootstrap endpoint is now active (`/api/v1/races/:raceId/runtime-bootstrap`) and provides launched race config plus track/racer metadata for viewer startup.
 - Runtime viewer wiring now resolves race id from URL and consumes runtime bootstrap payload through a dedicated runtime client helper.
@@ -49,6 +50,13 @@
 - Track editor now supports background-image-assisted point placement, drag-to-edit points, and preview smoothing toggle for fast curve tuning.
 - Track editor now supports named saved test presets (local browser storage) that restore points plus replay/editor controls for fast repeated validation cycles.
 - Studio track preview now supports orientation switching (`left-to-right` and `top-to-bottom`) for race-direction variability tests.
+- Studio control panel layout is now compact and track-definition-first, with replay/preset/advanced controls collapsed by default to keep primary authoring controls visible without mandatory scrolling.
+- Studio orientation switching now applies to the actual editable geometry (curve and boundaries), not only playback direction metadata, so authored path layout visibly updates when toggling direction.
+- Studio editing now supports precision zoom (mouse wheel, zoom slider, and reset action) for accurate boundary-point placement on dense track maps.
+- Studio now includes auto track template generation in the dev surface (S-curve, oval, zigzag, river bend) with configurable point density.
+- Studio now includes automatic racer-pack generation from one source image, including deterministic variant tint/pattern assignment and downloadable generated sheet PNG + frame metadata JSON.
+- Studio racer-pack generator now includes quick presets (`Minimal`, `Balanced`, `Max Contrast`) to keep high-contrast multi-racer setup one-click simple.
+- Studio replay racer rendering now consumes generated racer-pack visuals directly (with built-in fallback auto-pack), keeping replay/broadcast look consistent with exported pack output.
 - Track metadata and raw JSON controls are now optional advanced sections so default test workflow stays lightweight.
 - Track editor now supports a broadcast preview mode (camera follow and zoom rides) to evaluate the same perspective players will see during races.
 - Broadcast preview is now fullscreen and high-DPI for player-like visual validation.
@@ -123,6 +131,7 @@
 - World transform reset and background clamping behavior are now extracted to shared Pixi transform helpers.
 - Web-viewer entry now uses a thin bootstrap (`main.ts`) with studio feature composition moved to `studio-app.ts`.
 - Surface bootstrap now dispatches by URL mode (`studio` default, `runtime` optional) through a dedicated dispatcher module.
+- Surface bootstrap now also supports an `admin` mode with a complete web launch console (track/racer selection, orientation selector, request preview, and start-race action wired to API catalogs).
 - Runtime surface entry is now isolated in `runtime-app.ts` to prepare real race playback without studio coupling.
 - Studio surface internals are now split into dedicated modules (`studio-dom`, `studio-render`, `studio-editor-helpers`) to reduce `studio-app.ts` complexity.
 - Studio point-edit event flow (pointer interactions + preset buttons) is now extracted into `studio-point-editor-controller` to keep orchestrator responsibilities tighter.

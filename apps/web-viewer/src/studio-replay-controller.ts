@@ -37,6 +37,7 @@ export interface StudioReplayRacerView {
   index: number;
   sprite: Container;
   marker: Graphics;
+  bodySprite?: Sprite;
   labelBg: Graphics;
   labelText: Text;
   progress: number;
@@ -612,6 +613,9 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
     rr.labelText.visible = decision.showLabel;
     rr.sprite.scale.set(decision.scale);
     rr.marker.alpha = decision.markerAlpha;
+    if (rr.bodySprite) {
+      rr.bodySprite.alpha = decision.markerAlpha;
+    }
     rr.sprite.zIndex = decision.zIndex + (decision.showLabel ? 2000 : 0);
 
     // Labels live on a dedicated overlay layer, so keep explicit world-space placement.

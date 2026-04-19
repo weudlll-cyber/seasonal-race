@@ -19,6 +19,24 @@ export interface EditorDom {
   laneWidthValue: HTMLElement;
   racerCountInput: HTMLInputElement;
   racerCountValue: HTMLElement;
+  editorZoomInput: HTMLInputElement;
+  editorZoomValue: HTMLElement;
+  trackTemplateSelect: HTMLSelectElement;
+  trackTemplatePointsInput: HTMLInputElement;
+  trackTemplatePointsValue: HTMLElement;
+  generateTrackTemplateButton: HTMLButtonElement;
+  spriteSourceImageInput: HTMLInputElement;
+  spriteFrameCountInput: HTMLInputElement;
+  spriteFrameCountValue: HTMLElement;
+  spriteVariantCountInput: HTMLInputElement;
+  spriteVariantCountValue: HTMLElement;
+  spritePresetMinimalButton: HTMLButtonElement;
+  spritePresetBalancedButton: HTMLButtonElement;
+  spritePresetMaxContrastButton: HTMLButtonElement;
+  generateSpriteSheetButton: HTMLButtonElement;
+  spriteSheetPreview: HTMLImageElement;
+  downloadSpriteSheetButton: HTMLButtonElement;
+  downloadSpriteMetaButton: HTMLButtonElement;
   nameModeSelect: HTMLSelectElement;
   focusRacerInput: HTMLInputElement;
   focusRacerLabel: HTMLElement;
@@ -31,6 +49,7 @@ export interface EditorDom {
   laneBoardsToggleButton: HTMLButtonElement;
   broadcastToggleButton: HTMLButtonElement;
   clearButton: HTMLButtonElement;
+  zoomResetButton: HTMLButtonElement;
   undoButton: HTMLButtonElement;
   clearImageButton: HTMLButtonElement;
   loadCurvyButton: HTMLButtonElement;
@@ -76,6 +95,24 @@ export function resolveStudioDom(): EditorDom {
     laneWidthValue: byId<HTMLElement>('lane-width-value'),
     racerCountInput: byId<HTMLInputElement>('racer-count-input'),
     racerCountValue: byId<HTMLElement>('racer-count-value'),
+    editorZoomInput: byId<HTMLInputElement>('editor-zoom-input'),
+    editorZoomValue: byId<HTMLElement>('editor-zoom-value'),
+    trackTemplateSelect: byId<HTMLSelectElement>('track-template-select'),
+    trackTemplatePointsInput: byId<HTMLInputElement>('track-template-points-input'),
+    trackTemplatePointsValue: byId<HTMLElement>('track-template-points-value'),
+    generateTrackTemplateButton: byId<HTMLButtonElement>('generate-track-template-btn'),
+    spriteSourceImageInput: byId<HTMLInputElement>('sprite-source-image-input'),
+    spriteFrameCountInput: byId<HTMLInputElement>('sprite-frame-count-input'),
+    spriteFrameCountValue: byId<HTMLElement>('sprite-frame-count-value'),
+    spriteVariantCountInput: byId<HTMLInputElement>('sprite-variant-count-input'),
+    spriteVariantCountValue: byId<HTMLElement>('sprite-variant-count-value'),
+    spritePresetMinimalButton: byId<HTMLButtonElement>('sprite-preset-minimal-btn'),
+    spritePresetBalancedButton: byId<HTMLButtonElement>('sprite-preset-balanced-btn'),
+    spritePresetMaxContrastButton: byId<HTMLButtonElement>('sprite-preset-max-contrast-btn'),
+    generateSpriteSheetButton: byId<HTMLButtonElement>('generate-sprite-sheet-btn'),
+    spriteSheetPreview: byId<HTMLImageElement>('sprite-sheet-preview'),
+    downloadSpriteSheetButton: byId<HTMLButtonElement>('download-sprite-sheet-btn'),
+    downloadSpriteMetaButton: byId<HTMLButtonElement>('download-sprite-meta-btn'),
     nameModeSelect: byId<HTMLSelectElement>('name-mode-select'),
     focusRacerInput: byId<HTMLInputElement>('focus-racer-input'),
     focusRacerLabel: byId<HTMLElement>('focus-racer-label'),
@@ -88,6 +125,7 @@ export function resolveStudioDom(): EditorDom {
     laneBoardsToggleButton: byId<HTMLButtonElement>('lane-boards-toggle-btn'),
     broadcastToggleButton: byId<HTMLButtonElement>('broadcast-toggle-btn'),
     clearButton: byId<HTMLButtonElement>('clear-btn'),
+    zoomResetButton: byId<HTMLButtonElement>('zoom-reset-btn'),
     undoButton: byId<HTMLButtonElement>('undo-btn'),
     clearImageButton: byId<HTMLButtonElement>('clear-image-btn'),
     loadCurvyButton: byId<HTMLButtonElement>('load-curvy-btn'),
