@@ -36,7 +36,14 @@ describe('runtime track helpers', () => {
   it('falls back to default path for insufficient points', () => {
     const mapped = mapRuntimeTrackPointsToViewport([{ x: 50, y: 50 }], 1160, 720);
 
-    expect(mapped).toEqual(FALLBACK_RUNTIME_TRACK_POINTS);
+    expect(mapped).toHaveLength(FALLBACK_RUNTIME_TRACK_POINTS.length);
+
+    const xs = mapped.map((point) => point.x);
+    const ys = mapped.map((point) => point.y);
+    expect(Math.min(...xs)).toBeGreaterThanOrEqual(72);
+    expect(Math.max(...xs)).toBeLessThanOrEqual(1088);
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(72);
+    expect(Math.max(...ys)).toBeLessThanOrEqual(648);
   });
 
   it('samples endpoints correctly across normalized progress', () => {
@@ -48,5 +55,23 @@ describe('runtime track helpers', () => {
 
     expect(sampleRuntimeTrackPosition(points, 0)).toEqual({ x: 0, y: 0 });
     expect(sampleRuntimeTrackPosition(points, 1)).toEqual({ x: 200, y: 0 });
+  });
+
+  it('maps track in top-to-bottom orientation when requested', () => {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 200, y: 0 }
+    ];
+
+    const mapped = mapRuntimeTrackPointsToViewport(points, 1160, 720, 80, 'top-to-bottom');
+
+    const xs = mapped.map((point) => point.x);
+    const ys = mapped.map((point) => point.y);
+
+    const spanX = Math.max(...xs) - Math.min(...xs);
+    const spanY = Math.max(...ys) - Math.min(...ys);
+
+    expect(spanY).toBeGreaterThan(spanX);
   });
 });

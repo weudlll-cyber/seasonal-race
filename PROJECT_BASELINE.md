@@ -38,6 +38,7 @@
 - Runtime bootstrap endpoint is now active (`/api/v1/races/:raceId/runtime-bootstrap`) and provides launched race config plus track/racer metadata for viewer startup.
 - Runtime viewer wiring now resolves race id from URL and consumes runtime bootstrap payload through a dedicated runtime client helper.
 - Runtime viewer playback now renders movement on bootstrap-provided track geometry (viewport-mapped) and drives lap timing from launch duration.
+- Runtime viewer now supports orientation toggles for race direction variability (`left-to-right` and `top-to-bottom`) via runtime query and launch options.
 - Contract regression coverage now includes a full launch-to-runtime path test (admin launch model -> API start -> runtime bootstrap payload consistency assertions).
 - Visual MVP requirement and optional polish split is now documented in `docs/VISUAL_MVP_CHECKLIST.md`.
 - Phase 2 started with deterministic RNG, race session orchestration, and modular extension contracts.

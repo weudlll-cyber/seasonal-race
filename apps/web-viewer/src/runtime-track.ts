@@ -8,6 +8,7 @@
 
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
 import { interpolateTrackPosition } from './track-editor-utils.js';
+import { rotateTrackPointsForOrientation, type TrackOrientation } from './track-orientation.js';
 
 const MIN_RUNTIME_POINTS = 2;
 const DEFAULT_PADDING = 72;
@@ -26,16 +27,22 @@ export function mapRuntimeTrackPointsToViewport(
   points: TrackPoint[],
   viewportWidth: number,
   viewportHeight: number,
-  padding = DEFAULT_PADDING
+  padding = DEFAULT_PADDING,
+  orientation: TrackOrientation = 'left-to-right'
 ): TrackPoint[] {
-  if (points.length < MIN_RUNTIME_POINTS || viewportWidth <= 0 || viewportHeight <= 0) {
-    return FALLBACK_RUNTIME_TRACK_POINTS.map((point) => ({ x: point.x, y: point.y }));
+  const sourcePoints =
+    points.length < MIN_RUNTIME_POINTS
+      ? FALLBACK_RUNTIME_TRACK_POINTS
+      : rotateTrackPointsForOrientation(points, orientation);
+
+  if (viewportWidth <= 0 || viewportHeight <= 0) {
+    return sourcePoints.map((point) => ({ x: point.x, y: point.y }));
   }
 
-  const minX = Math.min(...points.map((point) => point.x));
-  const maxX = Math.max(...points.map((point) => point.x));
-  const minY = Math.min(...points.map((point) => point.y));
-  const maxY = Math.max(...points.map((point) => point.y));
+  const minX = Math.min(...sourcePoints.map((point) => point.x));
+  const maxX = Math.max(...sourcePoints.map((point) => point.x));
+  const minY = Math.min(...sourcePoints.map((point) => point.y));
+  const maxY = Math.max(...sourcePoints.map((point) => point.y));
 
   const spanX = Math.max(1, maxX - minX);
   const spanY = Math.max(1, maxY - minY);
@@ -49,7 +56,7 @@ export function mapRuntimeTrackPointsToViewport(
   const offsetX = (viewportWidth - mappedWidth) / 2;
   const offsetY = (viewportHeight - mappedHeight) / 2;
 
-  return points.map((point) => ({
+  return sourcePoints.map((point) => ({
     x: offsetX + (point.x - minX) * scale,
     y: offsetY + (point.y - minY) * scale
   }));

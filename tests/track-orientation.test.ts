@@ -1,0 +1,47 @@
+/**
+ * File: tests/track-orientation.test.ts
+ * Model: GPT-5.3-Codex
+ * Purpose: Verifies orientation normalization and point-rotation helpers for runtime race direction variants.
+ * Usage: Runs in Vitest as part of viewer helper coverage.
+ * Dependencies: track-orientation helper module.
+ */
+
+import { describe, expect, it } from 'vitest';
+
+import {
+  normalizeTrackOrientation,
+  resolveTrackOrientationFromSearch,
+  rotateTrackPointsForOrientation
+} from '../apps/web-viewer/src/track-orientation';
+
+describe('track orientation helpers', () => {
+  it('normalizes known orientation values and defaults safely', () => {
+    expect(normalizeTrackOrientation('top-to-bottom')).toBe('top-to-bottom');
+    expect(normalizeTrackOrientation('vertical')).toBe('top-to-bottom');
+    expect(normalizeTrackOrientation('tb')).toBe('top-to-bottom');
+    expect(normalizeTrackOrientation('left-to-right')).toBe('left-to-right');
+    expect(normalizeTrackOrientation('unknown')).toBe('left-to-right');
+    expect(normalizeTrackOrientation(undefined)).toBe('left-to-right');
+  });
+
+  it('parses orientation from URL query', () => {
+    expect(resolveTrackOrientationFromSearch('?orientation=top-to-bottom')).toBe('top-to-bottom');
+    expect(resolveTrackOrientationFromSearch('?orientation=vertical')).toBe('top-to-bottom');
+    expect(resolveTrackOrientationFromSearch('?orientation=left-to-right')).toBe('left-to-right');
+    expect(resolveTrackOrientationFromSearch('')).toBe('left-to-right');
+  });
+
+  it('rotates points 90 degrees around bounds center for vertical mode', () => {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 200, y: 0 }
+    ];
+
+    const rotated = rotateTrackPointsForOrientation(points, 'top-to-bottom');
+
+    expect(rotated[0]?.x).toBeCloseTo(100, 6);
+    expect(rotated[2]?.x).toBeCloseTo(100, 6);
+    expect(rotated[0]?.y).toBeLessThan(rotated[2]!.y);
+  });
+});

@@ -9,9 +9,11 @@ import { Application, Container, Graphics, Text } from 'pixi.js';
 import {
   fetchRuntimeBootstrap,
   resolveRuntimeApiBase,
-  resolveRuntimeRaceId
+  resolveRuntimeRaceId,
+  resolveRuntimeTrackOrientation
 } from './runtime-bootstrap-client';
 import { mapRuntimeTrackPointsToViewport, sampleRuntimeTrackPosition } from './runtime-track';
+import { normalizeTrackOrientation, type TrackOrientation } from './track-orientation.js';
 
 const VIEW_WIDTH = 1160;
 const VIEW_HEIGHT = 720;
@@ -54,7 +56,14 @@ export async function startRuntimeApp(): Promise<void> {
   label.position.set(24, 18);
   app.stage.addChild(label);
 
-  let runtimeTrackPoints = mapRuntimeTrackPointsToViewport([], VIEW_WIDTH, VIEW_HEIGHT);
+  let runtimeOrientation: TrackOrientation = resolveRuntimeTrackOrientation(window.location.search);
+  let runtimeTrackPoints = mapRuntimeTrackPointsToViewport(
+    [],
+    VIEW_WIDTH,
+    VIEW_HEIGHT,
+    undefined,
+    runtimeOrientation
+  );
   drawTrackLane(lane, runtimeTrackPoints);
   let lapDurationMs = 55_000;
 
@@ -63,15 +72,24 @@ export async function startRuntimeApp(): Promise<void> {
     const apiBase = resolveRuntimeApiBase(window.location.search);
     try {
       const bootstrap = await fetchRuntimeBootstrap(raceId, apiBase);
+      const requestedOrientation =
+        (bootstrap.launch.options?.trackOrientation as unknown) ??
+        (bootstrap.launch.options?.orientation as unknown);
+      if (requestedOrientation !== undefined && requestedOrientation !== null) {
+        runtimeOrientation = normalizeTrackOrientation(requestedOrientation);
+      }
+
       runtimeTrackPoints = mapRuntimeTrackPointsToViewport(
         bootstrap.track.points,
         VIEW_WIDTH,
-        VIEW_HEIGHT
+        VIEW_HEIGHT,
+        undefined,
+        runtimeOrientation
       );
       drawTrackLane(lane, runtimeTrackPoints);
       lapDurationMs = Math.max(5_000, bootstrap.launch.durationMs);
 
-      label.text = `Runtime Race ${bootstrap.raceId} | ${bootstrap.raceType} | racers: ${bootstrap.racerList.racerCount} | winners: ${bootstrap.launch.winnerCount} | duration: ${lapDurationMs}ms`;
+      label.text = `Runtime Race ${bootstrap.raceId} | ${bootstrap.raceType} | orientation: ${runtimeOrientation} | racers: ${bootstrap.racerList.racerCount} | winners: ${bootstrap.launch.winnerCount} | duration: ${lapDurationMs}ms`;
     } catch (error) {
       label.text = `Runtime bootstrap failed: ${error instanceof Error ? error.message : 'unknown error'}`;
     }
