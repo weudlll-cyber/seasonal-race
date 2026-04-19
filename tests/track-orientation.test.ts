@@ -9,6 +9,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  computeTrackOrientationCenter,
   normalizeTrackOrientation,
   resolveTrackOrientationFromSearch,
   rotateTrackPointsForOrientation
@@ -43,5 +44,21 @@ describe('track orientation helpers', () => {
     expect(rotated[0]?.x).toBeCloseTo(100, 6);
     expect(rotated[2]?.x).toBeCloseTo(100, 6);
     expect(rotated[0]?.y).toBeLessThan(rotated[2]!.y);
+  });
+
+  it('can rotate with an explicitly provided center', () => {
+    const points = [
+      { x: 10, y: 10 },
+      { x: 20, y: 10 }
+    ];
+
+    const center = computeTrackOrientationCenter([
+      { x: 0, y: 0 },
+      { x: 40, y: 40 }
+    ]);
+
+    const rotated = rotateTrackPointsForOrientation(points, 'top-to-bottom', center);
+    expect(rotated[0]?.x).toBeCloseTo(30, 6);
+    expect(rotated[0]?.y).toBeCloseTo(10, 6);
   });
 });
