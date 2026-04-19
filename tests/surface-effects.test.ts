@@ -42,7 +42,10 @@ describe('surface effects profiles', () => {
   });
 
   it('emits clearly different particle behavior for water and sand profiles', () => {
-    const waterSetup = buildSurfaceEffectSetup({ effectProfileId: 'water-choppy', raceType: 'duck' });
+    const waterSetup = buildSurfaceEffectSetup({
+      effectProfileId: 'water-choppy',
+      raceType: 'duck'
+    });
     const sandSetup = buildSurfaceEffectSetup({ effectProfileId: 'sand-dry', raceType: 'horse' });
     const waterParticles: SurfaceParticle[] = [];
     const sandParticles: SurfaceParticle[] = [];
@@ -112,7 +115,10 @@ describe('surface effects profiles', () => {
   });
 
   it('emits profile-specific particle shapes', () => {
-    const waterSetup = buildSurfaceEffectSetup({ effectProfileId: 'water-choppy', raceType: 'duck' });
+    const waterSetup = buildSurfaceEffectSetup({
+      effectProfileId: 'water-choppy',
+      raceType: 'duck'
+    });
     const snowSetup = buildSurfaceEffectSetup({ effectProfileId: 'snow-powder', raceType: 'duck' });
     const waterParticles: SurfaceParticle[] = [];
     const snowParticles: SurfaceParticle[] = [];

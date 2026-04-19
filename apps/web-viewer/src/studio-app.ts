@@ -281,7 +281,10 @@ export async function startStudioApp(): Promise<void> {
       return;
     }
 
-    const frameCount = Math.max(4, Math.min(24, Math.floor(Number(dom.spriteFrameCountInput.value))));
+    const frameCount = Math.max(
+      4,
+      Math.min(24, Math.floor(Number(dom.spriteFrameCountInput.value)))
+    );
     const variantCount = Math.max(
       2,
       Math.min(60, Math.floor(Number(dom.spriteVariantCountInput.value)))
@@ -298,11 +301,9 @@ export async function startStudioApp(): Promise<void> {
       });
 
       if (safeScale < 0.999) {
-        dom.spriteGenerationWarning.textContent =
-          `Large source image detected: generator will auto-scale to ${(safeScale * 100).toFixed(1)}% (${frameCount} frames x ${variantCount} variants).`;
+        dom.spriteGenerationWarning.textContent = `Large source image detected: generator will auto-scale to ${(safeScale * 100).toFixed(1)}% (${frameCount} frames x ${variantCount} variants).`;
       } else {
-        dom.spriteGenerationWarning.textContent =
-          `Generation fits at 100% scale (${frameCount} frames x ${variantCount} variants).`;
+        dom.spriteGenerationWarning.textContent = `Generation fits at 100% scale (${frameCount} frames x ${variantCount} variants).`;
       }
     } catch {
       dom.spriteGenerationWarning.textContent =
@@ -1703,17 +1704,15 @@ export async function startStudioApp(): Promise<void> {
       rightBoundaryPoints
     })
   );
-  dom.effectProfileInput.addEventListener('input', () =>
-    {
-      syncSurfaceProfileSelectFromInput();
-      refreshExport(dom, points, {
-        mode: trackEditMode,
-        activeSide: boundaryEditSide,
-        leftBoundaryPoints,
-        rightBoundaryPoints
-      });
-    }
-  );
+  dom.effectProfileInput.addEventListener('input', () => {
+    syncSurfaceProfileSelectFromInput();
+    refreshExport(dom, points, {
+      mode: trackEditMode,
+      activeSide: boundaryEditSide,
+      leftBoundaryPoints,
+      rightBoundaryPoints
+    });
+  });
   dom.savePresetButton.addEventListener('click', () => {
     void saveTestPreset();
   });

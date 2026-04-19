@@ -373,9 +373,7 @@ export function emitSurfaceParticles(
       y: options.y + jitterY,
       vx: nx * launch + (Math.random() - 0.5) * spread * 45 * turbulence,
       vy:
-        ny * launch +
-        (Math.random() - 0.5) * spread * 45 * turbulence +
-        setup.profile.verticalKick,
+        ny * launch + (Math.random() - 0.5) * spread * 45 * turbulence + setup.profile.verticalKick,
       ageMs: 0,
       lifeMs: setup.profile.baseLifetimeMs * (0.75 + Math.random() * 0.5),
       sizePx: setup.profile.baseSizePx * setup.intensityScale * (0.7 + Math.random() * 0.8),
@@ -451,7 +449,11 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
-function resolveCategoryCadence(motionStyle: MotionStyle, elapsedSec: number, speedNorm: number): number {
+function resolveCategoryCadence(
+  motionStyle: MotionStyle,
+  elapsedSec: number,
+  speedNorm: number
+): number {
   const speed = clamp01(speedNorm);
   if (motionStyle === 'gallop') {
     // Two hoof bursts followed by a short pause, then repeat.
