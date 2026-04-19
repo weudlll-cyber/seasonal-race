@@ -10,6 +10,11 @@ import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
 
 export type TrackOrientation = 'left-to-right' | 'top-to-bottom';
 
+export interface TrackOrientationCenter {
+  x: number;
+  y: number;
+}
+
 export function normalizeTrackOrientation(value: unknown): TrackOrientation {
   if (typeof value !== 'string') {
     return 'left-to-right';
@@ -35,19 +40,16 @@ export function resolveTrackOrientationFromSearch(search: string): TrackOrientat
 
 export function rotateTrackPointsForOrientation(
   points: TrackPoint[],
-  orientation: TrackOrientation
+  orientation: TrackOrientation,
+  center?: TrackOrientationCenter
 ): TrackPoint[] {
   if (orientation === 'left-to-right' || points.length === 0) {
     return points.map((point) => ({ x: point.x, y: point.y }));
   }
 
-  const minX = Math.min(...points.map((point) => point.x));
-  const maxX = Math.max(...points.map((point) => point.x));
-  const minY = Math.min(...points.map((point) => point.y));
-  const maxY = Math.max(...points.map((point) => point.y));
-
-  const centerX = (minX + maxX) * 0.5;
-  const centerY = (minY + maxY) * 0.5;
+  const resolvedCenter = center ?? computeTrackOrientationCenter(points);
+  const centerX = resolvedCenter.x;
+  const centerY = resolvedCenter.y;
 
   return points.map((point) => {
     const dx = point.x - centerX;
@@ -58,4 +60,20 @@ export function rotateTrackPointsForOrientation(
       y: centerY + dx
     };
   });
+}
+
+export function computeTrackOrientationCenter(points: TrackPoint[]): TrackOrientationCenter {
+  if (points.length === 0) {
+    return { x: 0, y: 0 };
+  }
+
+  const minX = Math.min(...points.map((point) => point.x));
+  const maxX = Math.max(...points.map((point) => point.x));
+  const minY = Math.min(...points.map((point) => point.y));
+  const maxY = Math.max(...points.map((point) => point.y));
+
+  return {
+    x: (minX + maxX) * 0.5,
+    y: (minY + maxY) * 0.5
+  };
 }
