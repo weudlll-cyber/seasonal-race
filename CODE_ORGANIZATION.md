@@ -114,6 +114,9 @@
   - Consumes runtime bootstrap payload when `raceId` is provided in URL query.
 - `apps/web-viewer/src/runtime-bootstrap-client.ts`
   - URL/query helpers + API fetch wrapper for runtime bootstrap payload loading.
+- `apps/web-viewer/src/runtime-track.ts`
+  - Pure runtime geometry helpers that map bootstrap track points to the active viewport.
+  - Provides runtime track sampling fallback so playback still runs when bootstrap track data is incomplete.
 - `apps/web-viewer/src/camera.ts`
   - `CameraController` for smooth world follow/zoom behavior.
   - Receives camera-ready race state and applies interpolated world transform.
