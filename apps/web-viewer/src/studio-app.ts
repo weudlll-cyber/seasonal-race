@@ -6,7 +6,7 @@
  * Dependencies: PixiJS and local track-editor utility helpers.
  */
 
-import { Application, Container, Graphics, Sprite, Text } from 'pixi.js';
+import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
 import { CameraController } from './camera';
 import {
@@ -39,11 +39,22 @@ import {
 } from './track-orientation.js';
 import {
   generateRacerSpritePackFromImage,
+  resolveSafeSpriteSheetOutputScale,
   generateTrackTemplate,
   type GeneratedRacerSpritePack,
   type GeneratedRacerSpritePackMeta,
   type TrackTemplateKind
 } from './studio-generators';
+import {
+  buildSurfaceEffectSetup,
+  drawSurfaceParticles,
+  emitSurfaceParticles,
+  type RacerCategory,
+  resolveRacerCategory,
+  tickSurfaceParticles,
+  type RacerSizeClass,
+  type SurfaceParticle
+} from './surface-effects';
 
 const VIEW_WIDTH = 1160;
 const VIEW_HEIGHT = 720;
@@ -131,6 +142,7 @@ export async function startStudioApp(): Promise<void> {
   const pathLayer = new Graphics();
   const markerLayer = new Graphics();
   const laneBoardLayer = new Graphics();
+  const surfaceEffectLayer = new Graphics();
   const runnerLayer = new Container();
   const labelLayer = new Container();
   runnerLayer.sortableChildren = true;
@@ -139,6 +151,7 @@ export async function startStudioApp(): Promise<void> {
   world.addChild(pathLayer);
   world.addChild(markerLayer);
   world.addChild(laneBoardLayer);
+  world.addChild(surfaceEffectLayer);
   world.addChild(runnerLayer);
   world.addChild(labelLayer);
 
@@ -147,6 +160,7 @@ export async function startStudioApp(): Promise<void> {
   runner.scale.set(1.35);
   runner.visible = false;
   runnerLayer.addChild(runner);
+  const defaultRunnerTexture = runner.texture;
 
   let replayRacerCount = DEFAULT_REPLAY_RACER_COUNT;
   let replayRacers: StudioReplayRacerView[] = [];
@@ -181,6 +195,7 @@ export async function startStudioApp(): Promise<void> {
   let generatedRacerPack: GeneratedRacerSpritePack | null = null;
   let fallbackRuntimeRacerPack: GeneratedRacerSpritePack | null = null;
   let fallbackRuntimeRacerPackKey = '';
+  let spriteSourceImageDimensions: { width: number; height: number } | null = null;
 
   dom.laneWidthInput.value = String(laneWidthPx);
   dom.laneWidthValue.textContent = `${laneWidthPx} px`;
@@ -200,10 +215,138 @@ export async function startStudioApp(): Promise<void> {
   dom.editorZoomInput.value = String(Math.round(editorZoom * 100));
   dom.editorZoomValue.textContent = `${Math.round(editorZoom * 100)}%`;
   dom.trackTemplatePointsValue.textContent = dom.trackTemplatePointsInput.value;
+  dom.trackPreviewSizeValue.textContent = `${dom.trackPreviewSizeInput.value} px`;
   dom.spriteFrameCountValue.textContent = dom.spriteFrameCountInput.value;
   dom.spriteVariantCountValue.textContent = dom.spriteVariantCountInput.value;
   dom.downloadSpriteSheetButton.disabled = true;
   dom.downloadSpriteMetaButton.disabled = true;
+
+  let spritePreviewFrameIndex = 0;
+  let spritePreviewFrameElapsedMs = 0;
+  let spritePreviewVariantIndex = 0;
+  let spritePreviewVariantElapsedMs = 0;
+  let trackPreviewTextures: Texture[] = [];
+  let studioSurfaceElapsedMs = 0;
+  const studioSurfaceParticles: SurfaceParticle[] = [];
+  const replayPreviousPositions = new Map<string, { x: number; y: number }>();
+  let runnerPreviousPosition: { x: number; y: number } | null = null;
+
+  const hasSurfaceProfileOption = (value: string): boolean => {
+    return [...dom.surfaceProfileSelect.options].some((option) => option.value === value);
+  };
+
+  const syncSurfaceProfileSelectFromInput = (): void => {
+    const effectProfileId = dom.effectProfileInput.value.trim();
+    if (effectProfileId && hasSurfaceProfileOption(effectProfileId)) {
+      dom.surfaceProfileSelect.value = effectProfileId;
+      return;
+    }
+    dom.surfaceProfileSelect.value = 'auto';
+  };
+
+  syncSurfaceProfileSelectFromInput();
+
+  const setGeneratorPresetActive = (
+    activePreset: 'Minimal' | 'Balanced' | 'Max Contrast' | null
+  ): void => {
+    dom.spritePresetMinimalButton?.classList.toggle('primary', activePreset === 'Minimal');
+    dom.spritePresetBalancedButton?.classList.toggle('primary', activePreset === 'Balanced');
+    dom.spritePresetMaxContrastButton?.classList.toggle('primary', activePreset === 'Max Contrast');
+  };
+
+  const refreshGeneratorPresetHighlight = (): void => {
+    const frameCount = Number(dom.spriteFrameCountInput.value);
+    const variantCount = Number(dom.spriteVariantCountInput.value);
+    if (frameCount === 8 && variantCount === 8) {
+      setGeneratorPresetActive('Minimal');
+      return;
+    }
+    if (frameCount === 10 && variantCount === 12) {
+      setGeneratorPresetActive('Balanced');
+      return;
+    }
+    if (frameCount === 16 && variantCount === 24) {
+      setGeneratorPresetActive('Max Contrast');
+      return;
+    }
+    setGeneratorPresetActive(null);
+  };
+
+  refreshGeneratorPresetHighlight();
+
+  const refreshSpriteGenerationWarning = (): void => {
+    if (!spriteSourceImageDimensions) {
+      dom.spriteGenerationWarning.textContent =
+        'Select a source image to see generation-size guidance.';
+      return;
+    }
+
+    const frameCount = Math.max(
+      4,
+      Math.min(24, Math.floor(Number(dom.spriteFrameCountInput.value)))
+    );
+    const variantCount = Math.max(
+      2,
+      Math.min(60, Math.floor(Number(dom.spriteVariantCountInput.value)))
+    );
+
+    try {
+      const safeScale = resolveSafeSpriteSheetOutputScale({
+        sourceWidth: spriteSourceImageDimensions.width,
+        sourceHeight: spriteSourceImageDimensions.height,
+        requestedOutputScale: 1,
+        padding: 10,
+        frameCount,
+        variantCount
+      });
+
+      if (safeScale < 0.999) {
+        dom.spriteGenerationWarning.textContent = `Large source image detected: generator will auto-scale to ${(safeScale * 100).toFixed(1)}% (${frameCount} frames x ${variantCount} variants).`;
+      } else {
+        dom.spriteGenerationWarning.textContent = `Generation fits at 100% scale (${frameCount} frames x ${variantCount} variants).`;
+      }
+    } catch {
+      dom.spriteGenerationWarning.textContent =
+        'Current source image/settings exceed browser canvas limits. Reduce frame/variant count or use a smaller image.';
+    }
+  };
+
+  refreshSpriteGenerationWarning();
+
+  const rebuildTrackPreviewTextures = (
+    pack: GeneratedRacerSpritePack,
+    variantIndex: number
+  ): void => {
+    const variantCount = Math.max(1, pack.meta.racerVariantCount);
+    const normalizedVariantIndex = ((variantIndex % variantCount) + variantCount) % variantCount;
+    const textures: Texture[] = [];
+    for (let frameIndex = 0; frameIndex < pack.meta.frameCount; frameIndex += 1) {
+      const frameMetaIndex = normalizedVariantIndex * pack.meta.frameCount + frameIndex;
+      const frame = pack.meta.frames[frameMetaIndex];
+      if (!frame) continue;
+
+      const frameCanvas = document.createElement('canvas');
+      frameCanvas.width = frame.width;
+      frameCanvas.height = frame.height;
+      const frameCtx = frameCanvas.getContext('2d');
+      if (!frameCtx) continue;
+
+      frameCtx.drawImage(
+        pack.sheetCanvas,
+        frame.x,
+        frame.y,
+        frame.width,
+        frame.height,
+        0,
+        0,
+        frame.width,
+        frame.height
+      );
+      textures.push(Texture.from(frameCanvas));
+    }
+
+    trackPreviewTextures = textures;
+  };
 
   const applyGeneratorPreset = (
     frameCount: number,
@@ -214,7 +357,248 @@ export async function startStudioApp(): Promise<void> {
     dom.spriteVariantCountInput.value = String(racerVariantCount);
     dom.spriteFrameCountValue.textContent = String(frameCount);
     dom.spriteVariantCountValue.textContent = String(racerVariantCount);
+    setGeneratorPresetActive(label);
     dom.editorHelp.textContent = `Generator preset applied: ${label}.`;
+  };
+
+  const resolveStudioRaceType = (): string => {
+    const selectedRaceType = dom.surfaceRaceTypeSelect.value.trim().toLowerCase();
+    if (selectedRaceType && selectedRaceType !== 'auto') {
+      return selectedRaceType;
+    }
+
+    const trackKey = dom.trackIdInput.value.trim().toLowerCase();
+    const effectKey = dom.effectProfileInput.value.trim().toLowerCase();
+    if (trackKey.includes('duck') || effectKey.includes('duck') || effectKey.includes('water')) {
+      return 'duck';
+    }
+    if (trackKey.includes('horse') || effectKey.includes('horse') || effectKey.includes('sand')) {
+      return 'horse';
+    }
+    if (
+      trackKey.includes('rocket') ||
+      effectKey.includes('rocket') ||
+      effectKey.includes('space')
+    ) {
+      return 'rocket';
+    }
+    return 'generic';
+  };
+
+  const resolveStudioCategory = (raceType: string): RacerCategory => {
+    const selectedCategory = dom.surfaceCategorySelect.value as RacerCategory | 'auto';
+    if (selectedCategory !== 'auto') {
+      return selectedCategory;
+    }
+    return resolveRacerCategory(raceType);
+  };
+
+  const resolveStudioSizeClass = (): RacerSizeClass => {
+    const selectedSizeClass = dom.surfaceSizeClassSelect.value as RacerSizeClass | 'auto';
+    if (selectedSizeClass !== 'auto') {
+      return selectedSizeClass;
+    }
+
+    if (replayRacerCount <= 8) return 'small';
+    if (replayRacerCount <= 20) return 'medium';
+    if (replayRacerCount <= 45) return 'large';
+    return 'huge';
+  };
+
+  const resolveStudioEffectProfileId = (): string | undefined => {
+    const selectedProfileId = dom.surfaceProfileSelect.value.trim();
+    if (selectedProfileId && selectedProfileId !== 'auto') {
+      return selectedProfileId;
+    }
+
+    const typedEffectProfileId = dom.effectProfileInput.value.trim();
+    return typedEffectProfileId || undefined;
+  };
+
+  const updateStudioSurfaceEffects = (dtSec: number): void => {
+    studioSurfaceElapsedMs += dtSec * 1000;
+    const raceType = resolveStudioRaceType();
+    const category = resolveStudioCategory(raceType);
+    const effectProfileId = resolveStudioEffectProfileId();
+    const setup = buildSurfaceEffectSetup({
+      raceType,
+      category,
+      sizeClass: resolveStudioSizeClass(),
+      ...(effectProfileId ? { effectProfileId } : {})
+    });
+
+    if (replayModeEnabled) {
+      for (const rr of replayRacers) {
+        if (!rr.sprite.visible) continue;
+        const prev = replayPreviousPositions.get(rr.id);
+        const x = rr.sprite.position.x;
+        const y = rr.sprite.position.y;
+        const dx = prev ? x - prev.x : 0;
+        const dy = prev ? y - prev.y : 0;
+        const distance = Math.hypot(dx, dy);
+        const speedNorm = Math.max(0.15, Math.min(1, distance / Math.max(8, 180 * dtSec)));
+        emitSurfaceParticles(studioSurfaceParticles, setup, {
+          x,
+          y: y + 10,
+          dx,
+          dy,
+          speedNorm,
+          dtSec,
+          elapsedMs: studioSurfaceElapsedMs
+        });
+        replayPreviousPositions.set(rr.id, { x, y });
+      }
+      runnerPreviousPosition = null;
+    } else {
+      replayPreviousPositions.clear();
+      if (runner.visible) {
+        const x = runner.position.x;
+        const y = runner.position.y;
+        const dx = runnerPreviousPosition ? x - runnerPreviousPosition.x : 0;
+        const dy = runnerPreviousPosition ? y - runnerPreviousPosition.y : 0;
+        const distance = Math.hypot(dx, dy);
+        const speedNorm = Math.max(0.12, Math.min(1, distance / Math.max(8, 160 * dtSec)));
+        emitSurfaceParticles(studioSurfaceParticles, setup, {
+          x,
+          y: y + 10,
+          dx,
+          dy,
+          speedNorm,
+          dtSec,
+          elapsedMs: studioSurfaceElapsedMs
+        });
+        runnerPreviousPosition = { x, y };
+      } else {
+        runnerPreviousPosition = null;
+      }
+    }
+
+    tickSurfaceParticles(studioSurfaceParticles, setup, dtSec);
+    drawSurfaceParticles(surfaceEffectLayer, studioSurfaceParticles);
+  };
+
+  const drawSpritePreviewPlaceholder = (
+    canvas: HTMLCanvasElement,
+    message: string,
+    isLarge: boolean
+  ): void => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#071522';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(131, 165, 199, 0.22)';
+    for (let x = 0; x < canvas.width; x += isLarge ? 36 : 28) {
+      ctx.fillRect(x, 0, 1, canvas.height);
+    }
+    for (let y = 0; y < canvas.height; y += isLarge ? 36 : 28) {
+      ctx.fillRect(0, y, canvas.width, 1);
+    }
+
+    ctx.fillStyle = '#b7d5ff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = isLarge ? '18px Segoe UI' : '13px Segoe UI';
+    ctx.fillText(message, canvas.width * 0.5, canvas.height * 0.5);
+  };
+
+  const drawSpritePreviewSingle = (
+    canvas: HTMLCanvasElement,
+    pack: GeneratedRacerSpritePack,
+    frameIndex: number,
+    variantIndex: number,
+    isLarge: boolean
+  ): void => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#071522';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const variantCount = pack.meta.racerVariantCount;
+    if (variantCount <= 0) {
+      drawSpritePreviewPlaceholder(canvas, 'No variants available.', isLarge);
+      return;
+    }
+
+    const normalizedVariantIndex = ((variantIndex % variantCount) + variantCount) % variantCount;
+    const frameMetaIndex = normalizedVariantIndex * pack.meta.frameCount + frameIndex;
+    const frame = pack.meta.frames[frameMetaIndex];
+    if (!frame) {
+      drawSpritePreviewPlaceholder(canvas, 'Preview frame missing.', isLarge);
+      return;
+    }
+
+    const targetW = Math.min(
+      canvas.width * (isLarge ? 0.78 : 0.72),
+      frame.width * (isLarge ? 4.4 : 3)
+    );
+    const targetH = (frame.height / frame.width) * targetW;
+    const dx = (canvas.width - targetW) * 0.5;
+    const dy = (canvas.height - targetH) * 0.55;
+
+    ctx.fillStyle = 'rgba(8, 16, 24, 0.28)';
+    ctx.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
+    ctx.drawImage(
+      pack.sheetCanvas,
+      frame.x,
+      frame.y,
+      frame.width,
+      frame.height,
+      dx,
+      dy,
+      targetW,
+      targetH
+    );
+
+    const variant = pack.meta.variants[normalizedVariantIndex];
+    if (variant) {
+      const chipWidth = isLarge ? 200 : 160;
+      const chipHeight = isLarge ? 30 : 24;
+      ctx.fillStyle = 'rgba(5, 16, 28, 0.8)';
+      ctx.fillRect(10, 10, chipWidth, chipHeight);
+      ctx.fillStyle = '#cfe5ff';
+      ctx.font = isLarge ? '14px Segoe UI' : '12px Segoe UI';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`Preview ${variant.label} - ${variant.pattern}`, 18, 10 + chipHeight * 0.52);
+    }
+  };
+
+  const renderGeneratedSpritePreviews = (deltaMs: number): void => {
+    if (!generatedRacerPack) {
+      drawSpritePreviewPlaceholder(
+        dom.spritePackAnimPreviewCanvas,
+        'Generate racer pack to preview animation.',
+        false
+      );
+      return;
+    }
+
+    const frameDurationMs = Math.max(40, generatedRacerPack.meta.frames[0]?.durationMs ?? 90);
+    spritePreviewFrameElapsedMs += deltaMs;
+    while (spritePreviewFrameElapsedMs >= frameDurationMs) {
+      spritePreviewFrameElapsedMs -= frameDurationMs;
+      spritePreviewFrameIndex = (spritePreviewFrameIndex + 1) % generatedRacerPack.meta.frameCount;
+    }
+
+    spritePreviewVariantElapsedMs += deltaMs;
+    if (spritePreviewVariantElapsedMs >= 1400) {
+      spritePreviewVariantElapsedMs = 0;
+      spritePreviewVariantIndex =
+        (spritePreviewVariantIndex + 1) % Math.max(1, generatedRacerPack.meta.racerVariantCount);
+      rebuildTrackPreviewTextures(generatedRacerPack, spritePreviewVariantIndex);
+    }
+
+    drawSpritePreviewSingle(
+      dom.spritePackAnimPreviewCanvas,
+      generatedRacerPack,
+      spritePreviewFrameIndex,
+      spritePreviewVariantIndex,
+      false
+    );
   };
 
   function getCenterlinePoints(): TrackPoint[] {
@@ -470,7 +854,7 @@ export async function startStudioApp(): Promise<void> {
       laneBoardsVisible = parsed.laneBoardsVisible === true;
       broadcastViewEnabled = false;
 
-      rebuildReplayRacers();
+      safeRebuildReplayRacers('loadPreset');
       resetReplayPreviewState();
       redrawEditor(points, pathLayer, markerLayer, smoothingEnabled, VIEW_WIDTH, VIEW_HEIGHT, {
         mode: trackEditMode,
@@ -647,6 +1031,8 @@ export async function startStudioApp(): Promise<void> {
         sprite: racer,
         marker,
         bodySprite,
+        bodyBaseScaleX: bodySprite.scale.x,
+        bodyBaseScaleY: bodySprite.scale.y,
         labelBg,
         labelText,
         progress: 0,
@@ -658,10 +1044,33 @@ export async function startStudioApp(): Promise<void> {
     dom.focusRacerInput.value = String(focusRacerNumber);
     dom.focusRacerLabel.textContent = `D${focusRacerNumber}`;
     dom.leaderboardList.innerHTML = '';
+    applyReplaySpriteSizeFromSlider();
     regenerateReplayData();
   }
 
-  rebuildReplayRacers();
+  const applyReplaySpriteSizeFromSlider = (): void => {
+    const sizeFactor = resolveTrackPreviewSizePx() / 34;
+    for (const rr of replayRacers) {
+      if (!rr.bodySprite) continue;
+      const baseX = rr.bodyBaseScaleX ?? rr.bodySprite.scale.x;
+      const baseY = rr.bodyBaseScaleY ?? rr.bodySprite.scale.y;
+      rr.bodySprite.scale.set(baseX * sizeFactor, baseY * sizeFactor);
+    }
+  };
+
+  const safeRebuildReplayRacers = (origin: string): void => {
+    try {
+      rebuildReplayRacers();
+    } catch (error) {
+      replayRacers = [];
+      dom.leaderboardList.innerHTML = '';
+      dom.editorHelp.textContent =
+        'Replay visuals could not be rebuilt. Track editing is still active; try refreshing the page.';
+      console.error(`Replay rebuild failed (${origin}).`, error);
+    }
+  };
+
+  safeRebuildReplayRacers('startup');
 
   app.stage.eventMode = 'static';
   app.stage.hitArea = app.screen;
@@ -814,6 +1223,12 @@ export async function startStudioApp(): Promise<void> {
     return sprite;
   };
 
+  const resolveTrackPreviewSizePx = (): number => {
+    const rawValue = Number(dom.trackPreviewSizeInput.value);
+    if (!Number.isFinite(rawValue)) return 34;
+    return Math.max(16, Math.min(96, rawValue));
+  };
+
   wireStudioPointEditorController({
     app,
     controls: {
@@ -907,7 +1322,7 @@ export async function startStudioApp(): Promise<void> {
       focusRacerNumber = normalizeFocusRacerNumber(focusRacerNumber, replayRacerCount);
       dom.focusRacerInput.value = String(focusRacerNumber);
       dom.focusRacerLabel.textContent = `D${focusRacerNumber}`;
-      rebuildReplayRacers();
+      safeRebuildReplayRacers('racerCountChanged');
     },
     onNameModeChanged: (value) => {
       nameDisplayMode = toNameDisplayMode(value);
@@ -1068,22 +1483,92 @@ export async function startStudioApp(): Promise<void> {
 
   dom.spriteFrameCountInput.addEventListener('input', () => {
     dom.spriteFrameCountValue.textContent = dom.spriteFrameCountInput.value;
+    refreshGeneratorPresetHighlight();
+    refreshSpriteGenerationWarning();
+  });
+
+  dom.trackPreviewSizeInput.addEventListener('input', () => {
+    dom.trackPreviewSizeValue.textContent = `${dom.trackPreviewSizeInput.value} px`;
+    applyReplaySpriteSizeFromSlider();
   });
 
   dom.spriteVariantCountInput.addEventListener('input', () => {
     dom.spriteVariantCountValue.textContent = dom.spriteVariantCountInput.value;
+    refreshGeneratorPresetHighlight();
+    refreshSpriteGenerationWarning();
   });
 
-  dom.spritePresetMinimalButton.addEventListener('click', () => {
+  dom.spritePresetMinimalButton?.addEventListener('click', () => {
     applyGeneratorPreset(8, 8, 'Minimal');
+    refreshSpriteGenerationWarning();
   });
 
-  dom.spritePresetBalancedButton.addEventListener('click', () => {
+  dom.spritePresetBalancedButton?.addEventListener('click', () => {
     applyGeneratorPreset(10, 12, 'Balanced');
+    refreshSpriteGenerationWarning();
   });
 
-  dom.spritePresetMaxContrastButton.addEventListener('click', () => {
+  dom.spritePresetMaxContrastButton?.addEventListener('click', () => {
     applyGeneratorPreset(16, 24, 'Max Contrast');
+    refreshSpriteGenerationWarning();
+  });
+
+  dom.spriteSourceImageInput.addEventListener('change', async () => {
+    const file = dom.spriteSourceImageInput.files?.[0] ?? null;
+    if (!file) {
+      spriteSourceImageDimensions = null;
+      refreshSpriteGenerationWarning();
+      return;
+    }
+
+    try {
+      const image = await loadImageFromFile(file);
+      spriteSourceImageDimensions = { width: image.naturalWidth, height: image.naturalHeight };
+    } catch {
+      spriteSourceImageDimensions = null;
+    }
+
+    refreshSpriteGenerationWarning();
+  });
+
+  dom.surfaceRaceTypeSelect.addEventListener('change', () => {
+    const selectedRaceType = dom.surfaceRaceTypeSelect.value;
+    dom.editorHelp.textContent =
+      selectedRaceType === 'auto'
+        ? 'Surface race type back on Auto resolver.'
+        : `Surface race type forced to "${selectedRaceType}".`;
+  });
+
+  dom.surfaceCategorySelect.addEventListener('change', () => {
+    const selectedCategory = dom.surfaceCategorySelect.value;
+    dom.editorHelp.textContent =
+      selectedCategory === 'auto'
+        ? 'Racer category back on Auto resolver.'
+        : `Racer category forced to "${selectedCategory}".`;
+  });
+
+  dom.surfaceSizeClassSelect.addEventListener('change', () => {
+    const selectedSizeClass = dom.surfaceSizeClassSelect.value;
+    dom.editorHelp.textContent =
+      selectedSizeClass === 'auto'
+        ? 'Effect size class back on Auto resolver.'
+        : `Effect size class forced to "${selectedSizeClass}".`;
+  });
+
+  dom.surfaceProfileSelect.addEventListener('change', () => {
+    const selectedProfile = dom.surfaceProfileSelect.value;
+    if (selectedProfile === 'auto') {
+      dom.editorHelp.textContent = 'Surface profile back on Auto resolver.';
+      return;
+    }
+    dom.effectProfileInput.value = selectedProfile;
+    refreshExport(dom, points, {
+      mode: trackEditMode,
+      activeSide: boundaryEditSide,
+      leftBoundaryPoints,
+      rightBoundaryPoints
+    });
+    dom.editorHelp.textContent = `Surface profile forced to "${selectedProfile}".`;
   });
 
   dom.generateTrackTemplateButton.addEventListener('click', () => {
@@ -1153,15 +1638,25 @@ export async function startStudioApp(): Promise<void> {
       generatedSpriteSheetDataUrl = generated.sheetDataUrl;
       generatedSpriteSheetMeta = generated.meta;
       generatedRacerPack = generated;
+      spritePreviewFrameIndex = 0;
+      spritePreviewFrameElapsedMs = 0;
+      spritePreviewVariantIndex = 0;
+      spritePreviewVariantElapsedMs = 0;
+      rebuildTrackPreviewTextures(generated, 0);
       dom.spriteSheetPreview.src = generated.sheetDataUrl;
       dom.downloadSpriteSheetButton.disabled = false;
       dom.downloadSpriteMetaButton.disabled = false;
-      dom.editorHelp.textContent = `Racer pack generated: ${generated.meta.racerVariantCount} variants x ${generated.meta.frameCount} frames.`;
-      rebuildReplayRacers();
+      const scaleNote =
+        generated.meta.appliedOutputScale < 0.999
+          ? ` Auto-scaled to ${(generated.meta.appliedOutputScale * 100).toFixed(1)}% to fit canvas limits.`
+          : '';
+      dom.editorHelp.textContent = `Racer pack generated: ${generated.meta.racerVariantCount} variants x ${generated.meta.frameCount} frames.${scaleNote}`;
+      safeRebuildReplayRacers('spritePackGenerated');
     } catch (error) {
       generatedSpriteSheetDataUrl = null;
       generatedSpriteSheetMeta = null;
       generatedRacerPack = null;
+      trackPreviewTextures = [];
       dom.downloadSpriteSheetButton.disabled = true;
       dom.downloadSpriteMetaButton.disabled = true;
       dom.editorHelp.textContent =
@@ -1209,14 +1704,15 @@ export async function startStudioApp(): Promise<void> {
       rightBoundaryPoints
     })
   );
-  dom.effectProfileInput.addEventListener('input', () =>
+  dom.effectProfileInput.addEventListener('input', () => {
+    syncSurfaceProfileSelectFromInput();
     refreshExport(dom, points, {
       mode: trackEditMode,
       activeSide: boundaryEditSide,
       leftBoundaryPoints,
       rightBoundaryPoints
-    })
-  );
+    });
+  });
   dom.savePresetButton.addEventListener('click', () => {
     void saveTestPreset();
   });
@@ -1338,6 +1834,7 @@ export async function startStudioApp(): Promise<void> {
 
   app.ticker.add((delta) => {
     const dt = delta / 60;
+    renderGeneratedSpritePreviews(dt * 1000);
     const backgroundSprite = backgroundController.getBackgroundSprite();
 
     if (points.length < 3) {
@@ -1346,6 +1843,10 @@ export async function startStudioApp(): Promise<void> {
         rr.sprite.visible = false;
       }
       laneBoardLayer.clear();
+      surfaceEffectLayer.clear();
+      studioSurfaceParticles.length = 0;
+      replayPreviousPositions.clear();
+      runnerPreviousPosition = null;
       if (broadcastViewEnabled) {
         resetWorldTransform(world);
       } else {
@@ -1499,6 +2000,8 @@ export async function startStudioApp(): Promise<void> {
       replayTimeMs = replayTick.replayTimeMs;
       leaderboardTickMs = replayTick.leaderboardTickMs;
       replayData = replayTick.replayData;
+      applyReplaySpriteSizeFromSlider();
+      updateStudioSurfaceEffects(dt);
       return;
     }
 
@@ -1523,6 +2026,23 @@ export async function startStudioApp(): Promise<void> {
     });
     previewProgress = singleTick.previewProgress;
     singlePreviewElapsedSeconds = singleTick.singlePreviewElapsedSeconds;
+
+    if (generatedRacerPack && trackPreviewTextures.length > 0) {
+      const texture = trackPreviewTextures[spritePreviewFrameIndex % trackPreviewTextures.length]!;
+      runner.texture = texture;
+      const maxTextureEdge = Math.max(texture.width, texture.height) || 1;
+      const targetRunnerSizePx = resolveTrackPreviewSizePx();
+      const scale = targetRunnerSizePx / maxTextureEdge;
+      runner.scale.set(Math.max(0.12, Math.min(3.4, scale)));
+    } else {
+      runner.texture = defaultRunnerTexture;
+      const maxTextureEdge = Math.max(defaultRunnerTexture.width, defaultRunnerTexture.height) || 1;
+      const targetRunnerSizePx = resolveTrackPreviewSizePx();
+      const scale = targetRunnerSizePx / maxTextureEdge;
+      runner.scale.set(Math.max(0.12, Math.min(3.4, scale)));
+    }
+
+    updateStudioSurfaceEffects(dt);
   });
 
   function applyViewMode(): void {

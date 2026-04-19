@@ -55,8 +55,23 @@
 - Studio editing now supports precision zoom (mouse wheel, zoom slider, and reset action) for accurate boundary-point placement on dense track maps.
 - Studio now includes auto track template generation in the dev surface (S-curve, oval, zigzag, river bend) with configurable point density.
 - Studio now includes automatic racer-pack generation from one source image, including deterministic variant tint/pattern assignment and downloadable generated sheet PNG + frame metadata JSON.
+- Generated sprite-pack frames no longer include baked shadow overlays, preventing mirrored/reflection artifacts during on-track preview.
+- Racer-pack tinting now keeps stronger source-detail readability so category identity (for example duck features) stays visible.
 - Studio racer-pack generator now includes quick presets (`Minimal`, `Balanced`, `Max Contrast`) to keep high-contrast multi-racer setup one-click simple.
+- Max-contrast generation now automatically reduces output scale when required by browser canvas limits, avoiding broken/empty sprite-sheet previews.
+- Generator controls now provide a live warning hint before generation to indicate when current settings will require auto-scaling.
 - Studio replay racer rendering now consumes generated racer-pack visuals directly (with built-in fallback auto-pack), keeping replay/broadcast look consistent with exported pack output.
+- Viewer now includes a shared `surface-effects` module with extensible profile definitions (water/sand/snow/ash/space/mud/neon), category mapping, and size-class emission scaling.
+- Surface profiles now include differentiated spray dynamics (launch/turbulence/vertical-kick) so profile selection changes movement feel, not just color.
+- Surface profiles now include profile-specific particle-shape rendering (for example water bubbles/spray vs sand dust vs snow flakes), making world differences immediately readable.
+- Studio and runtime now resolve effect behavior through the same profile/category pipeline, so adding new world themes or vehicle classes is configuration-first.
+- Studio now also offers explicit selector controls for race type, racer category, size class, and surface profile so test runs can force behavior without changing track ids or metadata text fields.
+- Studio now includes a dedicated track-preview size slider for on-track single-preview sprite scaling.
+- Track-preview size scaling now also affects the fallback runner sprite (not only generated packs), ensuring immediate visible feedback in all single-preview states.
+- Replay/broadcast label-emphasis scaling now multiplies with the configured preview base-scale instead of overriding it, so the size slider remains effective there too.
+- Runtime racer glyph motion now supports style-specific pose signatures (`glide`, `gallop`, `stomp`, `sail`, `thrust`) as a base for richer per-category animation.
+- Category emission cadence now follows motion style rhythms (for example hoof-animal gallop burst/pause cycles) for clearer behavioral separation between racer classes.
+- Runtime game mode now automatically adjusts racer sprite base scale from racer count to keep crowded races legible.
 - Track metadata and raw JSON controls are now optional advanced sections so default test workflow stays lightweight.
 - Track editor now supports a broadcast preview mode (camera follow and zoom rides) to evaluate the same perspective players will see during races.
 - Broadcast preview is now fullscreen and high-DPI for player-like visual validation.

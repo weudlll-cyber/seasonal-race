@@ -84,6 +84,8 @@
 - `apps/web-viewer/src/studio-app.ts`
   - Studio surface composition and interactive track editor wiring.
   - Orchestrates mode switches, Pixi stage lifecycle, and module composition.
+  - Binds visible studio surface selectors (race type/category/size/profile) to shared effect resolution.
+  - Applies authoring-time on-track sprite-size control for single preview.
 - `apps/web-viewer/src/studio-dom.ts`
   - Centralized studio DOM resolution and control typing.
   - Removes duplicated selector/ID wiring from app orchestrators.
@@ -111,9 +113,14 @@
 - `apps/web-viewer/src/studio-ui-controls-controller.ts`
   - Owns studio toggle/input listener wiring for preview, replay, broadcast, and lane/racer controls.
   - Keeps UI event wiring and button/label text updates out of the studio surface orchestrator.
+- `apps/web-viewer/src/surface-effects.ts`
+  - Shared surface-effect profile system (profile resolution, category mapping, size scaling, particle emission/tick/draw helpers, and motion-style pose helpers).
+  - Central extension point for adding new race-world themes (water, sand, snow, ash, space, neon, etc.) and category-specific visual intensity behavior.
 - `apps/web-viewer/src/runtime-app.ts`
   - Runtime race surface entry isolated from studio authoring controls.
   - Serves as dedicated integration point for real game playback logic.
+  - Applies shared surface-effect profile/category behavior and motion-style glyph rendering for runtime visual feedback.
+  - Auto-scales runtime racer sprite size from racer count for consistent readability.
   - Consumes runtime bootstrap payload when `raceId` is provided in URL query.
 - `apps/web-viewer/src/admin-app.ts`
   - Dedicated admin launch surface (`?mode=admin`) with catalog fetch, id selectors, orientation control, payload preview, and race start actions.
