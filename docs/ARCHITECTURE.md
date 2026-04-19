@@ -17,6 +17,7 @@ The platform is split into five major concerns:
 3. Ops/Admin submits id-based launch payload (`trackId`, `racerListId`) plus modular starter options (`durationMs`, `winnerCount`, `brandingProfileId`, and extensible `options`) to `POST /api/v1/races/start`.
 4. API validates ids and modular options through a dedicated option-resolver layer, then starts a race session with the selected race-type adapter.
 5. Viewer runtime fetches `GET /api/v1/races/:raceId/runtime-bootstrap` to initialize race metadata and launch configuration, maps bootstrap track geometry to the active viewport, and applies launch duration timing to runtime playback.
+   Runtime direction orientation is configurable (`left-to-right` or `top-to-bottom`) via runtime query and launch options.
 6. Race engine runs deterministic or non-deterministic simulation ticks.
 7. State and events are streamed to viewer clients.
 8. Results and replay metadata are persisted.

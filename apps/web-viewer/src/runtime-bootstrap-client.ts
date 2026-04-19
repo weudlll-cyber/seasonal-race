@@ -7,6 +7,7 @@
  */
 
 import type { RuntimeBootstrapPayload } from '../../../packages/shared-types/src/index.js';
+import { resolveTrackOrientationFromSearch, type TrackOrientation } from './track-orientation.js';
 
 export function resolveRuntimeRaceId(search: string): string | null {
   const params = new URLSearchParams(search);
@@ -29,6 +30,10 @@ export function resolveRuntimeApiBase(search: string): string {
 
   const normalized = apiBase.trim();
   return normalized.length > 0 ? normalized : '/api/v1';
+}
+
+export function resolveRuntimeTrackOrientation(search: string): TrackOrientation {
+  return resolveTrackOrientationFromSearch(search);
 }
 
 export async function fetchRuntimeBootstrap(

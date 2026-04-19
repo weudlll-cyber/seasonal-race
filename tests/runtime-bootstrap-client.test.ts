@@ -11,7 +11,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   fetchRuntimeBootstrap,
   resolveRuntimeApiBase,
-  resolveRuntimeRaceId
+  resolveRuntimeRaceId,
+  resolveRuntimeTrackOrientation
 } from '../apps/web-viewer/src/runtime-bootstrap-client';
 
 describe('runtime bootstrap client', () => {
@@ -28,6 +29,11 @@ describe('runtime bootstrap client', () => {
       'http://localhost:5050/api/v1'
     );
     expect(resolveRuntimeApiBase('')).toBe('/api/v1');
+
+    expect(resolveRuntimeTrackOrientation('?orientation=top-to-bottom')).toBe('top-to-bottom');
+    expect(resolveRuntimeTrackOrientation('?orientation=vertical')).toBe('top-to-bottom');
+    expect(resolveRuntimeTrackOrientation('?orientation=left-to-right')).toBe('left-to-right');
+    expect(resolveRuntimeTrackOrientation('')).toBe('left-to-right');
   });
 
   it('fetches runtime bootstrap payload from api endpoint', async () => {

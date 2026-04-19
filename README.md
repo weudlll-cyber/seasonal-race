@@ -110,6 +110,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Web-admin now includes an Ops launch selector model that defaults valid id selections and builds id-only launch payloads for API calls.
 - Runtime viewer now includes a bootstrap client that resolves race id from URL and loads launch+track+racer payload for real race startup flow.
 - Runtime playback now maps bootstrap track points to viewport geometry and uses launch duration for live runtime movement timing.
+- Runtime playback now supports orientation variants (`left-to-right` default, `top-to-bottom`) via URL query (`orientation`) and launch options (`options.trackOrientation`).
 - Web viewer prototype is running with PixiJS: a sprite follows an S-curve track and a cinematic camera starts in overview mode, transitions into leader focus, applies runtime-aware zoom pulses, and returns to an end overview.
 - Race sessions can optionally provide `cameraSettings` to override cinematic defaults (expected duration, pulse count/strength, intro hold, intro transition).
 - Web viewer includes an interactive track path editor: click-to-place variable point counts, live path preview, and TrackDefinition JSON copy/download for fast creation of many track layouts.
