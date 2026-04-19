@@ -6,7 +6,7 @@
  */
 
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
-import { round3 } from './studio-editor-helpers';
+import { round3 } from './studio-editor-helpers.js';
 
 export type TrackTemplateKind = 's-curve' | 'oval' | 'zigzag' | 'river-bend';
 
