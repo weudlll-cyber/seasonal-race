@@ -12,7 +12,7 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { buildApiApp } from '../apps/api/src/app';
+import { buildApiApp } from '../apps/api/src/index';
 
 const tempDirectories: string[] = [];
 

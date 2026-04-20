@@ -17,7 +17,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Backend: Node.js + Fastify + TypeScript
 - Database: PostgreSQL + Prisma
 - `apps/`: runnable applications (`web-viewer`, `web-admin`, `api`)
-- `packages/`: shared and domain packages (`race-engine`, `race-types`, `branding`, `shared-types`)
+- `packages/`: shared and domain packages (`race-engine`, `race-types`, `shared-types`)
 - `tests/`: cross-package integration, e2e, performance, and security suites
 
 - Studio centerline/boundary edit-state helper logic is now isolated in `studio-track-edit-helpers.ts`, reducing state-transition noise in the main studio orchestrator.
@@ -115,6 +115,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Secondary studio editor control wiring (generator/surface/preset/json) is now isolated in `studio-app-secondary-controls-controller.ts`, reducing listener-registration density in studio app flow.
 - Studio replay-racer lifecycle policy (rebuild + preview-size scaling) is now isolated in `studio-replay-racer-lifecycle.ts`, reducing replay-racer lifecycle wiring noise in studio app flow.
 - Legacy orphan modules `scene.ts` and `viewer-model.ts` were removed after reference validation, reducing dead code without changing runtime behavior.
+- Source hygiene removed the unused `packages/branding/src/index.ts` placeholder and internalized unconsumed viewer exports with no runtime behavior changes.
 - Studio single-preview tick behavior is now isolated in `studio-single-preview-controller.ts` so non-replay runner/camera flow stays decoupled from studio composition.
 - Studio background image flow (load/clear/layout) is now isolated in `studio-background-controller.ts` so asset lifecycle stays decoupled from studio composition.
 - Studio preset persistence/storage helpers are now isolated in `studio-preset-store.ts` so preset metadata parsing and IndexedDB/localStorage fallback flow stay decoupled from studio composition.

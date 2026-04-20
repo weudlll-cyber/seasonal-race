@@ -19,16 +19,7 @@ import {
   smoothstep
 } from './studio-replay-math.js';
 
-export {
-  clamp,
-  clamp01,
-  computePathLength,
-  computeTrackTangentAtProgress,
-  lerp,
-  lerpPoint,
-  normalize,
-  smoothstep
-};
+export { clamp, clamp01, computeTrackTangentAtProgress, lerp, lerpPoint, normalize, smoothstep };
 
 export interface ReplayCameraBeat {
   startPhase: number;

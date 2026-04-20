@@ -6,12 +6,8 @@
  */
 
 import type { Graphics } from 'pixi.js';
-import {
-  listSurfaceProfiles as listSurfaceProfilesState,
-  resolveSurfaceProfile as resolveSurfaceProfileState
-} from './surface-effect-profiles.js';
+import { resolveSurfaceProfile as resolveSurfaceProfileState } from './surface-effect-profiles.js';
 
-export const listSurfaceProfiles = listSurfaceProfilesState;
 export const resolveSurfaceProfile = resolveSurfaceProfileState;
 
 export type SurfaceProfileId =
@@ -89,7 +85,7 @@ export function resolveRacerCategory(raceType: string | undefined): RacerCategor
   return 'generic';
 }
 
-export function defaultSizeClassForCategory(category: RacerCategory): RacerSizeClass {
+function defaultSizeClassForCategory(category: RacerCategory): RacerSizeClass {
   if (category === 'bird') return 'small';
   if (category === 'hoof-animal') return 'medium';
   if (category === 'heavy-animal') return 'huge';
@@ -98,7 +94,7 @@ export function defaultSizeClassForCategory(category: RacerCategory): RacerSizeC
   return 'medium';
 }
 
-export function resolveMotionStyle(category: RacerCategory): MotionStyle {
+function resolveMotionStyle(category: RacerCategory): MotionStyle {
   if (category === 'bird') return 'glide';
   if (category === 'hoof-animal') return 'gallop';
   if (category === 'heavy-animal') return 'stomp';

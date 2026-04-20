@@ -83,7 +83,7 @@ const MAX_SHEET_DIMENSION_PX = 8192;
 const MAX_SHEET_PIXELS = 67_000_000;
 const MIN_EFFECTIVE_OUTPUT_SCALE = 0.05;
 
-export function generateSpriteSheetFromImage(
+function generateSpriteSheetFromImage(
   sourceImage: CanvasImageSource,
   sourceWidth: number,
   sourceHeight: number,

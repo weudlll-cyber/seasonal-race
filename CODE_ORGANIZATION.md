@@ -10,7 +10,7 @@
 2. `packages/*`
 
 - Reusable domain modules.
-- Clear contracts for race engine, race types, branding, and shared types.
+- Clear contracts for race engine, race types, and shared types.
 
 3. `tests/*`
 

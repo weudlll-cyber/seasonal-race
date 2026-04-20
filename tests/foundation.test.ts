@@ -8,10 +8,18 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { apiAppId } from '../apps/api/src/index';
+import { apiAppId, buildApiApp } from '../apps/api/src/index';
 import { TRACK_ORIENTATION_OPTIONS, webAdminAppId } from '../apps/web-admin/src/index';
 import { webViewerAppId } from '../apps/web-viewer/src/index';
-import { clearRaceTypeRegistry, listRaceAdapters } from '../packages/race-types/src/index';
+import { createSecureRng } from '../packages/race-engine/src/index';
+import {
+  clearRaceTypeRegistry,
+  duckAdapter,
+  getRaceAdapter,
+  listRaceAdapters,
+  registerDefaultAdapters
+} from '../packages/race-types/src/index';
+import { KNOWN_RACE_TYPES } from '../packages/shared-types/src/index';
 
 describe('foundation bootstrap', () => {
   clearRaceTypeRegistry();
@@ -31,5 +39,19 @@ describe('foundation bootstrap', () => {
 
   it('starts with an empty race-type registry', () => {
     expect(listRaceAdapters()).toEqual([]);
+  });
+
+  it('keeps key exported API contracts wired', () => {
+    expect(typeof buildApiApp).toBe('function');
+    expect(KNOWN_RACE_TYPES.DUCK).toBe('duck');
+
+    const sample = createSecureRng().next();
+    expect(sample).toBeGreaterThanOrEqual(0);
+    expect(sample).toBeLessThan(1);
+
+    clearRaceTypeRegistry();
+    registerDefaultAdapters();
+    expect(getRaceAdapter(KNOWN_RACE_TYPES.DUCK)).toBe(duckAdapter);
+    clearRaceTypeRegistry();
   });
 });

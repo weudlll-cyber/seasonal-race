@@ -187,6 +187,7 @@
 - Studio replay-racer lifecycle policy (rebuild + preview-size scaling) is now extracted into `studio-replay-racer-lifecycle`, reducing replay-racer lifecycle wiring density in `studio-app` while preserving behavior.
 - Source hygiene sweep removed compiler-confirmed unused imports in `studio-app` and `studio-generators` with no runtime behavior changes.
 - Source hygiene sweep removed orphaned legacy modules (`scene.ts`, `viewer-model.ts`) after reference validation, with no runtime behavior changes.
+- Source hygiene sweep removed the unused `packages/branding/src/index.ts` placeholder and internalized unconsumed viewer exports; foundation tests now assert key API entrypoint exports.
 - Broadcast mode now resizes the renderer to the real viewport so race playback fills the full screen area.
 - Broadcast mode now supports `Esc` as a direct return shortcut back to editor mode.
 - Authored-to-broadcast track remapping now uses distinct source/target viewport dimensions to keep race path aligned with the background image in broadcast mode.

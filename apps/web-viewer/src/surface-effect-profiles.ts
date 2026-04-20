@@ -154,10 +154,6 @@ const SURFACE_PROFILES: Record<SurfaceProfileId, SurfaceEffectProfile> = {
   }
 };
 
-export function listSurfaceProfiles(): SurfaceEffectProfile[] {
-  return Object.values(SURFACE_PROFILES);
-}
-
 export function resolveSurfaceProfile(
   effectProfileId: string | undefined,
   raceType: string | undefined
