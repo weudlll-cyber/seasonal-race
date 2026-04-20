@@ -57,7 +57,10 @@ import {
   resolveCenterlinePoints
 } from './studio-track-edit-helpers';
 import { type RuntimeRacerPackCache, resolveTrackPreviewSizePx } from './studio-racer-pack-utils';
-import { rebuildReplayRacerViews } from './studio-replay-racer-builder';
+import {
+  applyReplaySpriteSizeToRacers,
+  rebuildStudioReplayRacersState
+} from './studio-replay-racer-lifecycle';
 import { applyStudioUiState } from './studio-ui-state';
 import { orientCenterlinePoints, rotateStudioGeometry } from './studio-geometry-state';
 import { buildPresetSelectState } from './studio-preset-select-state';
@@ -614,19 +617,19 @@ export async function startStudioApp(): Promise<void> {
   };
 
   function rebuildReplayRacers(): void {
-    const rebuilt = rebuildReplayRacerViews({
+    const rebuilt = rebuildStudioReplayRacersState({
       replayRacers,
       replayRacerCount,
       runnerLayer,
       labelLayer,
       generatedRacerPack,
       runtimeRacerPackCache,
-      defaultRuntimePackFrameCount: DEFAULT_RUNTIME_PACK_FRAME_COUNT
+      defaultRuntimePackFrameCount: DEFAULT_RUNTIME_PACK_FRAME_COUNT,
+      focusRacerNumber
     });
     replayRacers = rebuilt.replayRacers;
     runtimeRacerPackCache = rebuilt.runtimeRacerPackCache;
-
-    focusRacerNumber = normalizeFocusRacerNumber(focusRacerNumber, replayRacerCount);
+    focusRacerNumber = rebuilt.focusRacerNumber;
     dom.focusRacerInput.value = String(focusRacerNumber);
     dom.focusRacerLabel.textContent = `D${focusRacerNumber}`;
     dom.leaderboardList.innerHTML = '';
@@ -635,13 +638,10 @@ export async function startStudioApp(): Promise<void> {
   }
 
   const applyReplaySpriteSizeFromSlider = (): void => {
-    const sizeFactor = resolveTrackPreviewSizePx(Number(dom.trackPreviewSizeInput.value)) / 34;
-    for (const rr of replayRacers) {
-      if (!rr.bodySprite) continue;
-      const baseX = rr.bodyBaseScaleX ?? rr.bodySprite.scale.x;
-      const baseY = rr.bodyBaseScaleY ?? rr.bodySprite.scale.y;
-      rr.bodySprite.scale.set(baseX * sizeFactor, baseY * sizeFactor);
-    }
+    applyReplaySpriteSizeToRacers({
+      replayRacers,
+      targetSizePx: resolveTrackPreviewSizePx(Number(dom.trackPreviewSizeInput.value))
+    });
   };
 
   const safeRebuildReplayRacers = (origin: string): void => {

@@ -149,6 +149,9 @@
 - `apps/web-viewer/src/studio-app-secondary-controls-controller.ts`
   - Owns secondary studio editor control wiring (generator/surface/preset/json) via callback registration.
   - Keeps non-core listener registration density out of studio app orchestration.
+- `apps/web-viewer/src/studio-replay-racer-lifecycle.ts`
+  - Owns replay-racer lifecycle helpers for rebuild state transitions and preview-size scaling policy.
+  - Keeps replay-racer lifecycle policy wiring out of studio app orchestration.
 - `apps/web-viewer/src/studio-surface-effects-state.ts`
   - Pure helper layer for studio surface-setup selection resolution and particle-emitter state transitions.
   - Keeps surface selector inference and emitter-state update flow out of studio app orchestration.

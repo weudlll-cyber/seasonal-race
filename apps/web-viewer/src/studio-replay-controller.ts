@@ -7,23 +7,23 @@
 
 import type { Container, Graphics, Sprite, Text } from 'pixi.js';
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
-import type { CameraController } from './camera';
+import type { CameraController } from './camera.js';
 import {
   buildReplayPackLayout,
   buildReplayVisualSnapshot,
   type NameDisplayMode
-} from './replay-visual-policy';
-import type { RecordedRaceData } from './replay-utils';
-import { sampleReplayAtTime } from './replay-utils';
-import { interpolateTrackPosition } from './track-editor-utils';
-import { computeTrackNormal } from './track-layout-helpers';
-import { clampWorldToBackground, resetWorldTransform } from './world-transform-utils';
+} from './replay-visual-policy.js';
+import type { RecordedRaceData } from './replay-utils.js';
+import { sampleReplayAtTime } from './replay-utils.js';
+import { interpolateTrackPosition } from './track-editor-utils.js';
+import { computeTrackNormal } from './track-layout-helpers.js';
+import { clampWorldToBackground, resetWorldTransform } from './world-transform-utils.js';
 import {
   drawReplayBoundaryLines,
   drawReplayFinishGuides,
   drawReplayLaneBoards,
   renderLeaderboardRows
-} from './studio-render';
+} from './studio-render.js';
 import {
   applyReplayLabelDecisions,
   applyReplaySpriteSeparation,
@@ -48,7 +48,7 @@ import {
   selectReplayCameraInputRacers,
   smoothstep,
   smoothWindow
-} from './studio-replay-utils';
+} from './studio-replay-utils.js';
 
 const START_FORMATION_BLEND_MS = 3200;
 const PRESTART_HOLD_MS = 2200;

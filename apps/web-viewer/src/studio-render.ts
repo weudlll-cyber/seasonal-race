@@ -7,10 +7,10 @@
 
 import type { Graphics } from 'pixi.js';
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
-import { buildTrackDefinition, buildSmoothedPreviewPath } from './track-editor-utils';
-import { buildLaneBoardBounds } from './track-layout-helpers';
-import type { ReplayLeaderboardRow } from './replay-visual-policy';
-import type { EditorDom } from './studio-dom';
+import { buildTrackDefinition, buildSmoothedPreviewPath } from './track-editor-utils.js';
+import { buildLaneBoardBounds } from './track-layout-helpers.js';
+import type { ReplayLeaderboardRow } from './replay-visual-policy.js';
+import type { EditorDom } from './studio-dom.js';
 
 export interface BoundaryEditorState {
   mode: 'centerline' | 'boundaries';
