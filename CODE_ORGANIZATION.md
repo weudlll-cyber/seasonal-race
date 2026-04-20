@@ -116,6 +116,9 @@
 - `apps/web-viewer/src/studio-background-controller.ts`
   - Owns background image load/clear/layout behavior for editor and broadcast view states.
   - Keeps background asset lifecycle and cover/contain layout transitions out of the studio surface orchestrator.
+- `apps/web-viewer/src/studio-preset-store.ts`
+  - Owns studio preset persistence helpers (localStorage preset metadata + IndexedDB background image assets).
+  - Keeps persistence and storage-fallback behavior out of studio composition/orchestration flow.
 - `apps/web-viewer/src/studio-ui-controls-controller.ts`
   - Owns studio toggle/input listener wiring for preview, replay, broadcast, and lane/racer controls.
   - Keeps UI event wiring and button/label text updates out of the studio surface orchestrator.

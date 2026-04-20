@@ -191,6 +191,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Studio replay low-level helper logic is now isolated in `studio-replay-utils.ts` so cinematic/coast/geometry math stays decoupled from frame orchestration.
 - Studio single-preview tick behavior is now isolated in `studio-single-preview-controller.ts` so non-replay runner/camera flow stays decoupled from studio composition.
 - Studio background image flow (load/clear/layout) is now isolated in `studio-background-controller.ts` so asset lifecycle stays decoupled from studio composition.
+- Studio preset persistence/storage helpers are now isolated in `studio-preset-store.ts` so preset metadata parsing and IndexedDB/localStorage fallback flow stay decoupled from studio composition.
 - Studio control-panel event wiring (toggles/inputs and display labels) is now isolated in `studio-ui-controls-controller.ts` so UI wiring stays decoupled from studio composition.
 - Studio preview/replay path derivation is now isolated in `studio-paths.ts`, centralizing centerline/boundary/coast semantics outside the main studio orchestrator.
 - Broadcast mode now resizes the renderer to the real viewport so race coverage uses the full screen instead of leaving unused side areas.

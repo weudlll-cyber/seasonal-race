@@ -47,6 +47,16 @@ import {
   type StudioTrackEditMode
 } from './studio-paths';
 import {
+  clampInteger,
+  deletePresetBackground,
+  loadPresetBackground,
+  loadPresetStore,
+  savePresetBackground,
+  savePresetStore,
+  type BoundarySide,
+  type StudioTestPreset
+} from './studio-preset-store';
+import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
   emitSurfaceParticles,
@@ -79,45 +89,11 @@ const SAMPLE_STRAIGHT_POINTS: TrackPoint[] = [
 
 const RUNNER_SPEED = 0.09;
 const DEFAULT_REPLAY_RACER_COUNT = 12;
-const STUDIO_TEST_PRESET_STORAGE_KEY = 'seasonal-race:studio-test-presets:v2';
-const STUDIO_PRESET_BACKGROUND_DB = 'seasonal-race-studio-preset-assets';
-const STUDIO_PRESET_BACKGROUND_STORE = 'backgrounds';
 const MIN_EDITOR_ZOOM = 1;
 const MAX_EDITOR_ZOOM = 4;
 const DEFAULT_RUNTIME_PACK_FRAME_COUNT = 10;
 
 type TrackEditMode = StudioTrackEditMode;
-type BoundarySide = 'left' | 'right';
-
-interface StudioTestPreset {
-  version: 1;
-  trackId: string;
-  trackName: string;
-  effectProfileId: string;
-  points: TrackPoint[];
-  trackEditMode?: TrackEditMode;
-  trackOrientation?: TrackOrientation;
-  boundaryEditSide?: BoundarySide;
-  leftBoundaryPoints?: TrackPoint[];
-  rightBoundaryPoints?: TrackPoint[];
-  laneWidthPx: number;
-  replayRacerCount: number;
-  nameDisplayMode: NameDisplayMode;
-  focusRacerNumber: number;
-  playingPreview: boolean;
-  smoothingEnabled: boolean;
-  replayModeEnabled: boolean;
-  laneBoardsVisible: boolean;
-  backgroundImageDataUrl?: string;
-  hasBackgroundImage?: boolean;
-  editorGeometryMode?: 'geometry-rotated-v1';
-}
-
-interface StudioTestPresetStore {
-  version: 2;
-  lastUsedPresetName?: string;
-  presets: Record<string, StudioTestPreset>;
-}
 
 export async function startStudioApp(): Promise<void> {
   const app = new Application({
@@ -1983,89 +1959,6 @@ export async function startStudioApp(): Promise<void> {
   }
 
   resetEditorView();
-}
-
-function loadPresetStore(): StudioTestPresetStore {
-  try {
-    const raw = localStorage.getItem(STUDIO_TEST_PRESET_STORAGE_KEY);
-    if (!raw) {
-      return { version: 2, presets: {} };
-    }
-
-    const parsed = JSON.parse(raw) as Partial<StudioTestPresetStore>;
-    if (parsed.version !== 2 || typeof parsed.presets !== 'object' || parsed.presets === null) {
-      return { version: 2, presets: {} };
-    }
-
-    const store: StudioTestPresetStore = {
-      version: 2,
-      presets: parsed.presets as Record<string, StudioTestPreset>
-    };
-    if (typeof parsed.lastUsedPresetName === 'string' && parsed.lastUsedPresetName) {
-      store.lastUsedPresetName = parsed.lastUsedPresetName;
-    }
-    return store;
-  } catch {
-    return { version: 2, presets: {} };
-  }
-}
-
-function savePresetStore(store: StudioTestPresetStore): void {
-  localStorage.setItem(STUDIO_TEST_PRESET_STORAGE_KEY, JSON.stringify(store));
-}
-
-async function savePresetBackground(presetName: string, dataUrl: string): Promise<void> {
-  const db = await openPresetBackgroundDb();
-  await runBackgroundStoreRequest(db, 'readwrite', (store) => store.put(dataUrl, presetName));
-}
-
-async function loadPresetBackground(presetName: string): Promise<string | null> {
-  const db = await openPresetBackgroundDb();
-  const value = await runBackgroundStoreRequest(db, 'readonly', (store) => store.get(presetName));
-  return typeof value === 'string' ? value : null;
-}
-
-async function deletePresetBackground(presetName: string): Promise<void> {
-  const db = await openPresetBackgroundDb();
-  await runBackgroundStoreRequest(db, 'readwrite', (store) => store.delete(presetName));
-}
-
-function openPresetBackgroundDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    if (typeof indexedDB === 'undefined') {
-      reject(new Error('IndexedDB not available'));
-      return;
-    }
-
-    const request = indexedDB.open(STUDIO_PRESET_BACKGROUND_DB, 1);
-    request.onerror = () => reject(request.error ?? new Error('Failed to open IndexedDB'));
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(STUDIO_PRESET_BACKGROUND_STORE)) {
-        db.createObjectStore(STUDIO_PRESET_BACKGROUND_STORE);
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-  });
-}
-
-function runBackgroundStoreRequest<T>(
-  db: IDBDatabase,
-  mode: IDBTransactionMode,
-  run: (store: IDBObjectStore) => IDBRequest<T>
-): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STUDIO_PRESET_BACKGROUND_STORE, mode);
-    const store = tx.objectStore(STUDIO_PRESET_BACKGROUND_STORE);
-    const request = run(store);
-    request.onerror = () => reject(request.error ?? new Error('IndexedDB request failed'));
-    request.onsuccess = () => resolve(request.result);
-  });
-}
-
-function clampInteger(value: number, min: number, max: number, fallback: number): number {
-  if (!Number.isFinite(value)) return fallback;
-  return Math.max(min, Math.min(max, Math.floor(value)));
 }
 
 function buildBoundaryPairFromCenterline(

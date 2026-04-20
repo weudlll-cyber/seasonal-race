@@ -155,6 +155,7 @@
 - Studio single-preview frame tick behavior is now extracted into `studio-single-preview-controller` to decouple non-replay runner/camera flow from studio composition.
 - Studio background image flow (load/clear/layout) is now extracted into `studio-background-controller` to decouple asset lifecycle from studio composition.
 - Studio control-panel event wiring is now extracted into `studio-ui-controls-controller` to decouple UI listener wiring from studio composition.
+- Studio preset persistence/storage helpers are now extracted into `studio-preset-store` (preset metadata parsing + IndexedDB/localStorage fallback behavior) to reduce `studio-app` orchestration complexity.
 - Studio preview/replay path derivation is now extracted into `studio-paths`, centralizing boundary/coast endpoint semantics and reducing orchestration complexity in `studio-app`.
 - Broadcast mode now resizes the renderer to the real viewport so race playback fills the full screen area.
 - Broadcast mode now supports `Esc` as a direct return shortcut back to editor mode.
