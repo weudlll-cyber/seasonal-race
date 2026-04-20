@@ -100,6 +100,7 @@ import {
   wireStudioEditorZoomEvents
 } from './studio-app-view-events';
 import { tickStudioAppPlaybackFrame } from './studio-app-ticker-controller';
+import { wireStudioSecondaryControlsController } from './studio-app-secondary-controls-controller';
 import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
@@ -901,282 +902,246 @@ export async function startStudioApp(): Promise<void> {
     editorCanvas
   });
 
-  dom.trackTemplatePointsInput.addEventListener('input', () => {
-    dom.trackTemplatePointsValue.textContent = dom.trackTemplatePointsInput.value;
-  });
-
-  dom.spriteFrameCountInput.addEventListener('input', () => {
-    dom.spriteFrameCountValue.textContent = dom.spriteFrameCountInput.value;
-    refreshGeneratorPresetHighlight();
-    refreshSpriteGenerationWarning();
-  });
-
-  dom.trackPreviewSizeInput.addEventListener('input', () => {
-    dom.trackPreviewSizeValue.textContent = `${dom.trackPreviewSizeInput.value} px`;
-    applyReplaySpriteSizeFromSlider();
-  });
-
-  dom.spriteVariantCountInput.addEventListener('input', () => {
-    dom.spriteVariantCountValue.textContent = dom.spriteVariantCountInput.value;
-    refreshGeneratorPresetHighlight();
-    refreshSpriteGenerationWarning();
-  });
-
-  dom.spritePresetMinimalButton?.addEventListener('click', () => {
-    applyGeneratorPreset(8, 8, 'Minimal');
-    refreshSpriteGenerationWarning();
-  });
-
-  dom.spritePresetBalancedButton?.addEventListener('click', () => {
-    applyGeneratorPreset(10, 12, 'Balanced');
-    refreshSpriteGenerationWarning();
-  });
-
-  dom.spritePresetMaxContrastButton?.addEventListener('click', () => {
-    applyGeneratorPreset(16, 24, 'Max Contrast');
-    refreshSpriteGenerationWarning();
-  });
-
-  dom.spriteSourceImageInput.addEventListener('change', async () => {
-    const file = dom.spriteSourceImageInput.files?.[0] ?? null;
-    if (!file) {
-      spriteSourceImageDimensions = null;
+  wireStudioSecondaryControlsController({
+    controls: dom,
+    onTrackTemplatePointsInput: () => {
+      dom.trackTemplatePointsValue.textContent = dom.trackTemplatePointsInput.value;
+    },
+    onSpriteFrameCountInput: () => {
+      dom.spriteFrameCountValue.textContent = dom.spriteFrameCountInput.value;
+      refreshGeneratorPresetHighlight();
       refreshSpriteGenerationWarning();
-      return;
-    }
+    },
+    onTrackPreviewSizeInput: () => {
+      dom.trackPreviewSizeValue.textContent = `${dom.trackPreviewSizeInput.value} px`;
+      applyReplaySpriteSizeFromSlider();
+    },
+    onSpriteVariantCountInput: () => {
+      dom.spriteVariantCountValue.textContent = dom.spriteVariantCountInput.value;
+      refreshGeneratorPresetHighlight();
+      refreshSpriteGenerationWarning();
+    },
+    onSpritePresetMinimal: () => {
+      applyGeneratorPreset(8, 8, 'Minimal');
+      refreshSpriteGenerationWarning();
+    },
+    onSpritePresetBalanced: () => {
+      applyGeneratorPreset(10, 12, 'Balanced');
+      refreshSpriteGenerationWarning();
+    },
+    onSpritePresetMaxContrast: () => {
+      applyGeneratorPreset(16, 24, 'Max Contrast');
+      refreshSpriteGenerationWarning();
+    },
+    onSpriteSourceImageChanged: async (file) => {
+      if (!file) {
+        spriteSourceImageDimensions = null;
+        refreshSpriteGenerationWarning();
+        return;
+      }
 
-    try {
-      const image = await loadImageFromFile(file);
-      spriteSourceImageDimensions = { width: image.naturalWidth, height: image.naturalHeight };
-    } catch {
-      spriteSourceImageDimensions = null;
-    }
+      try {
+        const image = await loadImageFromFile(file);
+        spriteSourceImageDimensions = { width: image.naturalWidth, height: image.naturalHeight };
+      } catch {
+        spriteSourceImageDimensions = null;
+      }
 
-    refreshSpriteGenerationWarning();
-  });
-
-  dom.surfaceRaceTypeSelect.addEventListener('change', () => {
-    const selectedRaceType = dom.surfaceRaceTypeSelect.value;
-    dom.editorHelp.textContent =
-      selectedRaceType === 'auto'
-        ? 'Surface race type back on Auto resolver.'
-        : `Surface race type forced to "${selectedRaceType}".`;
-  });
-
-  dom.surfaceCategorySelect.addEventListener('change', () => {
-    const selectedCategory = dom.surfaceCategorySelect.value;
-    dom.editorHelp.textContent =
-      selectedCategory === 'auto'
-        ? 'Racer category back on Auto resolver.'
-        : `Racer category forced to "${selectedCategory}".`;
-  });
-
-  dom.surfaceSizeClassSelect.addEventListener('change', () => {
-    const selectedSizeClass = dom.surfaceSizeClassSelect.value;
-    dom.editorHelp.textContent =
-      selectedSizeClass === 'auto'
-        ? 'Effect size class back on Auto resolver.'
-        : `Effect size class forced to "${selectedSizeClass}".`;
-  });
-
-  dom.surfaceProfileSelect.addEventListener('change', () => {
-    const selectedProfile = dom.surfaceProfileSelect.value;
-    if (selectedProfile === 'auto') {
-      dom.editorHelp.textContent = 'Surface profile back on Auto resolver.';
-      return;
-    }
-    dom.effectProfileInput.value = selectedProfile;
-    refreshExport(dom, points, {
-      mode: trackEditMode,
-      activeSide: boundaryEditSide,
-      leftBoundaryPoints,
-      rightBoundaryPoints
-    });
-    dom.editorHelp.textContent = `Surface profile forced to "${selectedProfile}".`;
-  });
-
-  dom.generateTrackTemplateButton.addEventListener('click', () => {
-    const kind = dom.trackTemplateSelect.value as TrackTemplateKind;
-    const controlPointCount = Number(dom.trackTemplatePointsInput.value);
-
-    let generatedPoints = generateTrackTemplate({
-      kind,
-      controlPointCount,
-      width: VIEW_WIDTH,
-      height: VIEW_HEIGHT,
-      margin: 80
-    });
-    generatedPoints = orientCenterlinePoints(generatedPoints, trackOrientation);
-
-    if (trackEditMode === 'boundaries') {
-      const generatedBoundaryPair = buildBoundaryPairFromCenterline(
-        generatedPoints,
-        laneWidthPx * 8
-      );
-      leftBoundaryPoints = generatedBoundaryPair.leftBoundaryPoints;
-      rightBoundaryPoints = generatedBoundaryPair.rightBoundaryPoints;
-      points = buildCenterlineFromBoundaries(leftBoundaryPoints, rightBoundaryPoints);
-    } else {
-      points = generatedPoints;
-    }
-
-    resetReplayPreviewState();
-    renderPointsChanged();
-    dom.editorHelp.textContent = `Generated ${kind} template with ${controlPointCount} control points.`;
-  });
-
-  dom.generateSpriteSheetButton.addEventListener('click', async () => {
-    const file = dom.spriteSourceImageInput.files?.[0] ?? null;
-    if (!file) {
-      dom.editorHelp.textContent = 'Select a sprite source image first.';
-      return;
-    }
-
-    dom.generateSpriteSheetButton.disabled = true;
-    try {
-      const image = await loadImageFromFile(file);
-      const frameCount = Number(dom.spriteFrameCountInput.value);
-      const racerVariantCount = Number(dom.spriteVariantCountInput.value);
-      const generated = generateRacerSpritePackFromImage(
-        image,
-        image.naturalWidth,
-        image.naturalHeight,
-        {
-          frameCount,
-          racerVariantCount,
-          frameDurationMs: 90,
-          outputScale: 1,
-          paddingPx: 10
-        }
-      );
-
-      generatedSpriteSheetDataUrl = generated.sheetDataUrl;
-      generatedSpriteSheetMeta = generated.meta;
-      generatedRacerPack = generated;
-      spritePreviewState = createDefaultStudioSpritePreviewState();
-      trackPreviewTextures = rebuildTrackPreviewTextures(generated, 0);
-      dom.spriteSheetPreview.src = generated.sheetDataUrl;
-      dom.downloadSpriteSheetButton.disabled = false;
-      dom.downloadSpriteMetaButton.disabled = false;
-      const scaleNote =
-        generated.meta.appliedOutputScale < 0.999
-          ? ` Auto-scaled to ${(generated.meta.appliedOutputScale * 100).toFixed(1)}% to fit canvas limits.`
-          : '';
-      dom.editorHelp.textContent = `Racer pack generated: ${generated.meta.racerVariantCount} variants x ${generated.meta.frameCount} frames.${scaleNote}`;
-      safeRebuildReplayRacers('spritePackGenerated');
-    } catch (error) {
-      generatedSpriteSheetDataUrl = null;
-      generatedSpriteSheetMeta = null;
-      generatedRacerPack = null;
-      trackPreviewTextures = [];
-      dom.downloadSpriteSheetButton.disabled = true;
-      dom.downloadSpriteMetaButton.disabled = true;
+      refreshSpriteGenerationWarning();
+    },
+    onSurfaceRaceTypeChanged: (selectedRaceType) => {
       dom.editorHelp.textContent =
-        error instanceof Error ? error.message : 'Sprite generation failed.';
-    } finally {
-      dom.generateSpriteSheetButton.disabled = false;
-    }
-  });
+        selectedRaceType === 'auto'
+          ? 'Surface race type back on Auto resolver.'
+          : `Surface race type forced to "${selectedRaceType}".`;
+    },
+    onSurfaceCategoryChanged: (selectedCategory) => {
+      dom.editorHelp.textContent =
+        selectedCategory === 'auto'
+          ? 'Racer category back on Auto resolver.'
+          : `Racer category forced to "${selectedCategory}".`;
+    },
+    onSurfaceSizeClassChanged: (selectedSizeClass) => {
+      dom.editorHelp.textContent =
+        selectedSizeClass === 'auto'
+          ? 'Effect size class back on Auto resolver.'
+          : `Effect size class forced to "${selectedSizeClass}".`;
+    },
+    onSurfaceProfileChanged: (selectedProfile) => {
+      if (selectedProfile === 'auto') {
+        dom.editorHelp.textContent = 'Surface profile back on Auto resolver.';
+        return;
+      }
+      dom.effectProfileInput.value = selectedProfile;
+      refreshExport(dom, points, {
+        mode: trackEditMode,
+        activeSide: boundaryEditSide,
+        leftBoundaryPoints,
+        rightBoundaryPoints
+      });
+      dom.editorHelp.textContent = `Surface profile forced to "${selectedProfile}".`;
+    },
+    onGenerateTrackTemplate: () => {
+      const kind = dom.trackTemplateSelect.value as TrackTemplateKind;
+      const controlPointCount = Number(dom.trackTemplatePointsInput.value);
 
-  dom.downloadSpriteSheetButton.addEventListener('click', () => {
-    if (!generatedSpriteSheetDataUrl) {
-      return;
-    }
-    downloadDataUrl('generated-racer-pack.png', generatedSpriteSheetDataUrl);
-  });
+      let generatedPoints = generateTrackTemplate({
+        kind,
+        controlPointCount,
+        width: VIEW_WIDTH,
+        height: VIEW_HEIGHT,
+        margin: 80
+      });
+      generatedPoints = orientCenterlinePoints(generatedPoints, trackOrientation);
 
-  dom.downloadSpriteMetaButton.addEventListener('click', () => {
-    if (!generatedSpriteSheetMeta) {
-      return;
-    }
-    downloadTextFile(
-      'generated-racer-pack.meta.json',
-      JSON.stringify(generatedSpriteSheetMeta, null, 2)
-    );
-  });
+      if (trackEditMode === 'boundaries') {
+        const generatedBoundaryPair = buildBoundaryPairFromCenterline(
+          generatedPoints,
+          laneWidthPx * 8
+        );
+        leftBoundaryPoints = generatedBoundaryPair.leftBoundaryPoints;
+        rightBoundaryPoints = generatedBoundaryPair.rightBoundaryPoints;
+        points = buildCenterlineFromBoundaries(leftBoundaryPoints, rightBoundaryPoints);
+      } else {
+        points = generatedPoints;
+      }
 
-  dom.boundaryEditSideSelect.addEventListener('change', () => {
-    boundaryEditSide = dom.boundaryEditSideSelect.value === 'right' ? 'right' : 'left';
-    renderPointsChanged();
-  });
-
-  dom.trackIdInput.addEventListener('input', () =>
-    refreshExport(dom, points, {
-      mode: trackEditMode,
-      activeSide: boundaryEditSide,
-      leftBoundaryPoints,
-      rightBoundaryPoints
-    })
-  );
-  dom.trackNameInput.addEventListener('input', () =>
-    refreshExport(dom, points, {
-      mode: trackEditMode,
-      activeSide: boundaryEditSide,
-      leftBoundaryPoints,
-      rightBoundaryPoints
-    })
-  );
-  dom.effectProfileInput.addEventListener('input', () => {
-    syncSurfaceProfileSelectFromInput();
-    refreshExport(dom, points, {
-      mode: trackEditMode,
-      activeSide: boundaryEditSide,
-      leftBoundaryPoints,
-      rightBoundaryPoints
-    });
-  });
-  dom.savePresetButton.addEventListener('click', () => {
-    void saveTestPreset();
-  });
-  dom.loadPresetButton.addEventListener('click', () => {
-    void loadTestPreset();
-  });
-  dom.deletePresetButton.addEventListener('click', () => {
-    void deleteSelectedPreset();
-  });
-  dom.presetSelect.addEventListener('change', () => {
-    dom.presetNameInput.value = dom.presetSelect.value;
-  });
-
-  dom.copyJsonButton.addEventListener('click', async () => {
-    const payload = dom.jsonOutput.value;
-    try {
-      await navigator.clipboard.writeText(payload);
-      dom.editorHelp.textContent = 'Track JSON copied to clipboard.';
-    } catch {
-      dom.editorHelp.textContent = 'Clipboard copy failed. Copy manually from the JSON area.';
-    }
-  });
-
-  dom.downloadJsonButton.addEventListener('click', () => {
-    const payload = dom.jsonOutput.value;
-    const trackId = dom.trackIdInput.value.trim() || DEFAULT_EDITOR_TRACK_ID;
-    const blob = new Blob([payload], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `${trackId}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    dom.editorHelp.textContent = 'Track JSON downloaded.';
-  });
-
-  dom.loadJsonButton.addEventListener('click', () => {
-    try {
-      const loadedTrackState = parseStudioTrackJsonLoadState(dom.jsonOutput.value);
-      points = loadedTrackState.points;
-      trackEditMode = loadedTrackState.trackEditMode;
-      trackOrientation = loadedTrackState.trackOrientation;
-      leftBoundaryPoints = loadedTrackState.leftBoundaryPoints;
-      rightBoundaryPoints = loadedTrackState.rightBoundaryPoints;
-      if (loadedTrackState.trackId) dom.trackIdInput.value = loadedTrackState.trackId;
-      if (loadedTrackState.trackName) dom.trackNameInput.value = loadedTrackState.trackName;
       resetReplayPreviewState();
-      syncUiFromState();
       renderPointsChanged();
-      dom.editorHelp.textContent = 'Track loaded from JSON preview.';
-    } catch {
-      dom.editorHelp.textContent = 'Could not parse track JSON. Check the JSON preview format.';
+      dom.editorHelp.textContent = `Generated ${kind} template with ${controlPointCount} control points.`;
+    },
+    onGenerateSpriteSheet: async () => {
+      const file = dom.spriteSourceImageInput.files?.[0] ?? null;
+      if (!file) {
+        dom.editorHelp.textContent = 'Select a sprite source image first.';
+        return;
+      }
+
+      dom.generateSpriteSheetButton.disabled = true;
+      try {
+        const image = await loadImageFromFile(file);
+        const frameCount = Number(dom.spriteFrameCountInput.value);
+        const racerVariantCount = Number(dom.spriteVariantCountInput.value);
+        const generated = generateRacerSpritePackFromImage(
+          image,
+          image.naturalWidth,
+          image.naturalHeight,
+          {
+            frameCount,
+            racerVariantCount,
+            frameDurationMs: 90,
+            outputScale: 1,
+            paddingPx: 10
+          }
+        );
+
+        generatedSpriteSheetDataUrl = generated.sheetDataUrl;
+        generatedSpriteSheetMeta = generated.meta;
+        generatedRacerPack = generated;
+        spritePreviewState = createDefaultStudioSpritePreviewState();
+        trackPreviewTextures = rebuildTrackPreviewTextures(generated, 0);
+        dom.spriteSheetPreview.src = generated.sheetDataUrl;
+        dom.downloadSpriteSheetButton.disabled = false;
+        dom.downloadSpriteMetaButton.disabled = false;
+        const scaleNote =
+          generated.meta.appliedOutputScale < 0.999
+            ? ` Auto-scaled to ${(generated.meta.appliedOutputScale * 100).toFixed(1)}% to fit canvas limits.`
+            : '';
+        dom.editorHelp.textContent = `Racer pack generated: ${generated.meta.racerVariantCount} variants x ${generated.meta.frameCount} frames.${scaleNote}`;
+        safeRebuildReplayRacers('spritePackGenerated');
+      } catch (error) {
+        generatedSpriteSheetDataUrl = null;
+        generatedSpriteSheetMeta = null;
+        generatedRacerPack = null;
+        trackPreviewTextures = [];
+        dom.downloadSpriteSheetButton.disabled = true;
+        dom.downloadSpriteMetaButton.disabled = true;
+        dom.editorHelp.textContent =
+          error instanceof Error ? error.message : 'Sprite generation failed.';
+      } finally {
+        dom.generateSpriteSheetButton.disabled = false;
+      }
+    },
+    onDownloadSpriteSheet: () => {
+      if (!generatedSpriteSheetDataUrl) {
+        return;
+      }
+      downloadDataUrl('generated-racer-pack.png', generatedSpriteSheetDataUrl);
+    },
+    onDownloadSpriteMeta: () => {
+      if (!generatedSpriteSheetMeta) {
+        return;
+      }
+      downloadTextFile(
+        'generated-racer-pack.meta.json',
+        JSON.stringify(generatedSpriteSheetMeta, null, 2)
+      );
+    },
+    onBoundaryEditSideChanged: (side) => {
+      boundaryEditSide = side;
+      renderPointsChanged();
+    },
+    onTrackMetadataInput: () => {
+      refreshExport(dom, points, {
+        mode: trackEditMode,
+        activeSide: boundaryEditSide,
+        leftBoundaryPoints,
+        rightBoundaryPoints
+      });
+    },
+    onEffectProfileInput: () => {
+      syncSurfaceProfileSelectFromInput();
+      refreshExport(dom, points, {
+        mode: trackEditMode,
+        activeSide: boundaryEditSide,
+        leftBoundaryPoints,
+        rightBoundaryPoints
+      });
+    },
+    onSavePreset: saveTestPreset,
+    onLoadPreset: loadTestPreset,
+    onDeletePreset: deleteSelectedPreset,
+    onPresetSelectChanged: (value) => {
+      dom.presetNameInput.value = value;
+    },
+    onCopyJson: async () => {
+      const payload = dom.jsonOutput.value;
+      try {
+        await navigator.clipboard.writeText(payload);
+        dom.editorHelp.textContent = 'Track JSON copied to clipboard.';
+      } catch {
+        dom.editorHelp.textContent = 'Clipboard copy failed. Copy manually from the JSON area.';
+      }
+    },
+    onDownloadJson: () => {
+      const payload = dom.jsonOutput.value;
+      const trackId = dom.trackIdInput.value.trim() || DEFAULT_EDITOR_TRACK_ID;
+      const blob = new Blob([payload], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${trackId}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      dom.editorHelp.textContent = 'Track JSON downloaded.';
+    },
+    onLoadJson: () => {
+      try {
+        const loadedTrackState = parseStudioTrackJsonLoadState(dom.jsonOutput.value);
+        points = loadedTrackState.points;
+        trackEditMode = loadedTrackState.trackEditMode;
+        trackOrientation = loadedTrackState.trackOrientation;
+        leftBoundaryPoints = loadedTrackState.leftBoundaryPoints;
+        rightBoundaryPoints = loadedTrackState.rightBoundaryPoints;
+        if (loadedTrackState.trackId) dom.trackIdInput.value = loadedTrackState.trackId;
+        if (loadedTrackState.trackName) dom.trackNameInput.value = loadedTrackState.trackName;
+        resetReplayPreviewState();
+        syncUiFromState();
+        renderPointsChanged();
+        dom.editorHelp.textContent = 'Track loaded from JSON preview.';
+      } catch {
+        dom.editorHelp.textContent = 'Could not parse track JSON. Check the JSON preview format.';
+      }
     }
   });
 
