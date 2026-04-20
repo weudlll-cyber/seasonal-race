@@ -146,6 +146,12 @@
 - `apps/web-viewer/src/studio-generator-ui-state.ts`
   - Pure helper layer for generator preset resolution and sprite-sheet warning text policy.
   - Keeps generator policy calculations out of studio app orchestration.
+- `apps/web-viewer/src/studio-sprite-preview-state.ts`
+  - Pure helper layer for sprite-preview frame/variant animation state progression.
+  - Keeps preview animation stepping policy out of studio app orchestration.
+- `apps/web-viewer/src/studio-sprite-preview-render.ts`
+  - Shared sprite-preview canvas drawing and texture extraction helpers.
+  - Keeps preview rendering logic out of studio app orchestration.
 - `apps/web-viewer/src/studio-ui-controls-controller.ts`
   - Owns studio toggle/input listener wiring for preview, replay, broadcast, and lane/racer controls.
   - Keeps UI event wiring and button/label text updates out of the studio surface orchestrator.

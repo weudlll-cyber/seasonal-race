@@ -6,7 +6,8 @@
  * Dependencies: PixiJS and local track-editor utility helpers.
  */
 
-import { Application, Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { Application, Container, Graphics, Sprite } from 'pixi.js';
+import type { Texture } from 'pixi.js';
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
 import { CameraController } from './camera';
 import { DEFAULT_EDITOR_TRACK_ID } from './track-editor-utils';
@@ -76,6 +77,15 @@ import {
   buildSpriteGenerationWarning,
   resolveGeneratorPresetLabel
 } from './studio-generator-ui-state';
+import {
+  drawSpritePreviewPlaceholder,
+  drawSpritePreviewSingle,
+  rebuildTrackPreviewTextures
+} from './studio-sprite-preview-render';
+import {
+  createDefaultStudioSpritePreviewState,
+  tickStudioSpritePreviewState
+} from './studio-sprite-preview-state';
 import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
@@ -217,10 +227,7 @@ export async function startStudioApp(): Promise<void> {
   dom.downloadSpriteSheetButton.disabled = true;
   dom.downloadSpriteMetaButton.disabled = true;
 
-  let spritePreviewFrameIndex = 0;
-  let spritePreviewFrameElapsedMs = 0;
-  let spritePreviewVariantIndex = 0;
-  let spritePreviewVariantElapsedMs = 0;
+  let spritePreviewState = createDefaultStudioSpritePreviewState();
   let trackPreviewTextures: Texture[] = [];
   let studioSurfaceElapsedMs = 0;
   const studioSurfaceParticles: SurfaceParticle[] = [];
@@ -267,41 +274,6 @@ export async function startStudioApp(): Promise<void> {
   };
 
   refreshSpriteGenerationWarning();
-
-  const rebuildTrackPreviewTextures = (
-    pack: GeneratedRacerSpritePack,
-    variantIndex: number
-  ): void => {
-    const variantCount = Math.max(1, pack.meta.racerVariantCount);
-    const normalizedVariantIndex = ((variantIndex % variantCount) + variantCount) % variantCount;
-    const textures: Texture[] = [];
-    for (let frameIndex = 0; frameIndex < pack.meta.frameCount; frameIndex += 1) {
-      const frameMetaIndex = normalizedVariantIndex * pack.meta.frameCount + frameIndex;
-      const frame = pack.meta.frames[frameMetaIndex];
-      if (!frame) continue;
-
-      const frameCanvas = document.createElement('canvas');
-      frameCanvas.width = frame.width;
-      frameCanvas.height = frame.height;
-      const frameCtx = frameCanvas.getContext('2d');
-      if (!frameCtx) continue;
-
-      frameCtx.drawImage(
-        pack.sheetCanvas,
-        frame.x,
-        frame.y,
-        frame.width,
-        frame.height,
-        0,
-        0,
-        frame.width,
-        frame.height
-      );
-      textures.push(Texture.from(frameCanvas));
-    }
-
-    trackPreviewTextures = textures;
-  };
 
   const applyGeneratorPreset = (
     frameCount: number,
@@ -351,96 +323,6 @@ export async function startStudioApp(): Promise<void> {
     drawSurfaceParticles(surfaceEffectLayer, studioSurfaceParticles);
   };
 
-  const drawSpritePreviewPlaceholder = (
-    canvas: HTMLCanvasElement,
-    message: string,
-    isLarge: boolean
-  ): void => {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#071522';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'rgba(131, 165, 199, 0.22)';
-    for (let x = 0; x < canvas.width; x += isLarge ? 36 : 28) {
-      ctx.fillRect(x, 0, 1, canvas.height);
-    }
-    for (let y = 0; y < canvas.height; y += isLarge ? 36 : 28) {
-      ctx.fillRect(0, y, canvas.width, 1);
-    }
-
-    ctx.fillStyle = '#b7d5ff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = isLarge ? '18px Segoe UI' : '13px Segoe UI';
-    ctx.fillText(message, canvas.width * 0.5, canvas.height * 0.5);
-  };
-
-  const drawSpritePreviewSingle = (
-    canvas: HTMLCanvasElement,
-    pack: GeneratedRacerSpritePack,
-    frameIndex: number,
-    variantIndex: number,
-    isLarge: boolean
-  ): void => {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#071522';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const variantCount = pack.meta.racerVariantCount;
-    if (variantCount <= 0) {
-      drawSpritePreviewPlaceholder(canvas, 'No variants available.', isLarge);
-      return;
-    }
-
-    const normalizedVariantIndex = ((variantIndex % variantCount) + variantCount) % variantCount;
-    const frameMetaIndex = normalizedVariantIndex * pack.meta.frameCount + frameIndex;
-    const frame = pack.meta.frames[frameMetaIndex];
-    if (!frame) {
-      drawSpritePreviewPlaceholder(canvas, 'Preview frame missing.', isLarge);
-      return;
-    }
-
-    const targetW = Math.min(
-      canvas.width * (isLarge ? 0.78 : 0.72),
-      frame.width * (isLarge ? 4.4 : 3)
-    );
-    const targetH = (frame.height / frame.width) * targetW;
-    const dx = (canvas.width - targetW) * 0.5;
-    const dy = (canvas.height - targetH) * 0.55;
-
-    ctx.fillStyle = 'rgba(8, 16, 24, 0.28)';
-    ctx.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
-    ctx.drawImage(
-      pack.sheetCanvas,
-      frame.x,
-      frame.y,
-      frame.width,
-      frame.height,
-      dx,
-      dy,
-      targetW,
-      targetH
-    );
-
-    const variant = pack.meta.variants[normalizedVariantIndex];
-    if (variant) {
-      const chipWidth = isLarge ? 200 : 160;
-      const chipHeight = isLarge ? 30 : 24;
-      ctx.fillStyle = 'rgba(5, 16, 28, 0.8)';
-      ctx.fillRect(10, 10, chipWidth, chipHeight);
-      ctx.fillStyle = '#cfe5ff';
-      ctx.font = isLarge ? '14px Segoe UI' : '12px Segoe UI';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`Preview ${variant.label} - ${variant.pattern}`, 18, 10 + chipHeight * 0.52);
-    }
-  };
-
   const renderGeneratedSpritePreviews = (deltaMs: number): void => {
     if (!generatedRacerPack) {
       drawSpritePreviewPlaceholder(
@@ -452,25 +334,27 @@ export async function startStudioApp(): Promise<void> {
     }
 
     const frameDurationMs = Math.max(40, generatedRacerPack.meta.frames[0]?.durationMs ?? 90);
-    spritePreviewFrameElapsedMs += deltaMs;
-    while (spritePreviewFrameElapsedMs >= frameDurationMs) {
-      spritePreviewFrameElapsedMs -= frameDurationMs;
-      spritePreviewFrameIndex = (spritePreviewFrameIndex + 1) % generatedRacerPack.meta.frameCount;
-    }
+    const tickedState = tickStudioSpritePreviewState({
+      state: spritePreviewState,
+      deltaMs,
+      frameDurationMs,
+      frameCount: generatedRacerPack.meta.frameCount,
+      variantCount: generatedRacerPack.meta.racerVariantCount
+    });
+    spritePreviewState = tickedState.nextState;
 
-    spritePreviewVariantElapsedMs += deltaMs;
-    if (spritePreviewVariantElapsedMs >= 1400) {
-      spritePreviewVariantElapsedMs = 0;
-      spritePreviewVariantIndex =
-        (spritePreviewVariantIndex + 1) % Math.max(1, generatedRacerPack.meta.racerVariantCount);
-      rebuildTrackPreviewTextures(generatedRacerPack, spritePreviewVariantIndex);
+    if (tickedState.variantChanged) {
+      trackPreviewTextures = rebuildTrackPreviewTextures(
+        generatedRacerPack,
+        spritePreviewState.variantIndex
+      );
     }
 
     drawSpritePreviewSingle(
       dom.spritePackAnimPreviewCanvas,
       generatedRacerPack,
-      spritePreviewFrameIndex,
-      spritePreviewVariantIndex,
+      spritePreviewState.frameIndex,
+      spritePreviewState.variantIndex,
       false
     );
   };
@@ -1263,11 +1147,8 @@ export async function startStudioApp(): Promise<void> {
       generatedSpriteSheetDataUrl = generated.sheetDataUrl;
       generatedSpriteSheetMeta = generated.meta;
       generatedRacerPack = generated;
-      spritePreviewFrameIndex = 0;
-      spritePreviewFrameElapsedMs = 0;
-      spritePreviewVariantIndex = 0;
-      spritePreviewVariantElapsedMs = 0;
-      rebuildTrackPreviewTextures(generated, 0);
+      spritePreviewState = createDefaultStudioSpritePreviewState();
+      trackPreviewTextures = rebuildTrackPreviewTextures(generated, 0);
       dom.spriteSheetPreview.src = generated.sheetDataUrl;
       dom.downloadSpriteSheetButton.disabled = false;
       dom.downloadSpriteMetaButton.disabled = false;
@@ -1557,7 +1438,8 @@ export async function startStudioApp(): Promise<void> {
     singlePreviewElapsedSeconds = singleTick.singlePreviewElapsedSeconds;
 
     if (generatedRacerPack && trackPreviewTextures.length > 0) {
-      const texture = trackPreviewTextures[spritePreviewFrameIndex % trackPreviewTextures.length]!;
+      const texture =
+        trackPreviewTextures[spritePreviewState.frameIndex % trackPreviewTextures.length]!;
       runner.texture = texture;
       const maxTextureEdge = Math.max(texture.width, texture.height) || 1;
       const targetRunnerSizePx = resolveTrackPreviewSizePx(Number(dom.trackPreviewSizeInput.value));
