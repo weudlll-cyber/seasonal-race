@@ -171,6 +171,7 @@
 - Generated template centerline orientation mapping is now routed through shared geometry helpers, removing inline orientation-rotation branching in `studio-app`.
 - Studio preset dropdown selection model logic is now extracted into `studio-preset-select-state`, reducing preset-selection fallback wiring noise in `studio-app`.
 - Studio editor zoom/view-state math is now extracted into `studio-editor-view-state`, reducing editor transform math wiring noise in `studio-app`.
+- Studio surface setup resolution and particle-emitter state transitions are now extracted into `studio-surface-effects-state`, reducing selector/state wiring noise in `studio-app` while preserving visual behavior.
 - Broadcast mode now resizes the renderer to the real viewport so race playback fills the full screen area.
 - Broadcast mode now supports `Esc` as a direct return shortcut back to editor mode.
 - Authored-to-broadcast track remapping now uses distinct source/target viewport dimensions to keep race path aligned with the background image in broadcast mode.

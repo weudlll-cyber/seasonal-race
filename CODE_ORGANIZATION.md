@@ -140,6 +140,9 @@
 - `apps/web-viewer/src/studio-editor-view-state.ts`
   - Pure editor zoom/view transform math helpers for centered zoom and world positioning.
   - Keeps editor camera/zoom state math out of studio app orchestration.
+- `apps/web-viewer/src/studio-surface-effects-state.ts`
+  - Pure helper layer for studio surface-setup selection resolution and particle-emitter state transitions.
+  - Keeps surface selector inference and emitter-state update flow out of studio app orchestration.
 - `apps/web-viewer/src/studio-ui-controls-controller.ts`
   - Owns studio toggle/input listener wiring for preview, replay, broadcast, and lane/racer controls.
   - Keeps UI event wiring and button/label text updates out of the studio surface orchestrator.

@@ -70,13 +70,13 @@ import {
   createDefaultEditorViewState
 } from './studio-editor-view-state';
 import {
+  advanceStudioSurfaceEmitter,
+  resolveStudioSurfaceEffectSetupInput
+} from './studio-surface-effects-state';
+import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
-  emitSurfaceParticles,
-  type RacerCategory,
-  resolveRacerCategory,
   tickSurfaceParticles,
-  type RacerSizeClass,
   type SurfaceParticle
 } from './surface-effects';
 
@@ -354,117 +354,36 @@ export async function startStudioApp(): Promise<void> {
     dom.editorHelp.textContent = `Generator preset applied: ${label}.`;
   };
 
-  const resolveStudioRaceType = (): string => {
-    const selectedRaceType = dom.surfaceRaceTypeSelect.value.trim().toLowerCase();
-    if (selectedRaceType && selectedRaceType !== 'auto') {
-      return selectedRaceType;
-    }
-
-    const trackKey = dom.trackIdInput.value.trim().toLowerCase();
-    const effectKey = dom.effectProfileInput.value.trim().toLowerCase();
-    if (trackKey.includes('duck') || effectKey.includes('duck') || effectKey.includes('water')) {
-      return 'duck';
-    }
-    if (trackKey.includes('horse') || effectKey.includes('horse') || effectKey.includes('sand')) {
-      return 'horse';
-    }
-    if (
-      trackKey.includes('rocket') ||
-      effectKey.includes('rocket') ||
-      effectKey.includes('space')
-    ) {
-      return 'rocket';
-    }
-    return 'generic';
-  };
-
-  const resolveStudioCategory = (raceType: string): RacerCategory => {
-    const selectedCategory = dom.surfaceCategorySelect.value as RacerCategory | 'auto';
-    if (selectedCategory !== 'auto') {
-      return selectedCategory;
-    }
-    return resolveRacerCategory(raceType);
-  };
-
-  const resolveStudioSizeClass = (): RacerSizeClass => {
-    const selectedSizeClass = dom.surfaceSizeClassSelect.value as RacerSizeClass | 'auto';
-    if (selectedSizeClass !== 'auto') {
-      return selectedSizeClass;
-    }
-
-    if (replayRacerCount <= 8) return 'small';
-    if (replayRacerCount <= 20) return 'medium';
-    if (replayRacerCount <= 45) return 'large';
-    return 'huge';
-  };
-
-  const resolveStudioEffectProfileId = (): string | undefined => {
-    const selectedProfileId = dom.surfaceProfileSelect.value.trim();
-    if (selectedProfileId && selectedProfileId !== 'auto') {
-      return selectedProfileId;
-    }
-
-    const typedEffectProfileId = dom.effectProfileInput.value.trim();
-    return typedEffectProfileId || undefined;
-  };
-
   const updateStudioSurfaceEffects = (dtSec: number): void => {
-    studioSurfaceElapsedMs += dtSec * 1000;
-    const raceType = resolveStudioRaceType();
-    const category = resolveStudioCategory(raceType);
-    const effectProfileId = resolveStudioEffectProfileId();
-    const setup = buildSurfaceEffectSetup({
-      raceType,
-      category,
-      sizeClass: resolveStudioSizeClass(),
-      ...(effectProfileId ? { effectProfileId } : {})
+    const setupInput = resolveStudioSurfaceEffectSetupInput(
+      {
+        surfaceRaceType: dom.surfaceRaceTypeSelect.value,
+        surfaceCategory: dom.surfaceCategorySelect.value,
+        surfaceSizeClass: dom.surfaceSizeClassSelect.value,
+        surfaceProfile: dom.surfaceProfileSelect.value,
+        effectProfileInput: dom.effectProfileInput.value,
+        trackId: dom.trackIdInput.value
+      },
+      replayRacerCount
+    );
+    const setup = buildSurfaceEffectSetup(setupInput);
+    const nextSurfaceState = advanceStudioSurfaceEmitter({
+      dtSec,
+      setup,
+      particles: studioSurfaceParticles,
+      replayModeEnabled,
+      replayRacers,
+      runnerVisible: runner.visible,
+      runnerX: runner.position.x,
+      runnerY: runner.position.y,
+      state: {
+        elapsedMs: studioSurfaceElapsedMs,
+        replayPreviousPositions,
+        runnerPreviousPosition
+      }
     });
-
-    if (replayModeEnabled) {
-      for (const rr of replayRacers) {
-        if (!rr.sprite.visible) continue;
-        const prev = replayPreviousPositions.get(rr.id);
-        const x = rr.sprite.position.x;
-        const y = rr.sprite.position.y;
-        const dx = prev ? x - prev.x : 0;
-        const dy = prev ? y - prev.y : 0;
-        const distance = Math.hypot(dx, dy);
-        const speedNorm = Math.max(0.15, Math.min(1, distance / Math.max(8, 180 * dtSec)));
-        emitSurfaceParticles(studioSurfaceParticles, setup, {
-          x,
-          y: y + 10,
-          dx,
-          dy,
-          speedNorm,
-          dtSec,
-          elapsedMs: studioSurfaceElapsedMs
-        });
-        replayPreviousPositions.set(rr.id, { x, y });
-      }
-      runnerPreviousPosition = null;
-    } else {
-      replayPreviousPositions.clear();
-      if (runner.visible) {
-        const x = runner.position.x;
-        const y = runner.position.y;
-        const dx = runnerPreviousPosition ? x - runnerPreviousPosition.x : 0;
-        const dy = runnerPreviousPosition ? y - runnerPreviousPosition.y : 0;
-        const distance = Math.hypot(dx, dy);
-        const speedNorm = Math.max(0.12, Math.min(1, distance / Math.max(8, 160 * dtSec)));
-        emitSurfaceParticles(studioSurfaceParticles, setup, {
-          x,
-          y: y + 10,
-          dx,
-          dy,
-          speedNorm,
-          dtSec,
-          elapsedMs: studioSurfaceElapsedMs
-        });
-        runnerPreviousPosition = { x, y };
-      } else {
-        runnerPreviousPosition = null;
-      }
-    }
+    studioSurfaceElapsedMs = nextSurfaceState.elapsedMs;
+    runnerPreviousPosition = nextSurfaceState.runnerPreviousPosition;
 
     tickSurfaceParticles(studioSurfaceParticles, setup, dtSec);
     drawSurfaceParticles(surfaceEffectLayer, studioSurfaceParticles);
