@@ -92,6 +92,8 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Studio file/image utility helpers are now isolated in `studio-file-utils.ts`, reducing generic browser utility noise in studio orchestration.
 - Runtime racer-pack fallback/sprite extraction/preview-size helpers are now isolated in `studio-racer-pack-utils.ts`, reducing replay sprite orchestration noise in studio app flow.
 - Studio UI state synchronization mapping is now isolated in `studio-ui-state.ts`, reducing control-value and label synchronization noise in studio app flow.
+- Studio geometry orientation rotation state updates are now isolated in `studio-geometry-state.ts`, reducing duplicated centerline/boundary orientation wiring in studio app flow.
+- Studio preset dropdown selection model logic is now isolated in `studio-preset-select-state.ts`, reducing preset-selection fallback wiring noise in studio app flow.
 - Studio single-preview tick behavior is now isolated in `studio-single-preview-controller.ts` so non-replay runner/camera flow stays decoupled from studio composition.
 - Studio background image flow (load/clear/layout) is now isolated in `studio-background-controller.ts` so asset lifecycle stays decoupled from studio composition.
 - Studio preset persistence/storage helpers are now isolated in `studio-preset-store.ts` so preset metadata parsing and IndexedDB/localStorage fallback flow stay decoupled from studio composition.

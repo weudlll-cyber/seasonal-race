@@ -52,8 +52,6 @@ import {
   deletePresetBackground,
   loadPresetBackground,
   loadPresetStore,
-  listPresetNames,
-  resolveSelectedPresetName,
   savePresetBackground,
   savePresetStore,
   type BoundarySide,
@@ -69,6 +67,8 @@ import {
 import { type RuntimeRacerPackCache, resolveTrackPreviewSizePx } from './studio-racer-pack-utils';
 import { rebuildReplayRacerViews } from './studio-replay-racer-builder';
 import { applyStudioUiState } from './studio-ui-state';
+import { rotateStudioGeometry } from './studio-geometry-state';
+import { buildPresetSelectState } from './studio-preset-select-state';
 import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
@@ -793,29 +793,14 @@ export async function startStudioApp(): Promise<void> {
         nextOrientation === 'top-to-bottom' &&
         parsed.editorGeometryMode !== 'geometry-rotated-v1'
       ) {
-        const orientationCenter = computeTrackOrientationCenter(points);
-        points = rotateTrackPointsBetweenOrientations(
-          points,
+        const rotated = rotateStudioGeometry(
+          { points, leftBoundaryPoints, rightBoundaryPoints },
           'left-to-right',
-          'top-to-bottom',
-          orientationCenter
+          'top-to-bottom'
         );
-        if (leftBoundaryPoints.length >= 3) {
-          leftBoundaryPoints = rotateTrackPointsBetweenOrientations(
-            leftBoundaryPoints,
-            'left-to-right',
-            'top-to-bottom',
-            orientationCenter
-          );
-        }
-        if (rightBoundaryPoints.length >= 3) {
-          rightBoundaryPoints = rotateTrackPointsBetweenOrientations(
-            rightBoundaryPoints,
-            'left-to-right',
-            'top-to-bottom',
-            orientationCenter
-          );
-        }
+        points = rotated.points;
+        leftBoundaryPoints = rotated.leftBoundaryPoints;
+        rightBoundaryPoints = rotated.rightBoundaryPoints;
       }
       dom.trackIdInput.value =
         (parsed.trackId ?? DEFAULT_EDITOR_TRACK_ID).trim() || DEFAULT_EDITOR_TRACK_ID;
@@ -910,13 +895,10 @@ export async function startStudioApp(): Promise<void> {
 
   const refreshPresetSelect = (preferredName?: string): void => {
     const store = loadPresetStore();
-    const names = listPresetNames(store);
-    const currentValue = dom.presetSelect.value;
-    const nextSelected = resolveSelectedPresetName(
-      names,
-      preferredName,
-      currentValue,
-      store.lastUsedPresetName
+    const { names, nextSelected } = buildPresetSelectState(
+      store,
+      dom.presetSelect.value,
+      preferredName
     );
 
     dom.presetSelect.innerHTML = '';
@@ -1109,29 +1091,14 @@ export async function startStudioApp(): Promise<void> {
     onTrackOrientationChanged: (value) => {
       const nextOrientation = normalizeTrackOrientation(value);
       if (nextOrientation !== trackOrientation) {
-        const orientationCenter = computeTrackOrientationCenter(points);
-        points = rotateTrackPointsBetweenOrientations(
-          points,
+        const rotated = rotateStudioGeometry(
+          { points, leftBoundaryPoints, rightBoundaryPoints },
           trackOrientation,
-          nextOrientation,
-          orientationCenter
+          nextOrientation
         );
-        if (leftBoundaryPoints.length >= 3) {
-          leftBoundaryPoints = rotateTrackPointsBetweenOrientations(
-            leftBoundaryPoints,
-            trackOrientation,
-            nextOrientation,
-            orientationCenter
-          );
-        }
-        if (rightBoundaryPoints.length >= 3) {
-          rightBoundaryPoints = rotateTrackPointsBetweenOrientations(
-            rightBoundaryPoints,
-            trackOrientation,
-            nextOrientation,
-            orientationCenter
-          );
-        }
+        points = rotated.points;
+        leftBoundaryPoints = rotated.leftBoundaryPoints;
+        rightBoundaryPoints = rotated.rightBoundaryPoints;
         trackOrientation = nextOrientation;
       }
       renderPointsChanged();
@@ -1570,29 +1537,14 @@ export async function startStudioApp(): Promise<void> {
       trackOrientation = normalizeTrackOrientation(parsed.editorTrackOrientation);
 
       if (trackOrientation === 'top-to-bottom') {
-        const orientationCenter = computeTrackOrientationCenter(points);
-        points = rotateTrackPointsBetweenOrientations(
-          points,
+        const rotated = rotateStudioGeometry(
+          { points, leftBoundaryPoints, rightBoundaryPoints },
           'left-to-right',
-          'top-to-bottom',
-          orientationCenter
+          'top-to-bottom'
         );
-        if (leftBoundaryPoints.length >= 3) {
-          leftBoundaryPoints = rotateTrackPointsBetweenOrientations(
-            leftBoundaryPoints,
-            'left-to-right',
-            'top-to-bottom',
-            orientationCenter
-          );
-        }
-        if (rightBoundaryPoints.length >= 3) {
-          rightBoundaryPoints = rotateTrackPointsBetweenOrientations(
-            rightBoundaryPoints,
-            'left-to-right',
-            'top-to-bottom',
-            orientationCenter
-          );
-        }
+        points = rotated.points;
+        leftBoundaryPoints = rotated.leftBoundaryPoints;
+        rightBoundaryPoints = rotated.rightBoundaryPoints;
       }
 
       if (parsed.id) dom.trackIdInput.value = parsed.id;
