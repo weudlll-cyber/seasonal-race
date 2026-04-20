@@ -105,6 +105,9 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
   - `POST /api/v1/races/start`
 - API now exposes runtime bootstrap payload for launched races:
   - `GET /api/v1/races/:raceId/runtime-bootstrap`
+- API runtime bootstrap persistence is now routed through a dedicated launch-store abstraction with an in-memory default and an optional file-backed implementation for incremental persistence rollout.
+- API launch-store selection now supports env/config wiring (`SEASONAL_RACE_API_LAUNCH_STORE_FILE_PATH`) so file-backed persistence can be enabled without route-code changes.
+- Race-id sequencing (`race-<n>`) is now owned by the launch store, so file-backed mode preserves id continuity across API restarts instead of resetting to `race-1`.
 - Launch endpoint now supports modular starter options (`durationMs`, `winnerCount`, `brandingProfileId`, and extensible `options`) via shared contracts and option-resolver modules.
 - Minimal modular app/package skeletons are in place for API, viewer, admin, engine, race types, branding, and shared types.
 - Web-admin now includes an Ops launch selector model that defaults valid id selections and builds id-only launch payloads for API calls.

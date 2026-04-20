@@ -39,6 +39,9 @@
 - Ops/Admin launch model now includes UI-ready orientation option metadata plus default selected orientation state for upcoming launch dropdown controls.
 - Launch configuration contracts are now centralized in shared types (`race-launch`) and API option resolution is modularized, so future starter features can be added as new option resolvers instead of route rewrites.
 - Runtime bootstrap endpoint is now active (`/api/v1/races/:raceId/runtime-bootstrap`) and provides launched race config plus track/racer metadata for viewer startup.
+- API runtime bootstrap storage is now abstracted behind a launch-store contract with in-memory default behavior and a file-backed implementation for persistence foundation rollout.
+- API launch-store default selection now supports env/config wiring (`SEASONAL_RACE_API_LAUNCH_STORE_FILE_PATH`) so file-backed persistence can be enabled without route rewrites.
+- Race-id sequencing is now managed by the launch store, so file-backed mode keeps `race-<n>` continuity across API restarts.
 - Runtime viewer wiring now resolves race id from URL and consumes runtime bootstrap payload through a dedicated runtime client helper.
 - Runtime viewer playback now renders movement on bootstrap-provided track geometry (viewport-mapped) and drives lap timing from launch duration.
 - Runtime viewer now supports orientation toggles for race direction variability (`left-to-right` and `top-to-bottom`) via runtime query and launch options.

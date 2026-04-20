@@ -47,10 +47,15 @@
 - `apps/api/src/race-launch-options.ts`
   - Modular launch-option resolver pipeline used by start-race endpoint validation.
   - Designed for additive extension: add new starter options by adding resolver units, not by rewriting route logic.
+- `apps/api/src/race-launch-store.ts`
+  - Pluggable launch/bootstrap persistence abstraction for API runtime bootstrap payloads.
+  - Provides in-memory default store and optional file-backed store implementation.
+  - Owns race-id sequence allocation (`race-<n>`) so file-backed mode survives app restarts without resetting to `race-1`.
 - `apps/api/src/app.ts`
-  - Also stores launched race bootstrap records and serves runtime bootstrap payloads by race id.
+  - Uses injected launch store (or env/config-selected default) to persist race bootstrap records and serves runtime bootstrap payloads by race id.
+  - Supports file-backed launch store selection through `SEASONAL_RACE_API_LAUNCH_STORE_FILE_PATH` (or explicit app option override).
 - `apps/api/src/index.ts`
-  - API package entry exports app factory and stable API app id.
+  - API package entry exports app factory, launch-store factories/contracts, and stable API app id.
 
 ## Shared Launch Contracts
 

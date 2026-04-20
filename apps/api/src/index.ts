@@ -7,5 +7,12 @@
  */
 
 export { buildApiApp, type BuildApiAppOptions } from './app';
+export {
+  createFileRaceLaunchStore,
+  createInMemoryRaceLaunchStore,
+  type CreateFileRaceLaunchStoreOptions,
+  type CreateInMemoryRaceLaunchStoreOptions,
+  type RaceLaunchStore
+} from './race-launch-store';
 
 export const apiAppId = 'seasonal-race-api';

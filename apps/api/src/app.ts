@@ -12,10 +12,14 @@ import Fastify, { type FastifyInstance } from 'fastify';
 
 import type {
   RaceLaunchRequest,
-  RaceLaunchResolvedConfig,
-  RuntimeBootstrapPayload
+  RaceLaunchResolvedConfig
 } from '../../../packages/shared-types/src/index';
 import { loadRacerCatalog, loadRacerListById, loadTrackById, loadTrackCatalog } from './catalog';
+import {
+  createFileRaceLaunchStore,
+  createInMemoryRaceLaunchStore,
+  type RaceLaunchStore
+} from './race-launch-store';
 import {
   resolveRaceLaunchOptions,
   type RaceLaunchValidationErrorCode
@@ -23,6 +27,8 @@ import {
 
 export interface BuildApiAppOptions {
   contentRoot?: string;
+  raceLaunchStore?: RaceLaunchStore;
+  raceLaunchStoreFilePath?: string;
 }
 
 interface ApiErrorBody {
@@ -41,6 +47,22 @@ interface RuntimeBootstrapErrorBody {
 }
 
 const defaultContentRoot = path.resolve(process.cwd(), 'content');
+const raceLaunchStoreFilePathEnvKey = 'SEASONAL_RACE_API_LAUNCH_STORE_FILE_PATH';
+
+function resolveRaceLaunchStore(options: BuildApiAppOptions): RaceLaunchStore {
+  if (options.raceLaunchStore) {
+    return options.raceLaunchStore;
+  }
+
+  const configuredFilePath =
+    options.raceLaunchStoreFilePath ?? process.env[raceLaunchStoreFilePathEnvKey];
+
+  if (typeof configuredFilePath === 'string' && configuredFilePath.trim().length > 0) {
+    return createFileRaceLaunchStore({ storageFilePath: configuredFilePath.trim() });
+  }
+
+  return createInMemoryRaceLaunchStore();
+}
 
 function mapCatalogError(error: unknown): ApiErrorBody {
   const message = error instanceof Error ? error.message : 'Unknown catalog error';
@@ -53,8 +75,7 @@ function mapCatalogError(error: unknown): ApiErrorBody {
 export function buildApiApp(options: BuildApiAppOptions = {}): FastifyInstance {
   const contentRoot = options.contentRoot ?? defaultContentRoot;
   const app = Fastify({ logger: false });
-  let raceSequence = 0;
-  const runtimeBootstrapStore = new Map<string, RuntimeBootstrapPayload>();
+  const raceLaunchStore = resolveRaceLaunchStore(options);
 
   app.get('/api/v1/catalog/tracks', async (_, reply) => {
     try {
@@ -120,7 +141,7 @@ export function buildApiApp(options: BuildApiAppOptions = {}): FastifyInstance {
       const resolvedOptions = resolveRaceLaunchOptions({
         input: body,
         racerCount: selectedRacerList.racerCount,
-        autoSeed: `auto-seed-${raceSequence + 1}`
+        autoSeed: `auto-seed-${raceLaunchStore.peekNextRaceSequence()}`
       });
 
       if (!resolvedOptions.ok) {
@@ -131,8 +152,7 @@ export function buildApiApp(options: BuildApiAppOptions = {}): FastifyInstance {
         return reply.status(400).send(optionsError);
       }
 
-      raceSequence += 1;
-      const raceId = `race-${raceSequence}`;
+      const raceId = raceLaunchStore.allocateRaceId();
 
       const responseBody: RaceLaunchResolvedConfig = {
         raceId,
@@ -160,7 +180,7 @@ export function buildApiApp(options: BuildApiAppOptions = {}): FastifyInstance {
         return reply.status(404).send(catalogError);
       }
 
-      runtimeBootstrapStore.set(raceId, {
+      raceLaunchStore.saveRuntimeBootstrap(raceId, {
         raceId,
         raceType: selectedTrack.raceType,
         launch: responseBody,
@@ -188,7 +208,7 @@ export function buildApiApp(options: BuildApiAppOptions = {}): FastifyInstance {
   app.get('/api/v1/races/:raceId/runtime-bootstrap', async (request, reply) => {
     const raceId = (request.params as { raceId?: string }).raceId ?? '';
 
-    const payload = runtimeBootstrapStore.get(raceId);
+    const payload = raceLaunchStore.getRuntimeBootstrap(raceId);
     if (!payload) {
       const notFound: RuntimeBootstrapErrorBody = {
         error: 'RACE_NOT_FOUND',
