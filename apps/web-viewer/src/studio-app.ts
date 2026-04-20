@@ -18,11 +18,8 @@ import {
   toNameDisplayMode,
   type NameDisplayMode
 } from './replay-visual-policy';
-import { mapTrackPointsToCurrentLayout } from './track-layout-helpers';
-import { resetWorldTransform } from './world-transform-utils';
 import { resolveStudioDom } from './studio-dom';
 import { redrawEditor, refreshExport } from './studio-render';
-import { round3 } from './studio-editor-helpers';
 import { wireStudioPointEditorController } from './studio-point-editor-controller';
 import { tickStudioReplayMode, type StudioReplayRacerView } from './studio-replay-controller';
 import { tickStudioSinglePreviewMode } from './studio-single-preview-controller';
@@ -37,11 +34,7 @@ import {
   type TrackTemplateKind
 } from './studio-generators';
 import { downloadDataUrl, downloadTextFile, loadImageFromFile } from './studio-file-utils';
-import {
-  buildCenterlineFromBoundaries,
-  resolveStudioPaths,
-  type StudioTrackEditMode
-} from './studio-paths';
+import { buildCenterlineFromBoundaries, type StudioTrackEditMode } from './studio-paths';
 import {
   loadPresetBackground,
   loadPresetStore,
@@ -87,10 +80,6 @@ import {
   createDefaultStudioSpritePreviewState,
   tickStudioSpritePreviewState
 } from './studio-sprite-preview-state';
-import {
-  resolveRunnerPreviewScale,
-  resolveRunnerPreviewTexture
-} from './studio-runner-preview-texture';
 import {
   buildStudioPresetFromState,
   deleteStudioPreset,

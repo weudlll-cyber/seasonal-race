@@ -5,7 +5,6 @@
  * Usage: Imported by studio app to support one-click content generation workflows.
  */
 
-import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
 export {
   generateTrackTemplate,
   type GenerateTrackTemplateOptions,
