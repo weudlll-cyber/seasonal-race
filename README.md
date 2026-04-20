@@ -108,6 +108,13 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - API runtime bootstrap persistence is now routed through a dedicated launch-store abstraction with an in-memory default and an optional file-backed implementation for incremental persistence rollout.
 - API launch-store selection now supports env/config wiring (`SEASONAL_RACE_API_LAUNCH_STORE_FILE_PATH`) so file-backed persistence can be enabled without route-code changes.
 - Race-id sequencing (`race-<n>`) is now owned by the launch store, so file-backed mode preserves id continuity across API restarts instead of resetting to `race-1`.
+- File-backed launch-store loading now self-heals malformed/corrupted JSON by resetting to a safe empty store shape, keeping API launch/runtime bootstrap endpoints available.
+- File-backed launch-store files are now schema-versioned and legacy unversioned files are migrated automatically during read.
+- File-backed launch-store now persists a backup file and restores primary store data from backup when the primary file is corrupted.
+- File-backed launch-store now prunes retained runtime bootstrap entries with configurable retention policy: max entries (default 500) and optional max age.
+- API file-store retention can be configured via `SEASONAL_RACE_API_LAUNCH_STORE_MAX_ENTRIES` and `SEASONAL_RACE_API_LAUNCH_STORE_MAX_AGE_MS`.
+- File-backed launch-store persistence now uses atomic writes (`temp -> rename`) for both primary and backup files to avoid half-written JSON artifacts.
+- Optional strict durability mode now adds fsync-based flush steps around atomic file writes (configurable via `SEASONAL_RACE_API_LAUNCH_STORE_STRICT_DURABILITY`).
 - Launch endpoint now supports modular starter options (`durationMs`, `winnerCount`, `brandingProfileId`, and extensible `options`) via shared contracts and option-resolver modules.
 - Minimal modular app/package skeletons are in place for API, viewer, admin, engine, race types, branding, and shared types.
 - Web-admin now includes an Ops launch selector model that defaults valid id selections and builds id-only launch payloads for API calls.

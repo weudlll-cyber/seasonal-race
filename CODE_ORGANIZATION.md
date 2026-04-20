@@ -51,9 +51,17 @@
   - Pluggable launch/bootstrap persistence abstraction for API runtime bootstrap payloads.
   - Provides in-memory default store and optional file-backed store implementation.
   - Owns race-id sequence allocation (`race-<n>`) so file-backed mode survives app restarts without resetting to `race-1`.
+  - Self-heals malformed/corrupted file-store JSON into a safe default shape to keep launch/runtime bootstrap routes resilient.
+  - Uses schema-versioned store files and migrates legacy unversioned files forward on read.
+  - Writes a backup file and restores primary store data from backup when primary file content is corrupted.
+  - Applies configurable retention pruning for runtime bootstrap entries (max retained entries and optional max-age TTL).
+  - Persists primary and backup files via atomic temp-file rename flow to avoid partial-write JSON corruption.
+  - Supports optional strict durability mode that runs fsync flush steps around atomic writes.
 - `apps/api/src/app.ts`
   - Uses injected launch store (or env/config-selected default) to persist race bootstrap records and serves runtime bootstrap payloads by race id.
   - Supports file-backed launch store selection through `SEASONAL_RACE_API_LAUNCH_STORE_FILE_PATH` (or explicit app option override).
+  - Supports file-store retention env knobs (`SEASONAL_RACE_API_LAUNCH_STORE_MAX_ENTRIES`, `SEASONAL_RACE_API_LAUNCH_STORE_MAX_AGE_MS`).
+  - Supports strict durability env knob (`SEASONAL_RACE_API_LAUNCH_STORE_STRICT_DURABILITY`) for fsync-backed store writes.
 - `apps/api/src/index.ts`
   - API package entry exports app factory, launch-store factories/contracts, and stable API app id.
 

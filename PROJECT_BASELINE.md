@@ -42,6 +42,13 @@
 - API runtime bootstrap storage is now abstracted behind a launch-store contract with in-memory default behavior and a file-backed implementation for persistence foundation rollout.
 - API launch-store default selection now supports env/config wiring (`SEASONAL_RACE_API_LAUNCH_STORE_FILE_PATH`) so file-backed persistence can be enabled without route rewrites.
 - Race-id sequencing is now managed by the launch store, so file-backed mode keeps `race-<n>` continuity across API restarts.
+- File-backed launch-store reads now self-heal malformed/corrupted JSON content by restoring a safe default store shape, avoiding API launch-flow outages from bad local store files.
+- File-backed launch-store persistence now includes schema-versioned file format handling with automatic migration of legacy unversioned store files.
+- File-backed launch-store persistence now writes a backup copy and restores primary store content from backup when the primary store file is corrupted.
+- File-backed launch-store retention now prunes runtime bootstrap entries by configurable policy (max retained entries, default 500, plus optional max-age TTL).
+- API env/config now supports launch-store retention knobs (`SEASONAL_RACE_API_LAUNCH_STORE_MAX_ENTRIES`, `SEASONAL_RACE_API_LAUNCH_STORE_MAX_AGE_MS`).
+- File-backed launch-store writes now use atomic temp-file rename flow for both primary and backup store files, reducing partial-write risk.
+- API launch-store persistence now supports optional strict durability mode (`SEASONAL_RACE_API_LAUNCH_STORE_STRICT_DURABILITY`) with fsync flush steps around atomic writes.
 - Runtime viewer wiring now resolves race id from URL and consumes runtime bootstrap payload through a dedicated runtime client helper.
 - Runtime viewer playback now renders movement on bootstrap-provided track geometry (viewport-mapped) and drives lap timing from launch duration.
 - Runtime viewer now supports orientation toggles for race direction variability (`left-to-right` and `top-to-bottom`) via runtime query and launch options.
