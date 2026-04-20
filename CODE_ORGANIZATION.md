@@ -229,12 +229,6 @@
 - `apps/web-viewer/src/world-transform-utils.ts`
   - Shared Pixi world transform helpers for camera reset and background clamping.
   - Keeps camera-bound behavior consistent across preview and runtime surfaces.
-- `apps/web-viewer/src/scene.ts`
-  - Layered scene builder (background, environment, obstacles, racers, trails, bursts, finish).
-  - Asset load with placeholder fallback to keep rendering resilient during asset gaps.
-- `apps/web-viewer/src/viewer-model.ts`
-  - Fixed-step simulation adapter (`100ms`) from race session to viewer-facing state.
-  - Produces both racer state and camera-ready state.
 
 ## Planned App Separation
 
