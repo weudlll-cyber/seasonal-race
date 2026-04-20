@@ -30,7 +30,6 @@ import { wireStudioUiControlsController } from './studio-ui-controls-controller'
 import { normalizeTrackOrientation, type TrackOrientation } from './track-orientation.js';
 import {
   generateRacerSpritePackFromImage,
-  resolveSafeSpriteSheetOutputScale,
   generateTrackTemplate,
   type GeneratedRacerSpritePack,
   type GeneratedRacerSpritePackMeta,
@@ -73,6 +72,10 @@ import {
   advanceStudioSurfaceEmitter,
   resolveStudioSurfaceEffectSetupInput
 } from './studio-surface-effects-state';
+import {
+  buildSpriteGenerationWarning,
+  resolveGeneratorPresetLabel
+} from './studio-generator-ui-state';
 import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
@@ -250,58 +253,17 @@ export async function startStudioApp(): Promise<void> {
   const refreshGeneratorPresetHighlight = (): void => {
     const frameCount = Number(dom.spriteFrameCountInput.value);
     const variantCount = Number(dom.spriteVariantCountInput.value);
-    if (frameCount === 8 && variantCount === 8) {
-      setGeneratorPresetActive('Minimal');
-      return;
-    }
-    if (frameCount === 10 && variantCount === 12) {
-      setGeneratorPresetActive('Balanced');
-      return;
-    }
-    if (frameCount === 16 && variantCount === 24) {
-      setGeneratorPresetActive('Max Contrast');
-      return;
-    }
-    setGeneratorPresetActive(null);
+    setGeneratorPresetActive(resolveGeneratorPresetLabel(frameCount, variantCount));
   };
 
   refreshGeneratorPresetHighlight();
 
   const refreshSpriteGenerationWarning = (): void => {
-    if (!spriteSourceImageDimensions) {
-      dom.spriteGenerationWarning.textContent =
-        'Select a source image to see generation-size guidance.';
-      return;
-    }
-
-    const frameCount = Math.max(
-      4,
-      Math.min(24, Math.floor(Number(dom.spriteFrameCountInput.value)))
-    );
-    const variantCount = Math.max(
-      2,
-      Math.min(60, Math.floor(Number(dom.spriteVariantCountInput.value)))
-    );
-
-    try {
-      const safeScale = resolveSafeSpriteSheetOutputScale({
-        sourceWidth: spriteSourceImageDimensions.width,
-        sourceHeight: spriteSourceImageDimensions.height,
-        requestedOutputScale: 1,
-        padding: 10,
-        frameCount,
-        variantCount
-      });
-
-      if (safeScale < 0.999) {
-        dom.spriteGenerationWarning.textContent = `Large source image detected: generator will auto-scale to ${(safeScale * 100).toFixed(1)}% (${frameCount} frames x ${variantCount} variants).`;
-      } else {
-        dom.spriteGenerationWarning.textContent = `Generation fits at 100% scale (${frameCount} frames x ${variantCount} variants).`;
-      }
-    } catch {
-      dom.spriteGenerationWarning.textContent =
-        'Current source image/settings exceed browser canvas limits. Reduce frame/variant count or use a smaller image.';
-    }
+    dom.spriteGenerationWarning.textContent = buildSpriteGenerationWarning({
+      spriteSourceImageDimensions,
+      frameCountInput: Number(dom.spriteFrameCountInput.value),
+      variantCountInput: Number(dom.spriteVariantCountInput.value)
+    });
   };
 
   refreshSpriteGenerationWarning();

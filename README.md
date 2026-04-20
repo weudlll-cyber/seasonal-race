@@ -101,6 +101,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Studio preset dropdown selection model logic is now isolated in `studio-preset-select-state.ts`, reducing preset-selection fallback wiring noise in studio app flow.
 - Studio editor zoom/view-state math is now isolated in `studio-editor-view-state.ts`, reducing editor transform math wiring noise in studio app flow.
 - Studio surface setup resolution and particle-emitter state transitions are now isolated in `studio-surface-effects-state.ts`, reducing selector/state wiring noise in studio app flow.
+- Studio generator preset/highlight and generation-warning resolution logic is now isolated in `studio-generator-ui-state.ts`, reducing generator-policy wiring noise in studio app flow.
 - Studio single-preview tick behavior is now isolated in `studio-single-preview-controller.ts` so non-replay runner/camera flow stays decoupled from studio composition.
 - Studio background image flow (load/clear/layout) is now isolated in `studio-background-controller.ts` so asset lifecycle stays decoupled from studio composition.
 - Studio preset persistence/storage helpers are now isolated in `studio-preset-store.ts` so preset metadata parsing and IndexedDB/localStorage fallback flow stay decoupled from studio composition.
