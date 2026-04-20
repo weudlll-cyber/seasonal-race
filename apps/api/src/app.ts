@@ -29,6 +29,9 @@ export interface BuildApiAppOptions {
   contentRoot?: string;
   raceLaunchStore?: RaceLaunchStore;
   raceLaunchStoreFilePath?: string;
+  raceLaunchStoreMaxEntries?: number;
+  raceLaunchStoreMaxAgeMs?: number;
+  raceLaunchStoreStrictDurability?: boolean;
 }
 
 interface ApiErrorBody {
@@ -48,6 +51,44 @@ interface RuntimeBootstrapErrorBody {
 
 const defaultContentRoot = path.resolve(process.cwd(), 'content');
 const raceLaunchStoreFilePathEnvKey = 'SEASONAL_RACE_API_LAUNCH_STORE_FILE_PATH';
+const raceLaunchStoreMaxEntriesEnvKey = 'SEASONAL_RACE_API_LAUNCH_STORE_MAX_ENTRIES';
+const raceLaunchStoreMaxAgeMsEnvKey = 'SEASONAL_RACE_API_LAUNCH_STORE_MAX_AGE_MS';
+const raceLaunchStoreStrictDurabilityEnvKey = 'SEASONAL_RACE_API_LAUNCH_STORE_STRICT_DURABILITY';
+
+function parseOptionalPositiveInteger(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const parsed = Math.trunc(value);
+    return parsed > 0 ? parsed : undefined;
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+  }
+
+  return undefined;
+}
+
+function parseOptionalBoolean(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalizedValue)) {
+    return true;
+  }
+
+  if (['0', 'false', 'no', 'off'].includes(normalizedValue)) {
+    return false;
+  }
+
+  return undefined;
+}
 
 function resolveRaceLaunchStore(options: BuildApiAppOptions): RaceLaunchStore {
   if (options.raceLaunchStore) {
@@ -56,9 +97,25 @@ function resolveRaceLaunchStore(options: BuildApiAppOptions): RaceLaunchStore {
 
   const configuredFilePath =
     options.raceLaunchStoreFilePath ?? process.env[raceLaunchStoreFilePathEnvKey];
+  const configuredMaxEntries =
+    parseOptionalPositiveInteger(options.raceLaunchStoreMaxEntries) ??
+    parseOptionalPositiveInteger(process.env[raceLaunchStoreMaxEntriesEnvKey]);
+  const configuredMaxAgeMs =
+    parseOptionalPositiveInteger(options.raceLaunchStoreMaxAgeMs) ??
+    parseOptionalPositiveInteger(process.env[raceLaunchStoreMaxAgeMsEnvKey]);
+  const configuredStrictDurability =
+    parseOptionalBoolean(options.raceLaunchStoreStrictDurability) ??
+    parseOptionalBoolean(process.env[raceLaunchStoreStrictDurabilityEnvKey]);
 
   if (typeof configuredFilePath === 'string' && configuredFilePath.trim().length > 0) {
-    return createFileRaceLaunchStore({ storageFilePath: configuredFilePath.trim() });
+    return createFileRaceLaunchStore({
+      storageFilePath: configuredFilePath.trim(),
+      ...(configuredMaxEntries ? { maxStoredRaceBootstraps: configuredMaxEntries } : {}),
+      ...(configuredMaxAgeMs ? { maxStoredRaceBootstrapAgeMs: configuredMaxAgeMs } : {}),
+      ...(configuredStrictDurability !== undefined
+        ? { strictDurability: configuredStrictDurability }
+        : {})
+    });
   }
 
   return createInMemoryRaceLaunchStore();
