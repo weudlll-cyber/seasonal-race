@@ -7,7 +7,12 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { clampInteger, parsePresetStore } from '../apps/web-viewer/src/studio-preset-store';
+import {
+  clampInteger,
+  listPresetNames,
+  parsePresetStore,
+  resolveSelectedPresetName
+} from '../apps/web-viewer/src/studio-preset-store';
 
 describe('studio preset store helpers', () => {
   it('parses valid preset stores and keeps last-used value', () => {
@@ -55,5 +60,26 @@ describe('studio preset store helpers', () => {
     expect(clampInteger(42, 1, 10, 5)).toBe(10);
     expect(clampInteger(-3, 1, 10, 5)).toBe(1);
     expect(clampInteger(Number.NaN, 1, 10, 5)).toBe(5);
+  });
+
+  it('sorts preset names and resolves preferred/current/lastUsed selection', () => {
+    const store = parsePresetStore(
+      JSON.stringify({
+        version: 2,
+        lastUsedPresetName: 'charlie',
+        presets: {
+          bravo: { version: 1 },
+          alpha: { version: 1 },
+          charlie: { version: 1 }
+        }
+      })
+    );
+
+    const names = listPresetNames(store);
+    expect(names).toEqual(['alpha', 'bravo', 'charlie']);
+    expect(resolveSelectedPresetName(names, 'bravo', 'alpha', 'charlie')).toBe('bravo');
+    expect(resolveSelectedPresetName(names, undefined, 'alpha', 'charlie')).toBe('alpha');
+    expect(resolveSelectedPresetName(names, undefined, 'missing', 'charlie')).toBe('charlie');
+    expect(resolveSelectedPresetName([], undefined, '', undefined)).toBe('');
   });
 });

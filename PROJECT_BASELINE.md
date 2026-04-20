@@ -157,6 +157,7 @@
 - Studio control-panel event wiring is now extracted into `studio-ui-controls-controller` to decouple UI listener wiring from studio composition.
 - Studio preset persistence/storage helpers are now extracted into `studio-preset-store` (preset metadata parsing + IndexedDB/localStorage fallback behavior) to reduce `studio-app` orchestration complexity.
 - Studio preview/replay path derivation is now extracted into `studio-paths`, centralizing boundary/coast endpoint semantics and reducing orchestration complexity in `studio-app`.
+- Studio centerline/boundary point-edit state transformations are now extracted into `studio-track-edit-helpers`, reducing orchestration complexity in `studio-app` while keeping behavior unchanged.
 - Broadcast mode now resizes the renderer to the real viewport so race playback fills the full screen area.
 - Broadcast mode now supports `Esc` as a direct return shortcut back to editor mode.
 - Authored-to-broadcast track remapping now uses distinct source/target viewport dimensions to keep race path aligned with the background image in broadcast mode.

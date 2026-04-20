@@ -17,7 +17,7 @@ import {
   toNameDisplayMode,
   type NameDisplayMode
 } from './replay-visual-policy';
-import { computeTrackNormal, mapTrackPointsToCurrentLayout } from './track-layout-helpers';
+import { mapTrackPointsToCurrentLayout } from './track-layout-helpers';
 import { resetWorldTransform } from './world-transform-utils';
 import { resolveStudioDom } from './studio-dom';
 import { redrawEditor, refreshExport } from './studio-render';
@@ -51,11 +51,20 @@ import {
   deletePresetBackground,
   loadPresetBackground,
   loadPresetStore,
+  listPresetNames,
+  resolveSelectedPresetName,
   savePresetBackground,
   savePresetStore,
   type BoundarySide,
   type StudioTestPreset
 } from './studio-preset-store';
+import {
+  applyEditablePointsUpdate,
+  buildBoundaryPairFromCenterline,
+  ensureBoundaryPointsFromCenterline as ensureBoundaryPointsFromCenterlineState,
+  getEditablePoints as getEditablePointsForMode,
+  resolveCenterlinePoints
+} from './studio-track-edit-helpers';
 import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
@@ -579,48 +588,43 @@ export async function startStudioApp(): Promise<void> {
   };
 
   function getCenterlinePoints(): TrackPoint[] {
-    if (
-      trackEditMode === 'boundaries' &&
-      leftBoundaryPoints.length >= 3 &&
-      rightBoundaryPoints.length >= 3
-    ) {
-      return buildCenterlineFromBoundaries(leftBoundaryPoints, rightBoundaryPoints);
-    }
-    return points;
+    return resolveCenterlinePoints(trackEditMode, points, leftBoundaryPoints, rightBoundaryPoints);
   }
 
   function ensureBoundaryPointsFromCenterline(): void {
-    if (leftBoundaryPoints.length >= 3 && rightBoundaryPoints.length >= 3) return;
-    const source = points.length >= 3 ? points : SAMPLE_CURVY_POINTS;
-    const generated = buildBoundaryPairFromCenterline(source, laneWidthPx * 8);
-    leftBoundaryPoints = generated.left;
-    rightBoundaryPoints = generated.right;
+    const ensured = ensureBoundaryPointsFromCenterlineState({
+      leftBoundaryPoints,
+      rightBoundaryPoints,
+      points,
+      fallbackPoints: SAMPLE_CURVY_POINTS,
+      halfWidthPx: laneWidthPx * 8
+    });
+    leftBoundaryPoints = ensured.leftBoundaryPoints;
+    rightBoundaryPoints = ensured.rightBoundaryPoints;
   }
 
   function getEditablePoints(): TrackPoint[] {
-    if (trackEditMode !== 'boundaries') return points;
-    return boundaryEditSide === 'left' ? leftBoundaryPoints : rightBoundaryPoints;
+    return getEditablePointsForMode(
+      trackEditMode,
+      boundaryEditSide,
+      points,
+      leftBoundaryPoints,
+      rightBoundaryPoints
+    );
   }
 
   function setEditablePoints(nextPoints: TrackPoint[]): void {
-    if (trackEditMode !== 'boundaries') {
-      points = nextPoints;
-      return;
-    }
-
-    if (boundaryEditSide === 'left') {
-      leftBoundaryPoints = nextPoints;
-    } else {
-      rightBoundaryPoints = nextPoints;
-    }
-
-    const other = boundaryEditSide === 'left' ? rightBoundaryPoints : leftBoundaryPoints;
-    if (other.length >= 3 && nextPoints.length >= 3) {
-      points = buildCenterlineFromBoundaries(
-        boundaryEditSide === 'left' ? nextPoints : leftBoundaryPoints,
-        boundaryEditSide === 'right' ? nextPoints : rightBoundaryPoints
-      );
-    }
+    const updated = applyEditablePointsUpdate({
+      trackEditMode,
+      boundaryEditSide,
+      nextPoints,
+      points,
+      leftBoundaryPoints,
+      rightBoundaryPoints
+    });
+    points = updated.points;
+    leftBoundaryPoints = updated.leftBoundaryPoints;
+    rightBoundaryPoints = updated.rightBoundaryPoints;
   }
 
   function regenerateReplayData(): ReturnType<typeof buildDemoRecordedRaceData> {
@@ -906,14 +910,14 @@ export async function startStudioApp(): Promise<void> {
 
   const refreshPresetSelect = (preferredName?: string): void => {
     const store = loadPresetStore();
-    const names = Object.keys(store.presets).sort((a, b) => a.localeCompare(b));
+    const names = listPresetNames(store);
     const currentValue = dom.presetSelect.value;
-    const nextSelected =
-      (preferredName && names.includes(preferredName) && preferredName) ||
-      (currentValue && names.includes(currentValue) && currentValue) ||
-      (store.lastUsedPresetName && names.includes(store.lastUsedPresetName)
-        ? store.lastUsedPresetName
-        : (names[0] ?? ''));
+    const nextSelected = resolveSelectedPresetName(
+      names,
+      preferredName,
+      currentValue,
+      store.lastUsedPresetName
+    );
 
     dom.presetSelect.innerHTML = '';
     if (names.length === 0) {
@@ -1575,8 +1579,8 @@ export async function startStudioApp(): Promise<void> {
         generatedPoints,
         laneWidthPx * 8
       );
-      leftBoundaryPoints = generatedBoundaryPair.left;
-      rightBoundaryPoints = generatedBoundaryPair.right;
+      leftBoundaryPoints = generatedBoundaryPair.leftBoundaryPoints;
+      rightBoundaryPoints = generatedBoundaryPair.rightBoundaryPoints;
       points = buildCenterlineFromBoundaries(leftBoundaryPoints, rightBoundaryPoints);
     } else {
       points = generatedPoints;
@@ -1959,20 +1963,4 @@ export async function startStudioApp(): Promise<void> {
   }
 
   resetEditorView();
-}
-
-function buildBoundaryPairFromCenterline(
-  centerline: TrackPoint[],
-  halfWidth: number
-): { left: TrackPoint[]; right: TrackPoint[] } {
-  const left: TrackPoint[] = [];
-  const right: TrackPoint[] = [];
-  for (let i = 0; i < centerline.length; i += 1) {
-    const progress = centerline.length <= 1 ? 0 : i / (centerline.length - 1);
-    const p = centerline[i]!;
-    const n = computeTrackNormal(centerline, progress);
-    left.push({ x: round3(p.x + n.x * halfWidth), y: round3(p.y + n.y * halfWidth) });
-    right.push({ x: round3(p.x - n.x * halfWidth), y: round3(p.y - n.y * halfWidth) });
-  }
-  return { left, right };
 }

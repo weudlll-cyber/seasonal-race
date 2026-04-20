@@ -135,3 +135,21 @@ export function clampInteger(value: number, min: number, max: number, fallback: 
   if (!Number.isFinite(value)) return fallback;
   return Math.max(min, Math.min(max, Math.floor(value)));
 }
+
+export function listPresetNames(store: StudioTestPresetStore): string[] {
+  return Object.keys(store.presets).sort((a, b) => a.localeCompare(b));
+}
+
+export function resolveSelectedPresetName(
+  names: string[],
+  preferredName: string | undefined,
+  currentValue: string,
+  lastUsedPresetName: string | undefined
+): string {
+  return (
+    (preferredName && names.includes(preferredName) && preferredName) ||
+    (currentValue && names.includes(currentValue) && currentValue) ||
+    (lastUsedPresetName && names.includes(lastUsedPresetName) ? lastUsedPresetName : names[0]) ||
+    ''
+  );
+}

@@ -89,6 +89,9 @@
 - `apps/web-viewer/src/studio-paths.ts`
   - Shared studio path-resolution helpers for centerline/boundary preview and replay path derivation.
   - Keeps coast-end semantics and boundary midpoint rules in one reusable module.
+- `apps/web-viewer/src/studio-track-edit-helpers.ts`
+  - Pure centerline/boundary edit-state helpers for point editing and boundary generation.
+  - Keeps track-edit state transitions out of the studio app orchestration flow.
 - `apps/web-viewer/src/studio-dom.ts`
   - Centralized studio DOM resolution and control typing.
   - Removes duplicated selector/ID wiring from app orchestrators.
