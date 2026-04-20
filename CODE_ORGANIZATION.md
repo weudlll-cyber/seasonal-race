@@ -111,7 +111,7 @@
   - Owns replay-mode frame tick flow (racer placement, label policy, leaderboard refresh, broadcast camera handoff).
   - Keeps replay simulation and broadcast-follow behavior out of the studio surface orchestrator.
 - `apps/web-viewer/src/studio-replay-utils.ts`
-  - Pure replay helper layer (cinematic plan, coast decay math, path metrics, run-path/coast-end safety mapping, camera selection, and ranking helper functions).
+  - Pure replay helper layer (cinematic plan, coast decay math, path metrics, run-path/coast-end safety mapping, collision/separation policy, camera selection, and ranking helper functions).
   - Keeps low-level replay math/policy utilities separate from frame orchestration flow.
 - `apps/web-viewer/src/studio-replay-racer-builder.ts`
   - Builds and resets replay racer sprites/labels/hover handlers for studio replay mode.

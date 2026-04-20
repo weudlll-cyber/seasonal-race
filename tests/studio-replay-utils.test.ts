@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  applyReplaySpriteSeparation,
   buildReplayCinematicPlan,
   buildReplayRunPathState,
   computeCoastStopProgress,
@@ -90,5 +91,48 @@ describe('studio replay utility helpers', () => {
     expect(resolveReplayZoomScale(false, true, false, 3)).toBe(2.2);
     expect(resolveReplayZoomScale(false, false, true, 3)).toBe(4.95);
     expect(resolveReplayZoomScale(false, false, false, 1.7)).toBe(1.7);
+  });
+
+  it('separates overlapping racers and keeps offset feedback bounded', () => {
+    const makePosition = (x: number, y: number) => ({
+      x,
+      y,
+      set(nx: number, ny: number) {
+        this.x = nx;
+        this.y = ny;
+      }
+    });
+    const racers = [
+      {
+        index: 0,
+        progress: 0.35,
+        sprite: { position: makePosition(40, 20) },
+        freeSwimOffsetNorm: 0
+      },
+      {
+        index: 1,
+        progress: 0.36,
+        sprite: { position: makePosition(40, 20) },
+        freeSwimOffsetNorm: 0
+      }
+    ];
+
+    applyReplaySpriteSeparation(
+      racers,
+      [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+        { x: 200, y: 0 }
+      ],
+      0.85,
+      7,
+      10
+    );
+
+    const dx = racers[0]!.sprite.position.x - racers[1]!.sprite.position.x;
+    const dy = racers[0]!.sprite.position.y - racers[1]!.sprite.position.y;
+    expect(Math.hypot(dx, dy)).toBeGreaterThan(0.01);
+    expect(Math.abs(racers[0]!.freeSwimOffsetNorm ?? 0)).toBeLessThanOrEqual(0.999);
+    expect(Math.abs(racers[1]!.freeSwimOffsetNorm ?? 0)).toBeLessThanOrEqual(0.999);
   });
 });

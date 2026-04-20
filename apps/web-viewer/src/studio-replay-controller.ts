@@ -25,6 +25,7 @@ import {
   renderLeaderboardRows
 } from './studio-render';
 import {
+  applyReplaySpriteSeparation,
   buildReplayRunPathState,
   buildFrameProgressById,
   buildReplayCinematicPlan,
@@ -478,101 +479,13 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
     cameraRacers.push({ progress: rr.progress, position: { x: finalX, y: finalY } });
   }
 
-  // --- Pixel-space collision: sprites must not overlap ---
-  // Each pair is checked; overlapping sprites are pushed apart by half the
-  // overlap each. Displacement is capped per frame to avoid visual jumps,
-  // and fed back into the free-swim offset so steering adapts next frame.
-  const racerCount = replayRacers.length;
-  const spriteRadius = racerCount >= 90 ? 4 : racerCount >= 70 ? 5 : racerCount >= 45 ? 6 : 9;
-  const minSep = spriteRadius * 2;
-  const maxPushPerFrame = spriteRadius * 1.6;
-  for (let iter = 0; iter < 2; iter++) {
-    for (let i = 0; i < racerCount; i++) {
-      const a = replayRacers[i]!;
-      if (a.frozenX !== undefined) continue;
-      // In finish approach, suppress tangential collision push.
-      const inFinishApproach = a.progress >= finishProgressOnFullRun - 0.025;
-      let ax = a.sprite.position.x;
-      let ay = a.sprite.position.y;
-      let totalDx = 0;
-      let totalDy = 0;
-      for (let j = 0; j < racerCount; j++) {
-        if (i === j) continue;
-        const b = replayRacers[j]!;
-        const bx = b.frozenX ?? b.sprite.position.x;
-        const by = b.frozenY ?? b.sprite.position.y;
-        const dx = ax - bx;
-        const dy = ay - by;
-        const inDeepCoast =
-          a.progress >= finishProgressOnFullRun + 0.015 &&
-          b.progress >= finishProgressOnFullRun + 0.015;
-        const effectiveMinSep = minSep * (inDeepCoast ? 1.2 : 1);
-        const distSq = dx * dx + dy * dy;
-        if (distSq >= effectiveMinSep * effectiveMinSep) continue;
-        const dist = Math.sqrt(distSq);
-        if (dist < 0.01) {
-          const angle = (a.index * 2.399) % (Math.PI * 2);
-          totalDx += Math.cos(angle) * effectiveMinSep * 0.5;
-          totalDy += Math.sin(angle) * effectiveMinSep * 0.5;
-        } else {
-          const overlap = effectiveMinSep - dist;
-          const pushStrength = b.frozenX !== undefined ? 1.0 : 0.5;
-          totalDx += (dx / dist) * overlap * pushStrength;
-          totalDy += (dy / dist) * overlap * pushStrength;
-        }
-      }
-      // Keep finish-approach collision lateral-only.
-      if (inFinishApproach) {
-        const coastDepthA = clamp01(
-          (a.progress - finishProgressOnFullRun) / Math.max(0.0005, 1 - finishProgressOnFullRun)
-        );
-        const aTangent = computeTrackTangentAtProgress(fullRunPath, a.progress);
-        const tangential = totalDx * aTangent.x + totalDy * aTangent.y;
-        const lateralX = totalDx - tangential * aTangent.x;
-        const lateralY = totalDy - tangential * aTangent.y;
-        const lateralScale = lerp(0.72, 1.04, Math.max(0, coastDepthA));
-        totalDx = lateralX * lateralScale;
-        totalDy = lateralY * lateralScale;
-      }
-      const pushLen = Math.hypot(totalDx, totalDy);
-      // Smoothly ramp collision push cap through finish approach.
-      const finishProximity = clamp01((a.progress - (finishProgressOnFullRun - 0.025)) / 0.05);
-      const coastDepthA = clamp01(
-        (a.progress - finishProgressOnFullRun) / Math.max(0.0005, 1 - finishProgressOnFullRun)
-      );
-      const localMaxPush =
-        maxPushPerFrame *
-        lerp(
-          1.0,
-          lerp(0.36, lerp(0.55, 0.9, coastDepthA), clamp01(coastDepthA * 4)),
-          finishProximity
-        );
-      if (pushLen > localMaxPush) {
-        const scale = localMaxPush / pushLen;
-        totalDx *= scale;
-        totalDy *= scale;
-      }
-      if (pushLen > 0.01) {
-        ax += totalDx;
-        ay += totalDy;
-        a.sprite.position.set(ax, ay);
-        // Feed lateral component back into free-swim offset so steering
-        // does not undo the separation on the next frame.
-        const aN = computeTrackNormal(fullRunPath, a.progress);
-        const lateralPx = totalDx * aN.x + totalDy * aN.y;
-        const approxMaxLane = Math.max(laneWidthPx * 2.2, halfWidth * 0.995);
-        const feedbackScale =
-          a.progress >= finishProgressOnFullRun ? lerp(0.6, 0.95, coastDepthA) : 0.5;
-        if (approxMaxLane > 0.001) {
-          a.freeSwimOffsetNorm = clamp(
-            (a.freeSwimOffsetNorm ?? 0) + (lateralPx / approxMaxLane) * feedbackScale,
-            -0.999,
-            0.999
-          );
-        }
-      }
-    }
-  }
+  applyReplaySpriteSeparation(
+    replayRacers,
+    fullRunPath,
+    finishProgressOnFullRun,
+    laneWidthPx,
+    halfWidth
+  );
   // Rebuild camera positions after separation.
   cameraRacers.length = 0;
   for (const rr of replayRacers) {
