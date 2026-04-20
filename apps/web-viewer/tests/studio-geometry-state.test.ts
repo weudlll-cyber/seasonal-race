@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { rotateStudioGeometry } from '../src/studio-geometry-state.js';
+import { orientCenterlinePoints, rotateStudioGeometry } from '../src/studio-geometry-state.js';
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
 
 function pointsEqual(a: TrackPoint[], b: TrackPoint[]): boolean {
@@ -97,5 +97,32 @@ describe('rotateStudioGeometry', () => {
     expect(pointsEqual(rotated.points, points)).toBe(false);
     expect(rotated.leftBoundaryPoints).toBe(leftBoundaryPoints);
     expect(rotated.rightBoundaryPoints).toBe(rightBoundaryPoints);
+  });
+});
+
+describe('orientCenterlinePoints', () => {
+  it('keeps points unchanged for left-to-right orientation', () => {
+    const points: TrackPoint[] = [
+      { x: 120, y: 300 },
+      { x: 320, y: 300 },
+      { x: 520, y: 300 }
+    ];
+
+    const oriented = orientCenterlinePoints(points, 'left-to-right');
+
+    expect(oriented).toBe(points);
+  });
+
+  it('rotates points for top-to-bottom orientation', () => {
+    const points: TrackPoint[] = [
+      { x: 120, y: 300 },
+      { x: 320, y: 300 },
+      { x: 520, y: 300 }
+    ];
+
+    const oriented = orientCenterlinePoints(points, 'top-to-bottom');
+
+    expect(pointsEqual(oriented, points)).toBe(false);
+    expect(oriented).toHaveLength(3);
   });
 });

@@ -27,12 +27,7 @@ import { tickStudioReplayMode, type StudioReplayRacerView } from './studio-repla
 import { tickStudioSinglePreviewMode } from './studio-single-preview-controller';
 import { wireStudioBackgroundController } from './studio-background-controller';
 import { wireStudioUiControlsController } from './studio-ui-controls-controller';
-import {
-  computeTrackOrientationCenter,
-  normalizeTrackOrientation,
-  rotateTrackPointsBetweenOrientations,
-  type TrackOrientation
-} from './track-orientation.js';
+import { normalizeTrackOrientation, type TrackOrientation } from './track-orientation.js';
 import {
   generateRacerSpritePackFromImage,
   resolveSafeSpriteSheetOutputScale,
@@ -67,8 +62,13 @@ import {
 import { type RuntimeRacerPackCache, resolveTrackPreviewSizePx } from './studio-racer-pack-utils';
 import { rebuildReplayRacerViews } from './studio-replay-racer-builder';
 import { applyStudioUiState } from './studio-ui-state';
-import { rotateStudioGeometry } from './studio-geometry-state';
+import { orientCenterlinePoints, rotateStudioGeometry } from './studio-geometry-state';
 import { buildPresetSelectState } from './studio-preset-select-state';
+import {
+  computeEditorWorldTransform,
+  computeZoomAroundScreenPoint,
+  createDefaultEditorViewState
+} from './studio-editor-view-state';
 import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
@@ -201,9 +201,10 @@ export async function startStudioApp(): Promise<void> {
   dom.trackOrientationSelect.value = trackOrientation;
   dom.boundaryEditSideSelect.value = boundaryEditSide;
   dom.boundaryEditSideSelect.disabled = true;
-  let editorZoom = 1;
-  let editorViewCenterX = VIEW_WIDTH * 0.5;
-  let editorViewCenterY = VIEW_HEIGHT * 0.5;
+  const defaultEditorViewState = createDefaultEditorViewState(VIEW_WIDTH, VIEW_HEIGHT);
+  let editorZoom = defaultEditorViewState.zoom;
+  let editorViewCenterX = defaultEditorViewState.centerX;
+  let editorViewCenterY = defaultEditorViewState.centerY;
   dom.editorZoomInput.value = String(Math.round(editorZoom * 100));
   dom.editorZoomValue.textContent = `${Math.round(editorZoom * 100)}%`;
   dom.trackTemplatePointsValue.textContent = dom.trackTemplatePointsInput.value;
@@ -1156,17 +1157,19 @@ export async function startStudioApp(): Promise<void> {
   };
 
   const applyEditorViewTransform = (): void => {
-    world.scale.set(editorZoom);
-    world.position.set(
-      app.screen.width * 0.5 - editorViewCenterX * editorZoom,
-      app.screen.height * 0.5 - editorViewCenterY * editorZoom
+    const transform = computeEditorWorldTransform(
+      { zoom: editorZoom, centerX: editorViewCenterX, centerY: editorViewCenterY },
+      app.screen.width,
+      app.screen.height
     );
+    world.scale.set(transform.scale);
+    world.position.set(transform.x, transform.y);
   };
 
   const resetEditorView = (): void => {
-    editorZoom = 1;
-    editorViewCenterX = VIEW_WIDTH * 0.5;
-    editorViewCenterY = VIEW_HEIGHT * 0.5;
+    editorZoom = defaultEditorViewState.zoom;
+    editorViewCenterX = defaultEditorViewState.centerX;
+    editorViewCenterY = defaultEditorViewState.centerY;
     updateEditorZoomUi();
     if (!broadcastViewEnabled) {
       applyEditorViewTransform();
@@ -1178,17 +1181,21 @@ export async function startStudioApp(): Promise<void> {
     screenX: number,
     screenY: number
   ): void => {
-    const clampedZoom = Math.max(MIN_EDITOR_ZOOM, Math.min(MAX_EDITOR_ZOOM, nextZoom));
-    if (Math.abs(clampedZoom - editorZoom) < 0.0001) {
-      return;
-    }
-
-    const worldX = (screenX - world.position.x) / editorZoom;
-    const worldY = (screenY - world.position.y) / editorZoom;
-
-    editorZoom = clampedZoom;
-    editorViewCenterX = worldX - (screenX - app.screen.width * 0.5) / editorZoom;
-    editorViewCenterY = worldY - (screenY - app.screen.height * 0.5) / editorZoom;
+    const nextState = computeZoomAroundScreenPoint({
+      state: { zoom: editorZoom, centerX: editorViewCenterX, centerY: editorViewCenterY },
+      nextZoom,
+      minZoom: MIN_EDITOR_ZOOM,
+      maxZoom: MAX_EDITOR_ZOOM,
+      screenX,
+      screenY,
+      worldPositionX: world.position.x,
+      worldPositionY: world.position.y,
+      screenWidth: app.screen.width,
+      screenHeight: app.screen.height
+    });
+    editorZoom = nextState.zoom;
+    editorViewCenterX = nextState.centerX;
+    editorViewCenterY = nextState.centerY;
 
     updateEditorZoomUi();
     if (!broadcastViewEnabled) {
@@ -1328,16 +1335,7 @@ export async function startStudioApp(): Promise<void> {
       height: VIEW_HEIGHT,
       margin: 80
     });
-
-    if (trackOrientation === 'top-to-bottom') {
-      const center = computeTrackOrientationCenter(generatedPoints);
-      generatedPoints = rotateTrackPointsBetweenOrientations(
-        generatedPoints,
-        'left-to-right',
-        'top-to-bottom',
-        center
-      );
-    }
+    generatedPoints = orientCenterlinePoints(generatedPoints, trackOrientation);
 
     if (trackEditMode === 'boundaries') {
       const generatedBoundaryPair = buildBoundaryPairFromCenterline(

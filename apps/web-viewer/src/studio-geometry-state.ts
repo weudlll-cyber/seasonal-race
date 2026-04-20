@@ -44,3 +44,20 @@ export function rotateStudioGeometry(
     rightBoundaryPoints
   };
 }
+
+export function orientCenterlinePoints(
+  points: TrackPoint[],
+  targetOrientation: TrackOrientation
+): TrackPoint[] {
+  if (targetOrientation === 'left-to-right') {
+    return points;
+  }
+
+  const orientationCenter = computeTrackOrientationCenter(points);
+  return rotateTrackPointsBetweenOrientations(
+    points,
+    'left-to-right',
+    targetOrientation,
+    orientationCenter
+  );
+}

@@ -163,7 +163,9 @@
 - Studio replay racer-view construction/reset logic is now extracted into `studio-replay-racer-builder`, reducing view-lifecycle orchestration complexity in `studio-app`.
 - Studio UI state synchronization mapping is now extracted into `studio-ui-state`, reducing control-value/label wiring noise in `studio-app`.
 - Studio geometry orientation rotation state updates are now extracted into `studio-geometry-state`, reducing duplicated centerline/boundary orientation wiring in `studio-app`.
+- Generated template centerline orientation mapping is now routed through shared geometry helpers, removing inline orientation-rotation branching in `studio-app`.
 - Studio preset dropdown selection model logic is now extracted into `studio-preset-select-state`, reducing preset-selection fallback wiring noise in `studio-app`.
+- Studio editor zoom/view-state math is now extracted into `studio-editor-view-state`, reducing editor transform math wiring noise in `studio-app`.
 - Broadcast mode now resizes the renderer to the real viewport so race playback fills the full screen area.
 - Broadcast mode now supports `Esc` as a direct return shortcut back to editor mode.
 - Authored-to-broadcast track remapping now uses distinct source/target viewport dimensions to keep race path aligned with the background image in broadcast mode.
