@@ -41,6 +41,7 @@ import {
   type GeneratedRacerSpritePackMeta,
   type TrackTemplateKind
 } from './studio-generators';
+import { downloadDataUrl, downloadTextFile, loadImageFromFile } from './studio-file-utils';
 import {
   buildCenterlineFromBoundaries,
   resolveStudioPaths,
@@ -65,6 +66,11 @@ import {
   getEditablePoints as getEditablePointsForMode,
   resolveCenterlinePoints
 } from './studio-track-edit-helpers';
+import {
+  createRacerSpriteFromPack,
+  resolveRuntimeRacerPack,
+  resolveTrackPreviewSizePx
+} from './studio-racer-pack-utils';
 import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
@@ -949,7 +955,16 @@ export async function startStudioApp(): Promise<void> {
     }
 
     const ids = createRacerIds(replayRacerCount);
-    const runtimeRacerPack = getRuntimeRacerPack(replayRacerCount);
+    const runtimePackResolution = resolveRuntimeRacerPack({
+      requiredRacerCount: replayRacerCount,
+      generatedRacerPack,
+      fallbackRuntimeRacerPack,
+      fallbackRuntimeRacerPackKey,
+      defaultRuntimePackFrameCount: DEFAULT_RUNTIME_PACK_FRAME_COUNT
+    });
+    const runtimeRacerPack = runtimePackResolution.runtimeRacerPack;
+    fallbackRuntimeRacerPack = runtimePackResolution.fallbackRuntimeRacerPack;
+    fallbackRuntimeRacerPackKey = runtimePackResolution.fallbackRuntimeRacerPackKey;
     const markerRadius =
       replayRacerCount >= 90 ? 4 : replayRacerCount >= 70 ? 5 : replayRacerCount >= 45 ? 6 : 9;
     const labelFontSize =
@@ -1030,7 +1045,7 @@ export async function startStudioApp(): Promise<void> {
   }
 
   const applyReplaySpriteSizeFromSlider = (): void => {
-    const sizeFactor = resolveTrackPreviewSizePx() / 34;
+    const sizeFactor = resolveTrackPreviewSizePx(Number(dom.trackPreviewSizeInput.value)) / 34;
     for (const rr of replayRacers) {
       if (!rr.bodySprite) continue;
       const baseX = rr.bodyBaseScaleX ?? rr.bodySprite.scale.x;
@@ -1076,138 +1091,6 @@ export async function startStudioApp(): Promise<void> {
     previewProgress = 0;
     replayTimeMs = 0;
     singlePreviewElapsedSeconds = 0;
-  };
-
-  const downloadTextFile = (filename: string, content: string): void => {
-    const blob = new Blob([content], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const downloadDataUrl = (filename: string, dataUrl: string): void => {
-    const anchor = document.createElement('a');
-    anchor.href = dataUrl;
-    anchor.download = filename;
-    anchor.click();
-  };
-
-  const loadImageFromFile = (file: File): Promise<HTMLImageElement> =>
-    new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
-      const image = new Image();
-      image.onload = () => {
-        URL.revokeObjectURL(url);
-        resolve(image);
-      };
-      image.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('Could not load selected image.'));
-      };
-      image.src = url;
-    });
-
-  const buildDefaultRacerSourceImage = (): HTMLCanvasElement => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      throw new Error('Canvas 2D context unavailable for default racer source.');
-    }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.ellipse(32, 35, 18, 14, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.ellipse(41, 29, 9, 8, -0.1, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#eaf3ff';
-    ctx.fillRect(22, 23, 12, 6);
-
-    ctx.fillStyle = '#111d2b';
-    ctx.beginPath();
-    ctx.arc(45, 27, 1.9, 0, Math.PI * 2);
-    ctx.fill();
-
-    return canvas;
-  };
-
-  const getRuntimeRacerPack = (requiredRacerCount: number): GeneratedRacerSpritePack => {
-    if (generatedRacerPack) {
-      return generatedRacerPack;
-    }
-
-    const key = `${requiredRacerCount}`;
-    if (fallbackRuntimeRacerPack && fallbackRuntimeRacerPackKey === key) {
-      return fallbackRuntimeRacerPack;
-    }
-
-    const defaultSourceImage = buildDefaultRacerSourceImage();
-    fallbackRuntimeRacerPack = generateRacerSpritePackFromImage(
-      defaultSourceImage,
-      defaultSourceImage.width,
-      defaultSourceImage.height,
-      {
-        frameCount: DEFAULT_RUNTIME_PACK_FRAME_COUNT,
-        racerVariantCount: requiredRacerCount,
-        frameDurationMs: 90,
-        outputScale: 1,
-        paddingPx: 6
-      }
-    );
-    fallbackRuntimeRacerPackKey = key;
-    return fallbackRuntimeRacerPack;
-  };
-
-  const createRacerSpriteFromPack = (
-    pack: GeneratedRacerSpritePack,
-    racerIndex: number,
-    desiredSize: number
-  ): Sprite => {
-    const variantCount = Math.max(1, pack.meta.racerVariantCount);
-    const variantIndex = racerIndex % variantCount;
-    const frameMetaIndex = variantIndex * pack.meta.frameCount;
-    const frame = pack.meta.frames[frameMetaIndex]!;
-
-    const frameCanvas = document.createElement('canvas');
-    frameCanvas.width = frame.width;
-    frameCanvas.height = frame.height;
-    const frameCtx = frameCanvas.getContext('2d');
-    if (!frameCtx) {
-      throw new Error('Canvas 2D context unavailable for runtime racer sprite extraction.');
-    }
-
-    frameCtx.drawImage(
-      pack.sheetCanvas,
-      frame.x,
-      frame.y,
-      frame.width,
-      frame.height,
-      0,
-      0,
-      frame.width,
-      frame.height
-    );
-
-    const sprite = Sprite.from(frameCanvas);
-    sprite.anchor.set(0.5);
-    const scale = desiredSize / Math.max(frame.width, frame.height);
-    sprite.scale.set(Math.max(0.2, scale));
-    return sprite;
-  };
-
-  const resolveTrackPreviewSizePx = (): number => {
-    const rawValue = Number(dom.trackPreviewSizeInput.value);
-    if (!Number.isFinite(rawValue)) return 34;
-    return Math.max(16, Math.min(96, rawValue));
   };
 
   wireStudioPointEditorController({
@@ -1931,13 +1814,13 @@ export async function startStudioApp(): Promise<void> {
       const texture = trackPreviewTextures[spritePreviewFrameIndex % trackPreviewTextures.length]!;
       runner.texture = texture;
       const maxTextureEdge = Math.max(texture.width, texture.height) || 1;
-      const targetRunnerSizePx = resolveTrackPreviewSizePx();
+      const targetRunnerSizePx = resolveTrackPreviewSizePx(Number(dom.trackPreviewSizeInput.value));
       const scale = targetRunnerSizePx / maxTextureEdge;
       runner.scale.set(Math.max(0.12, Math.min(3.4, scale)));
     } else {
       runner.texture = defaultRunnerTexture;
       const maxTextureEdge = Math.max(defaultRunnerTexture.width, defaultRunnerTexture.height) || 1;
-      const targetRunnerSizePx = resolveTrackPreviewSizePx();
+      const targetRunnerSizePx = resolveTrackPreviewSizePx(Number(dom.trackPreviewSizeInput.value));
       const scale = targetRunnerSizePx / maxTextureEdge;
       runner.scale.set(Math.max(0.12, Math.min(3.4, scale)));
     }

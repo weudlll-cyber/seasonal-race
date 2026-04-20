@@ -122,6 +122,12 @@
 - `apps/web-viewer/src/studio-preset-store.ts`
   - Owns studio preset persistence helpers (localStorage preset metadata + IndexedDB background image assets).
   - Keeps persistence and storage-fallback behavior out of studio composition/orchestration flow.
+- `apps/web-viewer/src/studio-file-utils.ts`
+  - Shared browser utility helpers for studio file download and local image loading.
+  - Keeps Blob/data-url/image-loader utility behavior out of studio app orchestration.
+- `apps/web-viewer/src/studio-racer-pack-utils.ts`
+  - Shared runtime racer-pack fallback, frame sprite extraction, and preview-size helpers.
+  - Keeps pack-cache and sprite extraction behavior out of studio app orchestration.
 - `apps/web-viewer/src/studio-ui-controls-controller.ts`
   - Owns studio toggle/input listener wiring for preview, replay, broadcast, and lane/racer controls.
   - Keeps UI event wiring and button/label text updates out of the studio surface orchestrator.
