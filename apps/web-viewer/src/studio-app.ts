@@ -77,6 +77,7 @@ import {
   buildSpriteGenerationWarning,
   resolveGeneratorPresetLabel
 } from './studio-generator-ui-state';
+import { parseStudioTrackJsonLoadState } from './studio-track-json-load-state';
 import {
   drawSpritePreviewPlaceholder,
   drawSpritePreviewSingle,
@@ -1257,58 +1258,14 @@ export async function startStudioApp(): Promise<void> {
 
   dom.loadJsonButton.addEventListener('click', () => {
     try {
-      const parsed = JSON.parse(dom.jsonOutput.value) as {
-        points?: TrackPoint[];
-        id?: string;
-        name?: string;
-        editorPathMode?: string;
-        editorBoundaries?: {
-          left?: TrackPoint[];
-          right?: TrackPoint[];
-        };
-        editorTrackOrientation?: string;
-      };
-      if (!Array.isArray(parsed.points) || parsed.points.length < 3) {
-        throw new Error('points array missing');
-      }
-      points = parsed.points.map((p) => ({ x: round3(Number(p.x)), y: round3(Number(p.y)) }));
-
-      if (
-        parsed.editorPathMode === 'boundaries' &&
-        Array.isArray(parsed.editorBoundaries?.left) &&
-        Array.isArray(parsed.editorBoundaries?.right) &&
-        parsed.editorBoundaries.left.length >= 3 &&
-        parsed.editorBoundaries.right.length >= 3
-      ) {
-        trackEditMode = 'boundaries';
-        leftBoundaryPoints = parsed.editorBoundaries.left.map((p) => ({
-          x: round3(Number(p.x)),
-          y: round3(Number(p.y))
-        }));
-        rightBoundaryPoints = parsed.editorBoundaries.right.map((p) => ({
-          x: round3(Number(p.x)),
-          y: round3(Number(p.y))
-        }));
-        points = buildCenterlineFromBoundaries(leftBoundaryPoints, rightBoundaryPoints);
-      } else {
-        trackEditMode = 'centerline';
-      }
-
-      trackOrientation = normalizeTrackOrientation(parsed.editorTrackOrientation);
-
-      if (trackOrientation === 'top-to-bottom') {
-        const rotated = rotateStudioGeometry(
-          { points, leftBoundaryPoints, rightBoundaryPoints },
-          'left-to-right',
-          'top-to-bottom'
-        );
-        points = rotated.points;
-        leftBoundaryPoints = rotated.leftBoundaryPoints;
-        rightBoundaryPoints = rotated.rightBoundaryPoints;
-      }
-
-      if (parsed.id) dom.trackIdInput.value = parsed.id;
-      if (parsed.name) dom.trackNameInput.value = parsed.name;
+      const loadedTrackState = parseStudioTrackJsonLoadState(dom.jsonOutput.value);
+      points = loadedTrackState.points;
+      trackEditMode = loadedTrackState.trackEditMode;
+      trackOrientation = loadedTrackState.trackOrientation;
+      leftBoundaryPoints = loadedTrackState.leftBoundaryPoints;
+      rightBoundaryPoints = loadedTrackState.rightBoundaryPoints;
+      if (loadedTrackState.trackId) dom.trackIdInput.value = loadedTrackState.trackId;
+      if (loadedTrackState.trackName) dom.trackNameInput.value = loadedTrackState.trackName;
       resetReplayPreviewState();
       syncUiFromState();
       renderPointsChanged();

@@ -174,6 +174,7 @@
 - Studio surface setup resolution and particle-emitter state transitions are now extracted into `studio-surface-effects-state`, reducing selector/state wiring noise in `studio-app` while preserving visual behavior.
 - Studio generator preset/highlight and generation-warning resolution are now extracted into `studio-generator-ui-state`, reducing generator-policy wiring noise in `studio-app` while preserving behavior.
 - Studio sprite-preview animation state progression and preview-canvas drawing/texture extraction are now extracted into `studio-sprite-preview-state` and `studio-sprite-preview-render`, reducing preview-rendering wiring noise in `studio-app` while preserving behavior.
+- Studio JSON-load parsing and normalization are now extracted into `studio-track-json-load-state`, reducing JSON import wiring noise in `studio-app` while preserving behavior.
 - Broadcast mode now resizes the renderer to the real viewport so race playback fills the full screen area.
 - Broadcast mode now supports `Esc` as a direct return shortcut back to editor mode.
 - Authored-to-broadcast track remapping now uses distinct source/target viewport dimensions to keep race path aligned with the background image in broadcast mode.

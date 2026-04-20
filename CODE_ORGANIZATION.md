@@ -152,6 +152,9 @@
 - `apps/web-viewer/src/studio-sprite-preview-render.ts`
   - Shared sprite-preview canvas drawing and texture extraction helpers.
   - Keeps preview rendering logic out of studio app orchestration.
+- `apps/web-viewer/src/studio-track-json-load-state.ts`
+  - Pure helper layer for parsing and normalizing studio track JSON imports.
+  - Keeps JSON load validation/normalization flow out of studio app orchestration.
 - `apps/web-viewer/src/studio-ui-controls-controller.ts`
   - Owns studio toggle/input listener wiring for preview, replay, broadcast, and lane/racer controls.
   - Keeps UI event wiring and button/label text updates out of the studio surface orchestrator.
