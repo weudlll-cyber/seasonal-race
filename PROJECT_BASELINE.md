@@ -116,6 +116,7 @@
 - Studio replay low-level utility logic is now extracted into `studio-replay-utils` (cinematic-plan generation, coast/geometry math, and ranking helpers) so `studio-replay-controller` stays focused on frame orchestration.
 - Studio replay run-path/coast safety derivation and broadcast camera selection/zoom policy logic are now extracted into `studio-replay-utils`, further reducing orchestration density in `studio-replay-controller`.
 - Replay pixel-space collision/separation policy is now extracted into `studio-replay-utils`, further reducing orchestration density in `studio-replay-controller` while preserving finish/coast spread behavior.
+- Replay transient racer-state reset and replay label-application policy are now extracted into `studio-replay-utils`, further reducing orchestration density in `studio-replay-controller` while preserving behavior.
 - Studio replay controller comments were normalized for clarity/maintenance without changing replay behavior.
 - Studio replay controller formatting was additionally normalized by splitting dense expressions into readable blocks, without changing replay behavior.
 - Replay row-lag formation offsets now fade out through race progression so late-race leading order reflects live performance instead of fixed row/index spacing.

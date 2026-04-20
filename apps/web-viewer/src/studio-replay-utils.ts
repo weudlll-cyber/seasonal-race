@@ -99,6 +99,94 @@ export function computeFreeSwimPersonalBias(racerIndex: number): number {
   return unit * 2 - 1;
 }
 
+export interface ReplayTransientStateRacer {
+  progress: number;
+  finishTimeMs?: number;
+  finishOrder?: number;
+  finishApproachRatePerSec?: number;
+  lockedTopFiveRank?: number;
+  terminalCruiseRatePerSec?: number;
+  coastEntryRatePerSec?: number;
+  coastStartTimeMs?: number;
+  coastStopProgress?: number;
+  freeSwimOffsetNorm?: number;
+  freeSwimVelocityNorm?: number;
+  frozenX?: number;
+  frozenY?: number;
+}
+
+export function resetReplayRacerTransientState(racer: ReplayTransientStateRacer): void {
+  racer.progress = 0;
+  delete racer.finishTimeMs;
+  delete racer.finishOrder;
+  delete racer.finishApproachRatePerSec;
+  delete racer.lockedTopFiveRank;
+  delete racer.terminalCruiseRatePerSec;
+  delete racer.coastEntryRatePerSec;
+  delete racer.coastStartTimeMs;
+  delete racer.coastStopProgress;
+  delete racer.freeSwimOffsetNorm;
+  delete racer.freeSwimVelocityNorm;
+  delete racer.frozenX;
+  delete racer.frozenY;
+}
+
+export interface ReplayLabelDecision {
+  id: string;
+  showLabel: boolean;
+  scale: number;
+  markerAlpha: number;
+  zIndex: number;
+}
+
+export interface ReplayLabelRenderable {
+  id: string;
+  marker: { alpha: number; width: number };
+  bodySprite?: { alpha: number };
+  sprite: {
+    scale: { y: number; set: (value: number) => void };
+    position: { x: number; y: number };
+    zIndex: number;
+  };
+  labelBg: {
+    visible: boolean;
+    position: { set: (x: number, y: number) => void };
+    zIndex: number;
+  };
+  labelText: {
+    visible: boolean;
+    position: { set: (x: number, y: number) => void };
+    zIndex: number;
+  };
+}
+
+export function applyReplayLabelDecisions(
+  replayRacers: ReplayLabelRenderable[],
+  labelDecisions: ReplayLabelDecision[]
+): void {
+  const decisionById = new Map(labelDecisions.map((decision) => [decision.id, decision]));
+  for (const rr of replayRacers) {
+    const decision = decisionById.get(rr.id);
+    if (!decision) continue;
+    rr.labelBg.visible = decision.showLabel;
+    rr.labelText.visible = decision.showLabel;
+    rr.sprite.scale.set(decision.scale);
+    rr.marker.alpha = decision.markerAlpha;
+    if (rr.bodySprite) {
+      rr.bodySprite.alpha = decision.markerAlpha;
+    }
+    rr.sprite.zIndex = decision.zIndex + (decision.showLabel ? 2000 : 0);
+
+    // Labels live on a dedicated overlay layer, so keep explicit world-space placement.
+    const markerRadius = Math.max(2, rr.marker.width * 0.5 * rr.sprite.scale.y);
+    const labelAnchorY = rr.sprite.position.y - markerRadius - 2;
+    rr.labelBg.position.set(rr.sprite.position.x, labelAnchorY);
+    rr.labelText.position.set(rr.sprite.position.x, labelAnchorY);
+    rr.labelBg.zIndex = rr.sprite.zIndex + 10_000;
+    rr.labelText.zIndex = rr.sprite.zIndex + 10_001;
+  }
+}
+
 export function buildFrameProgressById(
   racers: Array<{ id: string; progress: number }>
 ): Map<string, number> {

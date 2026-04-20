@@ -25,6 +25,7 @@ import {
   renderLeaderboardRows
 } from './studio-render';
 import {
+  applyReplayLabelDecisions,
   applyReplaySpriteSeparation,
   buildReplayRunPathState,
   buildFrameProgressById,
@@ -42,6 +43,7 @@ import {
   lerpPoint,
   mapCameraRacersToCenterline,
   normalize,
+  resetReplayRacerTransientState,
   resolveReplayZoomScale,
   selectReplayCameraInputRacers,
   smoothstep,
@@ -155,19 +157,7 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
       replayTimeMs = 0;
       replayData = regenerateReplayData();
       for (const rr of replayRacers) {
-        rr.progress = 0;
-        delete rr.finishTimeMs;
-        delete rr.finishOrder;
-        delete rr.finishApproachRatePerSec;
-        delete rr.lockedTopFiveRank;
-        delete rr.terminalCruiseRatePerSec;
-        delete rr.coastEntryRatePerSec;
-        delete rr.coastStartTimeMs;
-        delete rr.coastStopProgress;
-        delete rr.freeSwimOffsetNorm;
-        delete rr.freeSwimVelocityNorm;
-        delete rr.frozenX;
-        delete rr.frozenY;
+        resetReplayRacerTransientState(rr);
       }
     }
   }
@@ -508,30 +498,7 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
     nameDisplayMode,
     focusRacerNumber
   );
-
-  const decisionById = new Map(
-    visualSnapshot.labelDecisions.map((decision) => [decision.id, decision])
-  );
-  for (const rr of replayRacers) {
-    const decision = decisionById.get(rr.id);
-    if (!decision) continue;
-    rr.labelBg.visible = decision.showLabel;
-    rr.labelText.visible = decision.showLabel;
-    rr.sprite.scale.set(decision.scale);
-    rr.marker.alpha = decision.markerAlpha;
-    if (rr.bodySprite) {
-      rr.bodySprite.alpha = decision.markerAlpha;
-    }
-    rr.sprite.zIndex = decision.zIndex + (decision.showLabel ? 2000 : 0);
-
-    // Labels live on a dedicated overlay layer, so keep explicit world-space placement.
-    const markerRadius = Math.max(2, rr.marker.width * 0.5 * rr.sprite.scale.y);
-    const labelAnchorY = rr.sprite.position.y - markerRadius - 2;
-    rr.labelBg.position.set(rr.sprite.position.x, labelAnchorY);
-    rr.labelText.position.set(rr.sprite.position.x, labelAnchorY);
-    rr.labelBg.zIndex = rr.sprite.zIndex + 10_000;
-    rr.labelText.zIndex = rr.sprite.zIndex + 10_001;
-  }
+  applyReplayLabelDecisions(replayRacers, visualSnapshot.labelDecisions);
 
   leaderboardTickMs += dt * 1000;
   if (leaderboardTickMs >= 150) {

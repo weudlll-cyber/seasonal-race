@@ -8,11 +8,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  applyReplayLabelDecisions,
   applyReplaySpriteSeparation,
   buildReplayCinematicPlan,
   buildReplayRunPathState,
   computeCoastStopProgress,
   computeLinearDecayCoast,
+  resetReplayRacerTransientState,
   resolveReplayZoomScale,
   selectReplayCameraInputRacers
 } from '../apps/web-viewer/src/studio-replay-utils';
@@ -134,5 +136,86 @@ describe('studio replay utility helpers', () => {
     expect(Math.hypot(dx, dy)).toBeGreaterThan(0.01);
     expect(Math.abs(racers[0]!.freeSwimOffsetNorm ?? 0)).toBeLessThanOrEqual(0.999);
     expect(Math.abs(racers[1]!.freeSwimOffsetNorm ?? 0)).toBeLessThanOrEqual(0.999);
+  });
+
+  it('resets replay transient racer state fields for a fresh run', () => {
+    const racer = {
+      progress: 0.77,
+      finishTimeMs: 123,
+      finishOrder: 2,
+      finishApproachRatePerSec: 0.21,
+      lockedTopFiveRank: 2,
+      terminalCruiseRatePerSec: 0.1,
+      coastEntryRatePerSec: 0.2,
+      coastStartTimeMs: 444,
+      coastStopProgress: 0.95,
+      freeSwimOffsetNorm: 0.4,
+      freeSwimVelocityNorm: 0.03,
+      frozenX: 12,
+      frozenY: 18
+    };
+
+    resetReplayRacerTransientState(racer);
+
+    expect(racer.progress).toBe(0);
+    expect(racer.finishTimeMs).toBeUndefined();
+    expect(racer.finishOrder).toBeUndefined();
+    expect(racer.finishApproachRatePerSec).toBeUndefined();
+    expect(racer.lockedTopFiveRank).toBeUndefined();
+    expect(racer.terminalCruiseRatePerSec).toBeUndefined();
+    expect(racer.coastEntryRatePerSec).toBeUndefined();
+    expect(racer.coastStartTimeMs).toBeUndefined();
+    expect(racer.coastStopProgress).toBeUndefined();
+    expect(racer.freeSwimOffsetNorm).toBeUndefined();
+    expect(racer.freeSwimVelocityNorm).toBeUndefined();
+    expect(racer.frozenX).toBeUndefined();
+    expect(racer.frozenY).toBeUndefined();
+  });
+
+  it('applies label decisions and label anchor positions', () => {
+    const mkPos = (x = 0, y = 0) => {
+      const pos = {
+        x,
+        y,
+        set: (nx: number, ny: number) => {
+          pos.x = nx;
+          pos.y = ny;
+        }
+      };
+      return pos;
+    };
+    const scale = {
+      y: 1,
+      set: (v: number) => {
+        scale.y = v;
+      }
+    };
+    const racers = [
+      {
+        id: 'd1',
+        marker: { alpha: 0, width: 20 },
+        sprite: {
+          scale,
+          position: { x: 100, y: 60 },
+          zIndex: 0
+        },
+        labelBg: { visible: false, position: mkPos(), zIndex: 0 },
+        labelText: { visible: false, position: mkPos(), zIndex: 0 },
+        bodySprite: { alpha: 0 }
+      }
+    ];
+
+    applyReplayLabelDecisions(racers, [
+      { id: 'd1', showLabel: true, scale: 1.3, markerAlpha: 0.8, zIndex: 120 }
+    ]);
+
+    expect(racers[0]!.labelBg.visible).toBe(true);
+    expect(racers[0]!.labelText.visible).toBe(true);
+    expect(racers[0]!.marker.alpha).toBe(0.8);
+    expect(racers[0]!.bodySprite!.alpha).toBe(0.8);
+    expect(racers[0]!.sprite.zIndex).toBe(2120);
+    expect(racers[0]!.labelBg.zIndex).toBe(12120);
+    expect(racers[0]!.labelText.zIndex).toBe(12121);
+    expect(racers[0]!.labelBg.position.y).toBeLessThan(racers[0]!.sprite.position.y);
   });
 });
