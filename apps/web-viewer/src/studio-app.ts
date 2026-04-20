@@ -43,11 +43,8 @@ import {
   type StudioTrackEditMode
 } from './studio-paths';
 import {
-  clampInteger,
-  deletePresetBackground,
   loadPresetBackground,
   loadPresetStore,
-  savePresetBackground,
   savePresetStore,
   type BoundarySide,
   type StudioTestPreset
@@ -87,6 +84,17 @@ import {
   createDefaultStudioSpritePreviewState,
   tickStudioSpritePreviewState
 } from './studio-sprite-preview-state';
+import {
+  resolveRunnerPreviewScale,
+  resolveRunnerPreviewTexture
+} from './studio-runner-preview-texture';
+import {
+  buildStudioPresetFromState,
+  deleteStudioPreset,
+  lookupStudioPreset,
+  normalizeLoadedStudioPreset,
+  persistStudioPreset
+} from './studio-preset-actions';
 import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
@@ -430,17 +438,16 @@ export async function startStudioApp(): Promise<void> {
   };
 
   const buildCurrentTestPreset = (): StudioTestPreset => {
-    const preset: StudioTestPreset = {
-      version: 1,
-      trackId: dom.trackIdInput.value.trim() || DEFAULT_EDITOR_TRACK_ID,
-      trackName: dom.trackNameInput.value.trim() || 'Custom Track',
-      effectProfileId: dom.effectProfileInput.value.trim(),
-      points: points.map((p) => ({ x: round3(p.x), y: round3(p.y) })),
+    return buildStudioPresetFromState({
+      trackId: dom.trackIdInput.value,
+      trackName: dom.trackNameInput.value,
+      effectProfileId: dom.effectProfileInput.value,
+      points,
       trackEditMode,
       trackOrientation,
       boundaryEditSide,
-      leftBoundaryPoints: leftBoundaryPoints.map((p) => ({ x: round3(p.x), y: round3(p.y) })),
-      rightBoundaryPoints: rightBoundaryPoints.map((p) => ({ x: round3(p.x), y: round3(p.y) })),
+      leftBoundaryPoints,
+      rightBoundaryPoints,
       laneWidthPx,
       replayRacerCount,
       nameDisplayMode,
@@ -449,13 +456,10 @@ export async function startStudioApp(): Promise<void> {
       smoothingEnabled,
       replayModeEnabled,
       laneBoardsVisible,
-      editorGeometryMode: 'geometry-rotated-v1'
-    };
-    const backgroundDataUrl = backgroundController.getBackgroundDataUrl();
-    if (backgroundDataUrl) {
-      preset.backgroundImageDataUrl = backgroundDataUrl;
-    }
-    return preset;
+      backgroundImageDataUrl: backgroundController.getBackgroundDataUrl(),
+      fallbackTrackId: DEFAULT_EDITOR_TRACK_ID,
+      fallbackTrackName: 'Custom Track'
+    });
   };
 
   const saveTestPreset = async (): Promise<void> => {
@@ -465,56 +469,12 @@ export async function startStudioApp(): Promise<void> {
       return;
     }
 
-    const store = loadPresetStore();
-    const preset = buildCurrentTestPreset();
-    const backgroundDataUrl = preset.backgroundImageDataUrl;
-    delete preset.backgroundImageDataUrl;
-    preset.hasBackgroundImage = Boolean(backgroundDataUrl);
-    store.presets[presetName] = preset;
-    store.lastUsedPresetName = presetName;
-
-    if (backgroundDataUrl) {
-      try {
-        await savePresetBackground(presetName, backgroundDataUrl);
-      } catch {
-        // Keep backward-compatible fallback for environments without IndexedDB.
-        preset.backgroundImageDataUrl = backgroundDataUrl;
-        delete preset.hasBackgroundImage;
-      }
-    } else {
-      try {
-        await deletePresetBackground(presetName);
-      } catch {
-        // Ignore cleanup failures.
-      }
-    }
-
-    try {
-      savePresetStore(store);
-      refreshPresetSelect(presetName);
-      dom.editorHelp.textContent = `Preset "${presetName}" saved.`;
-      return;
-    } catch {
-      // If quota is exceeded by image-heavy preset, retry once without background data.
-    }
-
-    if (backgroundDataUrl) {
-      const lightweightPreset = { ...preset };
-      delete lightweightPreset.backgroundImageDataUrl;
-      delete lightweightPreset.hasBackgroundImage;
-      store.presets[presetName] = lightweightPreset;
-      try {
-        savePresetStore(store);
-        refreshPresetSelect(presetName);
-        dom.editorHelp.textContent = `Preset "${presetName}" saved, but background image could not be stored due to browser storage limits.`;
-        return;
-      } catch {
-        // Continue to generic error message below.
-      }
-    }
-
-    dom.editorHelp.textContent =
-      'Could not save test preset (browser storage may be full or blocked).';
+    const saveResult = await persistStudioPreset({
+      presetName,
+      preset: buildCurrentTestPreset()
+    });
+    refreshPresetSelect(saveResult.preferredName);
+    dom.editorHelp.textContent = saveResult.message;
   };
 
   const loadTestPreset = async (): Promise<void> => {
@@ -525,66 +485,44 @@ export async function startStudioApp(): Promise<void> {
     }
 
     try {
-      const store = loadPresetStore();
-      const parsed = store.presets[presetName] as Partial<StudioTestPreset> | undefined;
-      if (!parsed) {
+      const lookedUpPreset = lookupStudioPreset(presetName);
+      if (!lookedUpPreset.ok || !lookedUpPreset.parsed) {
         dom.editorHelp.textContent = `Preset "${presetName}" was not found.`;
         refreshPresetSelect();
         return;
       }
 
-      if (!Array.isArray(parsed.points) || parsed.points.length < 3) {
-        throw new Error('Invalid preset points');
-      }
+      const loadedPreset = normalizeLoadedStudioPreset({
+        parsed: lookedUpPreset.parsed,
+        fallbackPoints: SAMPLE_CURVY_POINTS,
+        defaults: {
+          laneWidthPx,
+          replayRacerCount,
+          nameDisplayMode,
+          focusRacerNumber,
+          fallbackTrackId: DEFAULT_EDITOR_TRACK_ID,
+          fallbackTrackName: 'Custom Track'
+        }
+      });
 
-      points = parsed.points.map((p) => ({ x: round3(Number(p.x)), y: round3(Number(p.y)) }));
-      trackEditMode = parsed.trackEditMode === 'boundaries' ? 'boundaries' : 'centerline';
-      const nextOrientation = normalizeTrackOrientation(parsed.trackOrientation);
-      trackOrientation = nextOrientation;
-      boundaryEditSide = parsed.boundaryEditSide === 'right' ? 'right' : 'left';
-      leftBoundaryPoints = Array.isArray(parsed.leftBoundaryPoints)
-        ? parsed.leftBoundaryPoints.map((p) => ({ x: round3(Number(p.x)), y: round3(Number(p.y)) }))
-        : [];
-      rightBoundaryPoints = Array.isArray(parsed.rightBoundaryPoints)
-        ? parsed.rightBoundaryPoints.map((p) => ({
-            x: round3(Number(p.x)),
-            y: round3(Number(p.y))
-          }))
-        : [];
-      if (trackEditMode === 'boundaries') {
-        ensureBoundaryPointsFromCenterline();
-        points = buildCenterlineFromBoundaries(leftBoundaryPoints, rightBoundaryPoints);
-      }
+      points = loadedPreset.points;
+      trackEditMode = loadedPreset.trackEditMode;
+      trackOrientation = loadedPreset.trackOrientation;
+      boundaryEditSide = loadedPreset.boundaryEditSide;
+      leftBoundaryPoints = loadedPreset.leftBoundaryPoints;
+      rightBoundaryPoints = loadedPreset.rightBoundaryPoints;
+      dom.trackIdInput.value = loadedPreset.trackId;
+      dom.trackNameInput.value = loadedPreset.trackName;
+      dom.effectProfileInput.value = loadedPreset.effectProfileId;
 
-      if (
-        nextOrientation === 'top-to-bottom' &&
-        parsed.editorGeometryMode !== 'geometry-rotated-v1'
-      ) {
-        const rotated = rotateStudioGeometry(
-          { points, leftBoundaryPoints, rightBoundaryPoints },
-          'left-to-right',
-          'top-to-bottom'
-        );
-        points = rotated.points;
-        leftBoundaryPoints = rotated.leftBoundaryPoints;
-        rightBoundaryPoints = rotated.rightBoundaryPoints;
-      }
-      dom.trackIdInput.value =
-        (parsed.trackId ?? DEFAULT_EDITOR_TRACK_ID).trim() || DEFAULT_EDITOR_TRACK_ID;
-      dom.trackNameInput.value = (parsed.trackName ?? 'Custom Track').trim() || 'Custom Track';
-      dom.effectProfileInput.value = (parsed.effectProfileId ?? '').trim();
-
-      laneWidthPx = clampInteger(Number(parsed.laneWidthPx), 1, 24, laneWidthPx);
-      replayRacerCount = clampInteger(Number(parsed.replayRacerCount), 2, 100, replayRacerCount);
-      nameDisplayMode = toNameDisplayMode(String(parsed.nameDisplayMode ?? nameDisplayMode));
-      focusRacerNumber = normalizeFocusRacerNumber(
-        Number(parsed.focusRacerNumber ?? focusRacerNumber),
-        replayRacerCount
-      );
-      playingPreview = parsed.playingPreview !== false;
-      smoothingEnabled = parsed.smoothingEnabled !== false;
-      replayModeEnabled = parsed.replayModeEnabled === true;
-      laneBoardsVisible = parsed.laneBoardsVisible === true;
+      laneWidthPx = loadedPreset.laneWidthPx;
+      replayRacerCount = loadedPreset.replayRacerCount;
+      nameDisplayMode = loadedPreset.nameDisplayMode;
+      focusRacerNumber = loadedPreset.focusRacerNumber;
+      playingPreview = loadedPreset.playingPreview;
+      smoothingEnabled = loadedPreset.smoothingEnabled;
+      replayModeEnabled = loadedPreset.replayModeEnabled;
+      laneBoardsVisible = loadedPreset.laneBoardsVisible;
       broadcastViewEnabled = false;
 
       safeRebuildReplayRacers('loadPreset');
@@ -602,11 +540,9 @@ export async function startStudioApp(): Promise<void> {
         rightBoundaryPoints
       });
 
-      const inlineBackground =
-        typeof parsed.backgroundImageDataUrl === 'string' ? parsed.backgroundImageDataUrl : null;
-      if (inlineBackground) {
-        await backgroundController.loadBackgroundFromDataUrl(inlineBackground);
-      } else if (parsed.hasBackgroundImage) {
+      if (loadedPreset.inlineBackgroundDataUrl) {
+        await backgroundController.loadBackgroundFromDataUrl(loadedPreset.inlineBackgroundDataUrl);
+      } else if (loadedPreset.hasBackgroundImage) {
         const indexedDbBackground = await loadPresetBackground(presetName);
         if (indexedDbBackground) {
           await backgroundController.loadBackgroundFromDataUrl(indexedDbBackground);
@@ -623,8 +559,8 @@ export async function startStudioApp(): Promise<void> {
       syncUiFromState();
       applyViewMode();
       dom.presetNameInput.value = presetName;
-      store.lastUsedPresetName = presetName;
-      savePresetStore(store);
+      lookedUpPreset.store.lastUsedPresetName = presetName;
+      savePresetStore(lookedUpPreset.store);
       refreshPresetSelect(presetName);
       dom.editorHelp.textContent = `Preset "${presetName}" loaded.`;
     } catch {
@@ -639,25 +575,9 @@ export async function startStudioApp(): Promise<void> {
       return;
     }
 
-    const store = loadPresetStore();
-    if (!store.presets[presetName]) {
-      dom.editorHelp.textContent = `Preset "${presetName}" does not exist anymore.`;
-      refreshPresetSelect();
-      return;
-    }
-
-    delete store.presets[presetName];
-    try {
-      await deletePresetBackground(presetName);
-    } catch {
-      // Ignore cleanup failures.
-    }
-    if (store.lastUsedPresetName === presetName) {
-      delete store.lastUsedPresetName;
-    }
-    savePresetStore(store);
+    const deleteResult = await deleteStudioPreset(presetName);
     refreshPresetSelect();
-    dom.editorHelp.textContent = `Preset "${presetName}" deleted.`;
+    dom.editorHelp.textContent = deleteResult.message;
   };
 
   const refreshPresetSelect = (preferredName?: string): void => {
@@ -1394,21 +1314,14 @@ export async function startStudioApp(): Promise<void> {
     previewProgress = singleTick.previewProgress;
     singlePreviewElapsedSeconds = singleTick.singlePreviewElapsedSeconds;
 
-    if (generatedRacerPack && trackPreviewTextures.length > 0) {
-      const texture =
-        trackPreviewTextures[spritePreviewState.frameIndex % trackPreviewTextures.length]!;
-      runner.texture = texture;
-      const maxTextureEdge = Math.max(texture.width, texture.height) || 1;
-      const targetRunnerSizePx = resolveTrackPreviewSizePx(Number(dom.trackPreviewSizeInput.value));
-      const scale = targetRunnerSizePx / maxTextureEdge;
-      runner.scale.set(Math.max(0.12, Math.min(3.4, scale)));
-    } else {
-      runner.texture = defaultRunnerTexture;
-      const maxTextureEdge = Math.max(defaultRunnerTexture.width, defaultRunnerTexture.height) || 1;
-      const targetRunnerSizePx = resolveTrackPreviewSizePx(Number(dom.trackPreviewSizeInput.value));
-      const scale = targetRunnerSizePx / maxTextureEdge;
-      runner.scale.set(Math.max(0.12, Math.min(3.4, scale)));
-    }
+    const textureSelection = resolveRunnerPreviewTexture({
+      generatedPreviewTextures: generatedRacerPack ? trackPreviewTextures : [],
+      previewFrameIndex: spritePreviewState.frameIndex,
+      defaultTexture: defaultRunnerTexture
+    });
+    const targetRunnerSizePx = resolveTrackPreviewSizePx(Number(dom.trackPreviewSizeInput.value));
+    runner.texture = textureSelection.texture;
+    runner.scale.set(resolveRunnerPreviewScale(textureSelection.texture, targetRunnerSizePx));
 
     updateStudioSurfaceEffects(dt);
   });

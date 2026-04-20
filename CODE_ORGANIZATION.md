@@ -155,6 +155,12 @@
 - `apps/web-viewer/src/studio-track-json-load-state.ts`
   - Pure helper layer for parsing and normalizing studio track JSON imports.
   - Keeps JSON load validation/normalization flow out of studio app orchestration.
+- `apps/web-viewer/src/studio-preset-actions.ts`
+  - Shared helper layer for studio preset build/save/load/delete state logic.
+  - Keeps preset lifecycle parsing and persistence flow out of studio app orchestration.
+- `apps/web-viewer/src/studio-runner-preview-texture.ts`
+  - Shared helper layer for runner preview texture selection and scale policy.
+  - Keeps ticker rendering-policy calculations out of studio app orchestration.
 - `apps/web-viewer/src/studio-ui-controls-controller.ts`
   - Owns studio toggle/input listener wiring for preview, replay, broadcast, and lane/racer controls.
   - Keeps UI event wiring and button/label text updates out of the studio surface orchestrator.
