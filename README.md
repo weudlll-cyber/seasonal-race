@@ -111,6 +111,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Surface profile registry and profile-resolution heuristics are now isolated in `surface-effect-profiles.ts`, keeping simulation/particle runtime flow focused in `surface-effects.ts`.
 - Replay math/path helpers are now isolated in `studio-replay-math.ts` and re-exported by `studio-replay-utils.ts`, reducing mixed concerns in replay utility flow.
 - Admin shell markup/style/DOM resolution is now isolated in `admin-shell.ts`, keeping `admin-app.ts` focused on launch orchestration.
+- Studio playback ticker branching (no-track/replay/single-preview) is now isolated in `studio-app-ticker-controller.ts`, reducing frame-orchestration density in studio app flow.
 - Studio single-preview tick behavior is now isolated in `studio-single-preview-controller.ts` so non-replay runner/camera flow stays decoupled from studio composition.
 - Studio background image flow (load/clear/layout) is now isolated in `studio-background-controller.ts` so asset lifecycle stays decoupled from studio composition.
 - Studio preset persistence/storage helpers are now isolated in `studio-preset-store.ts` so preset metadata parsing and IndexedDB/localStorage fallback flow stay decoupled from studio composition.

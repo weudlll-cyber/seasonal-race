@@ -99,6 +99,7 @@ import {
   wireStudioBroadcastWindowEvents,
   wireStudioEditorZoomEvents
 } from './studio-app-view-events';
+import { tickStudioAppPlaybackFrame } from './studio-app-ticker-controller';
 import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
@@ -1187,127 +1188,62 @@ export async function startStudioApp(): Promise<void> {
   app.ticker.add((delta) => {
     const dt = delta / 60;
     renderGeneratedSpritePreviews(dt * 1000);
-    const backgroundSprite = backgroundController.getBackgroundSprite();
-
-    if (points.length < 3) {
-      runner.visible = false;
-      for (const rr of replayRacers) {
-        rr.sprite.visible = false;
-      }
-      laneBoardLayer.clear();
-      surfaceEffectLayer.clear();
-      studioSurfaceParticles.length = 0;
-      replayPreviousPositions.clear();
-      runnerPreviousPosition = null;
-      if (broadcastViewEnabled) {
-        resetWorldTransform(world);
-      } else {
-        applyEditorViewTransform();
-      }
-      return;
-    }
-
-    const mapPointsForLayout = (sourcePoints: TrackPoint[]): TrackPoint[] => {
-      if (!backgroundSprite || !broadcastViewEnabled) {
-        return sourcePoints;
-      }
-      return mapTrackPointsToCurrentLayout(
-        sourcePoints,
-        backgroundSprite.texture.width,
-        backgroundSprite.texture.height,
-        VIEW_WIDTH,
-        VIEW_HEIGHT,
-        app.screen.width,
-        app.screen.height,
-        false,
-        true
-      );
-    };
-
-    const {
-      renderLeftBoundaryPoints,
-      renderRightBoundaryPoints,
-      previewPath,
-      replayRacePath,
-      coastEndPoint
-    } = resolveStudioPaths({
+    const tickResult = tickStudioAppPlaybackFrame({
+      dt,
       points,
       leftBoundaryPoints,
       rightBoundaryPoints,
       trackEditMode,
       smoothingEnabled,
-      mapPointsForLayout
-    });
-
-    if (replayModeEnabled) {
-      runner.visible = false;
-      const replayTick = tickStudioReplayMode({
-        dt,
-        playingPreview,
-        replayTimeMs,
-        leaderboardTickMs,
-        replayData,
-        replayRacers,
-        laneWidthPx,
-        laneBoardsVisible,
-        racePath: replayRacePath,
-        coastEndPoint,
-        previewPath,
-        leftBoundaryPath: renderLeftBoundaryPoints,
-        rightBoundaryPath: renderRightBoundaryPoints,
-        laneBoardLayer,
-        nameDisplayMode,
-        focusRacerNumber,
-        leaderboardList: dom.leaderboardList,
-        broadcastViewEnabled,
-        camera,
-        world,
-        appScreenWidth: app.screen.width,
-        appScreenHeight: app.screen.height,
-        backgroundSprite,
-        regenerateReplayData,
-        replayRunId
-      });
-      replayTimeMs = replayTick.replayTimeMs;
-      leaderboardTickMs = replayTick.leaderboardTickMs;
-      replayData = replayTick.replayData;
-      applyReplaySpriteSizeFromSlider();
-      updateStudioSurfaceEffects(dt);
-      return;
-    }
-
-    const singleTick = tickStudioSinglePreviewMode({
-      dt,
+      replayModeEnabled,
       playingPreview,
+      laneWidthPx,
+      laneBoardsVisible,
+      nameDisplayMode,
+      focusRacerNumber,
+      replayRacers,
+      replayTimeMs,
+      leaderboardTickMs,
+      replayData,
+      replayRunId,
       previewProgress,
       singlePreviewElapsedSeconds,
       runnerSpeed: RUNNER_SPEED,
-      previewPath,
       runner,
-      replayRacers,
       leaderboardList: dom.leaderboardList,
       laneBoardLayer,
+      surfaceEffectLayer,
       broadcastViewEnabled,
       camera,
       world,
+      backgroundSprite: backgroundController.getBackgroundSprite(),
       appScreenWidth: app.screen.width,
       appScreenHeight: app.screen.height,
-      backgroundSprite,
-      applyEditorViewTransform
+      viewWidth: VIEW_WIDTH,
+      viewHeight: VIEW_HEIGHT,
+      generatedRacerPack,
+      trackPreviewTextures,
+      spritePreviewState,
+      defaultRunnerTexture,
+      trackPreviewSizeInputValue: Number(dom.trackPreviewSizeInput.value),
+      regenerateReplayData,
+      applyReplaySpriteSizeFromSlider,
+      applyEditorViewTransform,
+      updateStudioSurfaceEffects,
+      tickReplayMode: tickStudioReplayMode,
+      tickSinglePreviewMode: tickStudioSinglePreviewMode,
+      resetNoTrackTransientState: () => {
+        studioSurfaceParticles.length = 0;
+        replayPreviousPositions.clear();
+        runnerPreviousPosition = null;
+      }
     });
-    previewProgress = singleTick.previewProgress;
-    singlePreviewElapsedSeconds = singleTick.singlePreviewElapsedSeconds;
 
-    const textureSelection = resolveRunnerPreviewTexture({
-      generatedPreviewTextures: generatedRacerPack ? trackPreviewTextures : [],
-      previewFrameIndex: spritePreviewState.frameIndex,
-      defaultTexture: defaultRunnerTexture
-    });
-    const targetRunnerSizePx = resolveTrackPreviewSizePx(Number(dom.trackPreviewSizeInput.value));
-    runner.texture = textureSelection.texture;
-    runner.scale.set(resolveRunnerPreviewScale(textureSelection.texture, targetRunnerSizePx));
-
-    updateStudioSurfaceEffects(dt);
+    replayTimeMs = tickResult.replayTimeMs;
+    leaderboardTickMs = tickResult.leaderboardTickMs;
+    replayData = tickResult.replayData;
+    previewProgress = tickResult.previewProgress;
+    singlePreviewElapsedSeconds = tickResult.singlePreviewElapsedSeconds;
   });
 
   function applyViewMode(): void {

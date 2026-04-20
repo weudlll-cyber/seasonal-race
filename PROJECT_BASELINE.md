@@ -182,6 +182,7 @@
 - Surface profile registry and profile-resolution heuristics are now extracted into `surface-effect-profiles`, keeping simulation/particle runtime flow focused in `surface-effects` while preserving behavior.
 - Replay math/path helpers are now extracted into `studio-replay-math` (re-exported by `studio-replay-utils`), reducing mixed concerns in replay utility flow while preserving behavior.
 - Admin shell render/style/DOM resolution is now extracted into `admin-shell`, keeping `admin-app` focused on launch orchestration while preserving behavior.
+- Studio playback ticker branching (no-track/replay/single-preview) is now extracted into `studio-app-ticker-controller`, reducing frame-orchestration density in `studio-app` while preserving behavior.
 - Broadcast mode now resizes the renderer to the real viewport so race playback fills the full screen area.
 - Broadcast mode now supports `Esc` as a direct return shortcut back to editor mode.
 - Authored-to-broadcast track remapping now uses distinct source/target viewport dimensions to keep race path aligned with the background image in broadcast mode.
