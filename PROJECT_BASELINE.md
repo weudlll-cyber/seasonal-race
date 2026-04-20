@@ -20,6 +20,7 @@
 - Versioned REST API under `/api/v1`.
 - Deterministic race simulation mode with reproducible seed.
 - CI quality gates with staged strictness (light, extended, full).
+- GitHub Actions CI is hardened for Node 24 JavaScript action runtime compatibility to reduce deprecation-noise and future runner breakage risk.
 - Content validation gate integrated in CI extended/full stages.
 - Core engine remains independent from UI, storage, and connector implementations.
 - Deployment process must be reproducible and idempotent.
@@ -113,6 +114,11 @@
 - Coast settling now includes deterministic time-complete freeze in addition to stop-progress threshold, with freeze-at-current-position (no last-frame snap to stop target) to prevent rare never-settle oscillation and end-position jump artifacts.
 - Studio replay controller internals were cleaned by removing unused per-racer world-history fields and replacing per-racer frame scans with a precomputed per-frame progress map.
 - Studio replay controller readability was further improved by extracting small behavior-preserving helpers (clip-zone threshold constant, linear-decay coast helper, finish-camera centerline mapper).
+- Studio replay low-level utility logic is now extracted into `studio-replay-utils` (cinematic-plan generation, coast/geometry math, and ranking helpers) so `studio-replay-controller` stays focused on frame orchestration.
+- Studio replay run-path/coast safety derivation and broadcast camera selection/zoom policy logic are now extracted into `studio-replay-utils`, further reducing orchestration density in `studio-replay-controller`.
+- Replay pixel-space collision/separation policy is now extracted into `studio-replay-utils`, further reducing orchestration density in `studio-replay-controller` while preserving finish/coast spread behavior.
+- Replay transient racer-state reset and replay label-application policy are now extracted into `studio-replay-utils`, further reducing orchestration density in `studio-replay-controller` while preserving behavior.
+- Replay finish/coast progress transition logic is now extracted into `studio-replay-utils`, further reducing orchestration density in `studio-replay-controller` while preserving behavior.
 - Studio replay controller comments were normalized for clarity/maintenance without changing replay behavior.
 - Studio replay controller formatting was additionally normalized by splitting dense expressions into readable blocks, without changing replay behavior.
 - Replay row-lag formation offsets now fade out through race progression so late-race leading order reflects live performance instead of fixed row/index spacing.
@@ -154,6 +160,34 @@
 - Studio single-preview frame tick behavior is now extracted into `studio-single-preview-controller` to decouple non-replay runner/camera flow from studio composition.
 - Studio background image flow (load/clear/layout) is now extracted into `studio-background-controller` to decouple asset lifecycle from studio composition.
 - Studio control-panel event wiring is now extracted into `studio-ui-controls-controller` to decouple UI listener wiring from studio composition.
+- Studio preset persistence/storage helpers are now extracted into `studio-preset-store` (preset metadata parsing + IndexedDB/localStorage fallback behavior) to reduce `studio-app` orchestration complexity.
+- Studio preview/replay path derivation is now extracted into `studio-paths`, centralizing boundary/coast endpoint semantics and reducing orchestration complexity in `studio-app`.
+- Studio centerline/boundary point-edit state transformations are now extracted into `studio-track-edit-helpers`, reducing orchestration complexity in `studio-app` while keeping behavior unchanged.
+- Studio file/image utility helpers are now extracted into `studio-file-utils`, reducing utility noise in `studio-app`.
+- Runtime racer-pack fallback/sprite extraction/preview-size helpers are now extracted into `studio-racer-pack-utils`, reducing orchestration complexity in `studio-app`.
+- Studio replay racer-view construction/reset logic is now extracted into `studio-replay-racer-builder`, reducing view-lifecycle orchestration complexity in `studio-app`.
+- Studio UI state synchronization mapping is now extracted into `studio-ui-state`, reducing control-value/label wiring noise in `studio-app`.
+- Studio geometry orientation rotation state updates are now extracted into `studio-geometry-state`, reducing duplicated centerline/boundary orientation wiring in `studio-app`.
+- Generated template centerline orientation mapping is now routed through shared geometry helpers, removing inline orientation-rotation branching in `studio-app`.
+- Studio preset dropdown selection model logic is now extracted into `studio-preset-select-state`, reducing preset-selection fallback wiring noise in `studio-app`.
+- Studio editor zoom/view-state math is now extracted into `studio-editor-view-state`, reducing editor transform math wiring noise in `studio-app`.
+- Studio surface setup resolution and particle-emitter state transitions are now extracted into `studio-surface-effects-state`, reducing selector/state wiring noise in `studio-app` while preserving visual behavior.
+- Studio generator preset/highlight and generation-warning resolution are now extracted into `studio-generator-ui-state`, reducing generator-policy wiring noise in `studio-app` while preserving behavior.
+- Studio sprite-preview animation state progression and preview-canvas drawing/texture extraction are now extracted into `studio-sprite-preview-state` and `studio-sprite-preview-render`, reducing preview-rendering wiring noise in `studio-app` while preserving behavior.
+- Studio JSON-load parsing and normalization are now extracted into `studio-track-json-load-state`, reducing JSON import wiring noise in `studio-app` while preserving behavior.
+- Studio preset build/save/load/delete state logic is now extracted into `studio-preset-actions`, reducing preset-lifecycle wiring noise in `studio-app` while preserving behavior.
+- Studio runner preview texture selection and scale policy are now extracted into `studio-runner-preview-texture`, reducing ticker rendering-policy wiring noise in `studio-app` while preserving behavior.
+- Studio broadcast-window (`Esc`/resize) and editor-zoom event wiring are now extracted into `studio-app-view-events`, reducing view-event setup density in `studio-app` while preserving behavior.
+- Studio track-template generation is now extracted into `studio-track-template-generator` (re-exported by `studio-generators`), separating template domain logic from sprite-pack generation while preserving behavior.
+- Surface profile registry and profile-resolution heuristics are now extracted into `surface-effect-profiles`, keeping simulation/particle runtime flow focused in `surface-effects` while preserving behavior.
+- Replay math/path helpers are now extracted into `studio-replay-math` (re-exported by `studio-replay-utils`), reducing mixed concerns in replay utility flow while preserving behavior.
+- Admin shell render/style/DOM resolution is now extracted into `admin-shell`, keeping `admin-app` focused on launch orchestration while preserving behavior.
+- Studio playback ticker branching (no-track/replay/single-preview) is now extracted into `studio-app-ticker-controller`, reducing frame-orchestration density in `studio-app` while preserving behavior.
+- Secondary studio editor control wiring (generator/surface/preset/json) is now extracted into `studio-app-secondary-controls-controller`, reducing listener-registration density in `studio-app` while preserving behavior.
+- Studio replay-racer lifecycle policy (rebuild + preview-size scaling) is now extracted into `studio-replay-racer-lifecycle`, reducing replay-racer lifecycle wiring density in `studio-app` while preserving behavior.
+- Source hygiene sweep removed compiler-confirmed unused imports in `studio-app` and `studio-generators` with no runtime behavior changes.
+- Source hygiene sweep removed orphaned legacy modules (`scene.ts`, `viewer-model.ts`) after reference validation, with no runtime behavior changes.
+- Source hygiene sweep removed the unused `packages/branding/src/index.ts` placeholder and internalized unconsumed viewer exports; foundation tests now assert key API entrypoint exports.
 - Broadcast mode now resizes the renderer to the real viewport so race playback fills the full screen area.
 - Broadcast mode now supports `Esc` as a direct return shortcut back to editor mode.
 - Authored-to-broadcast track remapping now uses distinct source/target viewport dimensions to keep race path aligned with the background image in broadcast mode.
