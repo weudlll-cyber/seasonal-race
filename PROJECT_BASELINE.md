@@ -20,6 +20,7 @@
 - Versioned REST API under `/api/v1`.
 - Deterministic race simulation mode with reproducible seed.
 - CI quality gates with staged strictness (light, extended, full).
+- GitHub Actions CI is hardened for Node 24 JavaScript action runtime compatibility to reduce deprecation-noise and future runner breakage risk.
 - Content validation gate integrated in CI extended/full stages.
 - Core engine remains independent from UI, storage, and connector implementations.
 - Deployment process must be reproducible and idempotent.

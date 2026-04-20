@@ -110,6 +110,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Track remapping for broadcast now uses separate authored-editor viewport and target-broadcast viewport dimensions, fixing path/background mismatch on wide screens.
 - Architecture direction is now explicitly split into three app roles: Studio (design/admin), Ops (race launch with presets), and Viewer (runtime race playback).
 - Phase 2 core contracts are in progress: race session orchestration, deterministic RNG, adapter registry, and extensibility interfaces.
+- CI workflow runtime is hardened for Node 24 JavaScript actions to reduce deprecation warning noise and lower future breakage risk.
 - See `PROJECT_BASELINE.md` and `docs/ROADMAP_PHASES.md` for milestone details.
 
 ## Source Header Standard
