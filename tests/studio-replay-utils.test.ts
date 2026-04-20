@@ -9,8 +9,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildReplayCinematicPlan,
+  buildReplayRunPathState,
   computeCoastStopProgress,
-  computeLinearDecayCoast
+  computeLinearDecayCoast,
+  resolveReplayZoomScale,
+  selectReplayCameraInputRacers
 } from '../apps/web-viewer/src/studio-replay-utils';
 
 describe('studio replay utility helpers', () => {
@@ -42,5 +45,50 @@ describe('studio replay utility helpers', () => {
     expect(start.currentV).toBeGreaterThan(mid.currentV);
     expect(mid.currentV).toBeGreaterThanOrEqual(end.currentV);
     expect(end.coastFrac).toBeLessThanOrEqual(1);
+  });
+
+  it('builds forward-safe run path state for authored coast points behind finish', () => {
+    const racePath = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 200, y: 0 }
+    ];
+    const state = buildReplayRunPathState(
+      racePath,
+      { x: 200, y: 0 },
+      { x: 1, y: 0 },
+      { x: 150, y: 0 },
+      220
+    );
+
+    expect(state.safeCoastEnd.x).toBeGreaterThan(200);
+    expect(state.fullRunPath[state.fullRunPath.length - 1]).toEqual(state.safeCoastEnd);
+    expect(state.finishProgressOnFullRun).toBeGreaterThan(0);
+    expect(state.finishProgressOnFullRun).toBeLessThan(1);
+  });
+
+  it('selects camera racers per phase policy', () => {
+    const racers = [
+      { progress: 0.1, position: { x: 1, y: 0 } },
+      { progress: 0.8, position: { x: 8, y: 0 } },
+      { progress: 0.4, position: { x: 4, y: 0 } }
+    ];
+
+    const preStart = selectReplayCameraInputRacers(true, false, false, 0.85, racers);
+    expect(preStart[0]!.progress).toBe(0.8);
+
+    const finishFraming = selectReplayCameraInputRacers(false, true, false, 0.5, racers);
+    expect(finishFraming.every((r) => r.progress < 0.5)).toBe(true);
+
+    const spotlight = selectReplayCameraInputRacers(false, false, true, 0.9, racers);
+    expect(spotlight).toHaveLength(2);
+    expect(spotlight[0]!.progress).toBe(0.8);
+  });
+
+  it('resolves replay zoom scale by mode priority', () => {
+    expect(resolveReplayZoomScale(true, false, false, 3)).toBe(2.15);
+    expect(resolveReplayZoomScale(false, true, false, 3)).toBe(2.2);
+    expect(resolveReplayZoomScale(false, false, true, 3)).toBe(4.95);
+    expect(resolveReplayZoomScale(false, false, false, 1.7)).toBe(1.7);
   });
 });

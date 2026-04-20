@@ -129,6 +129,95 @@ export function mapCameraRacersToCenterline(
   }));
 }
 
+export interface ReplayRunPathState {
+  safeCoastEnd: TrackPoint;
+  fullRunPath: TrackPoint[];
+  finishProgressOnFullRun: number;
+}
+
+export function buildReplayRunPathState(
+  racePath: TrackPoint[],
+  endPoint: TrackPoint,
+  endTangent: TrackPoint,
+  coastEndPoint: TrackPoint | null,
+  defaultExtendPx: number
+): ReplayRunPathState {
+  const coastEndBasePoint = coastEndPoint ?? {
+    x: endPoint.x + endTangent.x * defaultExtendPx,
+    y: endPoint.y + endTangent.y * defaultExtendPx
+  };
+  const authoredDistance = Math.hypot(
+    coastEndBasePoint.x - endPoint.x,
+    coastEndBasePoint.y - endPoint.y
+  );
+  const coastDot =
+    (coastEndBasePoint.x - endPoint.x) * endTangent.x +
+    (coastEndBasePoint.y - endPoint.y) * endTangent.y;
+  const safeCoastEnd =
+    coastDot > 5
+      ? coastEndBasePoint
+      : {
+          x: endPoint.x + endTangent.x * Math.max(defaultExtendPx, authoredDistance),
+          y: endPoint.y + endTangent.y * Math.max(defaultExtendPx, authoredDistance)
+        };
+  const baseRaceLengthPx = computePathLength(racePath);
+  const coastLengthPx = Math.max(
+    1,
+    Math.hypot(safeCoastEnd.x - endPoint.x, safeCoastEnd.y - endPoint.y)
+  );
+  const fullRunLengthPx = baseRaceLengthPx + coastLengthPx;
+  const finishProgressOnFullRun = baseRaceLengthPx / Math.max(1, fullRunLengthPx);
+  return {
+    safeCoastEnd,
+    fullRunPath: [...racePath, safeCoastEnd],
+    finishProgressOnFullRun
+  };
+}
+
+export function selectReplayCameraInputRacers(
+  preStartActive: boolean,
+  finishFramingActive: boolean,
+  spotlightTopPack: boolean,
+  finishProgressOnFullRun: number,
+  finishCameraRacers: Array<{ progress: number; position: TrackPoint }>
+): Array<{ progress: number; position: TrackPoint }> {
+  const uncrossedCameraRacers = finishFramingActive
+    ? finishCameraRacers.filter((r) => r.progress < finishProgressOnFullRun)
+    : [];
+
+  if (preStartActive) {
+    return [...finishCameraRacers].sort((a, b) => b.progress - a.progress).slice(0, 6);
+  }
+
+  if (finishFramingActive && uncrossedCameraRacers.length >= 2) {
+    return uncrossedCameraRacers;
+  }
+
+  if (spotlightTopPack) {
+    return [...finishCameraRacers].sort((a, b) => b.progress - a.progress).slice(0, 2);
+  }
+
+  return finishCameraRacers;
+}
+
+export function resolveReplayZoomScale(
+  preStartActive: boolean,
+  finishFramingActive: boolean,
+  spotlightTopPack: boolean,
+  blendedReplayZoom: number
+): number {
+  if (preStartActive) {
+    return 2.15;
+  }
+  if (finishFramingActive) {
+    return Math.min(blendedReplayZoom, 2.2);
+  }
+  if (spotlightTopPack) {
+    return Math.max(4.95, blendedReplayZoom);
+  }
+  return blendedReplayZoom;
+}
+
 export function computeBoundaryHalfWidthAtProgress(
   leftBoundaryPath: TrackPoint[],
   rightBoundaryPath: TrackPoint[],

@@ -25,6 +25,7 @@ import {
   renderLeaderboardRows
 } from './studio-render';
 import {
+  buildReplayRunPathState,
   buildFrameProgressById,
   buildReplayCinematicPlan,
   clamp,
@@ -33,7 +34,6 @@ import {
   computeCoastStopProgress,
   computeFreeSwimPersonalBias,
   computeLinearDecayCoast,
-  computePathLength,
   computeReplayRankScore,
   computeStartLaneSlot,
   computeTrackTangentAtProgress,
@@ -41,6 +41,8 @@ import {
   lerpPoint,
   mapCameraRacersToCenterline,
   normalize,
+  resolveReplayZoomScale,
+  selectReplayCameraInputRacers,
   smoothstep,
   smoothWindow
 } from './studio-replay-utils';
@@ -200,44 +202,13 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
   const endBehind = interpolateTrackPosition(racePath, 0.99);
   const endTangent = normalize(endPoint.x - endBehind.x, endPoint.y - endBehind.y);
   const endNormal = computeTrackNormal(racePath, 1);
-  // Coast endpoint: use the authored point directly if provided (studio-app now
-  // guarantees it lies beyond the finish line). Fall back to tangent extension.
-  const coastEndBasePoint = coastEndPoint ?? {
-    x: endPoint.x + endTangent.x * COAST_DEFAULT_EXTEND_PX,
-    y: endPoint.y + endTangent.y * COAST_DEFAULT_EXTEND_PX
-  };
-  // Safety: if the coast point somehow ended up behind the race path end,
-  // project it forward along the tangent using the authored distance.
-  const coastDot =
-    (coastEndBasePoint.x - endPoint.x) * endTangent.x +
-    (coastEndBasePoint.y - endPoint.y) * endTangent.y;
-  const safeCoastEnd =
-    coastDot > 5
-      ? coastEndBasePoint
-      : {
-          x:
-            endPoint.x +
-            endTangent.x *
-              Math.max(
-                COAST_DEFAULT_EXTEND_PX,
-                Math.hypot(coastEndBasePoint.x - endPoint.x, coastEndBasePoint.y - endPoint.y)
-              ),
-          y:
-            endPoint.y +
-            endTangent.y *
-              Math.max(
-                COAST_DEFAULT_EXTEND_PX,
-                Math.hypot(coastEndBasePoint.x - endPoint.x, coastEndBasePoint.y - endPoint.y)
-              )
-        };
-  const baseRaceLengthPx = computePathLength(racePath);
-  const coastLengthPx = Math.max(
-    1,
-    Math.hypot(safeCoastEnd.x - endPoint.x, safeCoastEnd.y - endPoint.y)
+  const { safeCoastEnd, fullRunPath, finishProgressOnFullRun } = buildReplayRunPathState(
+    racePath,
+    endPoint,
+    endTangent,
+    coastEndPoint,
+    COAST_DEFAULT_EXTEND_PX
   );
-  const fullRunLengthPx = baseRaceLengthPx + coastLengthPx;
-  const finishProgressOnFullRun = baseRaceLengthPx / Math.max(1, fullRunLengthPx);
-  const fullRunPath = [...racePath, safeCoastEnd];
   const hasBoundaryPaths =
     (leftBoundaryPath?.length ?? 0) >= 2 && (rightBoundaryPath?.length ?? 0) >= 2;
 
@@ -663,17 +634,13 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
     ? mapCameraRacersToCenterline(cameraRacers, fullRunPath)
     : cameraRacers;
 
-  const uncrossedCameraRacers = finishFramingActive
-    ? finishCameraRacers.filter((r) => r.progress < finishProgressOnFullRun)
-    : [];
-
-  const cameraInputRacers = preStartActive
-    ? [...finishCameraRacers].sort((a, b) => b.progress - a.progress).slice(0, 6)
-    : finishFramingActive && uncrossedCameraRacers.length >= 2
-      ? uncrossedCameraRacers
-      : spotlightTopPack
-        ? [...finishCameraRacers].sort((a, b) => b.progress - a.progress).slice(0, 2)
-        : finishCameraRacers;
+  const cameraInputRacers = selectReplayCameraInputRacers(
+    preStartActive,
+    finishFramingActive,
+    spotlightTopPack,
+    finishProgressOnFullRun,
+    finishCameraRacers
+  );
 
   const cinematicDrift = Math.sin(elapsedSeconds * 0.28 + cinematicPlan.phaseOffset) * 0.06;
   const baseReplayZoom = 1.52 + cinematicDrift;
@@ -687,13 +654,12 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
   const blendedReplayZoom = lerp(baseReplayZoom, beatZoom, beatBlend);
 
   if (broadcastViewEnabled) {
-    const zoomScaleMultiplier = preStartActive
-      ? 2.15
-      : finishFramingActive
-        ? Math.min(blendedReplayZoom, 2.2)
-        : spotlightTopPack
-          ? Math.max(4.95, blendedReplayZoom)
-          : blendedReplayZoom;
+    const zoomScaleMultiplier = resolveReplayZoomScale(
+      preStartActive,
+      finishFramingActive,
+      spotlightTopPack,
+      blendedReplayZoom
+    );
 
     camera.update(
       dt,
