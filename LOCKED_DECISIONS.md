@@ -50,8 +50,9 @@ The following decisions are locked unless explicitly changed via ADR:
 
 8. Refactor discipline strategy
 
-- Refactors must be necessity-driven and incremental.
-- Prefer small behavior-preserving extractions over large multi-concern rewrites.
+- Refactors must be necessity-driven.
+- During dedicated refactor phases, larger coherent restructures are allowed.
+- During feature implementation, changes must be clean-by-default so no later large cleanup wave is needed.
 - Every refactor batch must include parity tests for affected behavior.
 - Every refactor batch must update architecture/status docs in the same change set.
 - Avoid creating new abstraction layers unless they remove clear duplication or reduce risk.

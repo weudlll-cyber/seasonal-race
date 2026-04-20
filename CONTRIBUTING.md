@@ -38,7 +38,8 @@
 ## Refactor Guardrails
 
 - Only refactor when there is a clear benefit: bug risk reduction, duplication removal, readability, or easier extension.
-- Prefer small, behavior-preserving slices over broad rewrites.
+- In dedicated refactor phases, larger coherent restructures are allowed when they clearly reduce long-term complexity.
+- Outside dedicated refactor phases (especially during feature delivery), prefer small clean changes and avoid deferring structural cleanup.
 - Before changing code, identify one concrete hotspot and one measurable target (for example: remove duplicate logic, reduce file size, extract one cohesive helper).
 - Keep each refactor batch scoped so it can be reviewed quickly and reverted safely.
 - Do not mix unrelated concerns in one refactor commit.
@@ -63,7 +64,7 @@
 
 - [ ] Scope and intent are clear.
 - [ ] Refactor necessity is explicit (why this change is needed now).
-- [ ] Refactor scope is minimal and behavior-preserving.
+- [ ] Refactor scope matches context: cohesive larger batch in refactor phase, minimal clean change in feature phase.
 - [ ] Tests updated or added.
 - [ ] Architecture and API docs updated if needed.
 - [ ] Security impact reviewed.
