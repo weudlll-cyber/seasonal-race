@@ -8,6 +8,27 @@
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
 import { interpolateTrackPosition } from './track-editor-utils.js';
 import { computeTrackNormal } from './track-layout-helpers.js';
+import {
+  clamp,
+  clamp01,
+  computePathLength,
+  computeTrackTangentAtProgress,
+  lerp,
+  lerpPoint,
+  normalize,
+  smoothstep
+} from './studio-replay-math.js';
+
+export {
+  clamp,
+  clamp01,
+  computePathLength,
+  computeTrackTangentAtProgress,
+  lerp,
+  lerpPoint,
+  normalize,
+  smoothstep
+};
 
 export interface ReplayCameraBeat {
   startPhase: number;
@@ -64,28 +85,12 @@ function seededRng(seedInput: number): () => number {
   };
 }
 
-export function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
-}
-
 export function smoothWindow(value: number, start: number, end: number): number {
   if (value <= start || value >= end) return 0;
   const t = (value - start) / Math.max(0.0001, end - start);
   const rise = smoothstep(clamp01(t / 0.78));
   const fall = smoothstep(clamp01((1 - t) / 0.78));
   return Math.min(rise, fall);
-}
-
-export function smoothstep(t: number): number {
-  return t * t * (3 - 2 * t);
-}
-
-export function lerp(from: number, to: number, t: number): number {
-  return from + (to - from) * t;
-}
-
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }
 
 export function computeStartLaneSlot(columnIndex: number, columns: number): number {
@@ -592,36 +597,6 @@ export function computeCoastStopProgress(
   const easedRank = Math.pow(normalizedRank, 1.12);
   const baseStop = maxStop - (maxStop - minStop) * easedRank;
   return Math.max(minStop, Math.min(maxStop, baseStop));
-}
-
-export function computePathLength(points: TrackPoint[]): number {
-  if (points.length < 2) return 1;
-  let total = 0;
-  for (let i = 1; i < points.length; i += 1) {
-    const a = points[i - 1]!;
-    const b = points[i]!;
-    total += Math.hypot(b.x - a.x, b.y - a.y);
-  }
-  return Math.max(1, total);
-}
-
-export function computeTrackTangentAtProgress(path: TrackPoint[], progress: number): TrackPoint {
-  const p0 = interpolateTrackPosition(path, clamp01(progress - 0.003));
-  const p1 = interpolateTrackPosition(path, clamp01(progress + 0.003));
-  return normalize(p1.x - p0.x, p1.y - p0.y);
-}
-
-export function normalize(dx: number, dy: number): TrackPoint {
-  const len = Math.hypot(dx, dy);
-  if (len <= 0.00001) return { x: 1, y: 0 };
-  return { x: dx / len, y: dy / len };
-}
-
-export function lerpPoint(a: TrackPoint, b: TrackPoint, t: number): TrackPoint {
-  return {
-    x: a.x + (b.x - a.x) * t,
-    y: a.y + (b.y - a.y) * t
-  };
 }
 
 export function computeReplayRankScore(

@@ -106,6 +106,11 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Studio JSON-load parsing and normalization logic is now isolated in `studio-track-json-load-state.ts`, reducing JSON import wiring noise in studio app flow.
 - Studio preset build/save/load/delete state logic is now isolated in `studio-preset-actions.ts`, reducing preset-lifecycle wiring noise in studio app flow.
 - Studio runner preview texture selection and scale policy are now isolated in `studio-runner-preview-texture.ts`, reducing ticker rendering-policy wiring noise in studio app flow.
+- Studio broadcast-window (`Esc`/resize) and editor-zoom event wiring are now isolated in `studio-app-view-events.ts`, reducing view-event setup density in studio app flow.
+- Studio track-template generation is now isolated in `studio-track-template-generator.ts` and re-exported via `studio-generators.ts`, separating template domain logic from sprite-pack generation.
+- Surface profile registry and profile-resolution heuristics are now isolated in `surface-effect-profiles.ts`, keeping simulation/particle runtime flow focused in `surface-effects.ts`.
+- Replay math/path helpers are now isolated in `studio-replay-math.ts` and re-exported by `studio-replay-utils.ts`, reducing mixed concerns in replay utility flow.
+- Admin shell markup/style/DOM resolution is now isolated in `admin-shell.ts`, keeping `admin-app.ts` focused on launch orchestration.
 - Studio single-preview tick behavior is now isolated in `studio-single-preview-controller.ts` so non-replay runner/camera flow stays decoupled from studio composition.
 - Studio background image flow (load/clear/layout) is now isolated in `studio-background-controller.ts` so asset lifecycle stays decoupled from studio composition.
 - Studio preset persistence/storage helpers are now isolated in `studio-preset-store.ts` so preset metadata parsing and IndexedDB/localStorage fallback flow stay decoupled from studio composition.

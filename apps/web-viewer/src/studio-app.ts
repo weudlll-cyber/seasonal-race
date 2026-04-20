@@ -96,6 +96,10 @@ import {
   persistStudioPreset
 } from './studio-preset-actions';
 import {
+  wireStudioBroadcastWindowEvents,
+  wireStudioEditorZoomEvents
+} from './studio-app-view-events';
+import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
   tickSurfaceParticles,
@@ -807,18 +811,13 @@ export async function startStudioApp(): Promise<void> {
     }
   });
 
-  window.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape' || !broadcastViewEnabled) return;
-
-    broadcastViewEnabled = false;
-    dom.broadcastToggleButton.textContent = 'Broadcast View: Off';
-    dom.editorHelp.textContent = 'Editor view active: full track + points for editing.';
-    applyViewMode();
-  });
-
-  window.addEventListener('resize', () => {
-    if (!broadcastViewEnabled) return;
-    applyViewMode();
+  wireStudioBroadcastWindowEvents({
+    dom,
+    getBroadcastViewEnabled: () => broadcastViewEnabled,
+    setBroadcastViewEnabled: (value) => {
+      broadcastViewEnabled = value;
+    },
+    applyViewMode
   });
 
   dom.trackEditModeSelect.addEventListener('change', () => {
@@ -889,32 +888,17 @@ export async function startStudioApp(): Promise<void> {
     }
   };
 
-  dom.editorZoomInput.addEventListener('input', () => {
-    const nextZoom = Number(dom.editorZoomInput.value) / 100;
-    setEditorZoomAroundScreenPoint(nextZoom, app.screen.width * 0.5, app.screen.height * 0.5);
-  });
-
-  dom.zoomResetButton.addEventListener('click', () => {
-    resetEditorView();
-    dom.editorHelp.textContent = 'Editor zoom reset to 100%.';
-  });
-
   const editorCanvas = app.view as HTMLCanvasElement | undefined;
-  if (editorCanvas) {
-    editorCanvas.addEventListener(
-      'wheel',
-      (event: WheelEvent) => {
-        if (broadcastViewEnabled) {
-          return;
-        }
-
-        event.preventDefault();
-        const zoomFactor = event.deltaY > 0 ? 0.92 : 1.08;
-        setEditorZoomAroundScreenPoint(editorZoom * zoomFactor, event.offsetX, event.offsetY);
-      },
-      { passive: false }
-    );
-  }
+  wireStudioEditorZoomEvents({
+    dom,
+    getBroadcastViewEnabled: () => broadcastViewEnabled,
+    getScreenWidth: () => app.screen.width,
+    getScreenHeight: () => app.screen.height,
+    getEditorZoom: () => editorZoom,
+    setEditorZoomAroundScreenPoint,
+    resetEditorView,
+    editorCanvas
+  });
 
   dom.trackTemplatePointsInput.addEventListener('input', () => {
     dom.trackTemplatePointsValue.textContent = dom.trackTemplatePointsInput.value;
