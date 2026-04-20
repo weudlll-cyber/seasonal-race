@@ -15,9 +15,11 @@ import {
   computeCoastStopProgress,
   computeLinearDecayCoast,
   resetReplayRacerTransientState,
+  resolveReplayRacerProgress,
   resolveReplayZoomScale,
   selectReplayCameraInputRacers
 } from '../apps/web-viewer/src/studio-replay-utils';
+import type { ReplayProgressRacer } from '../apps/web-viewer/src/studio-replay-utils';
 
 describe('studio replay utility helpers', () => {
   it('builds deterministic cinematic plans for identical run ids', () => {
@@ -217,5 +219,61 @@ describe('studio replay utility helpers', () => {
     expect(racers[0]!.labelBg.zIndex).toBe(12120);
     expect(racers[0]!.labelText.zIndex).toBe(12121);
     expect(racers[0]!.labelBg.position.y).toBeLessThan(racers[0]!.sprite.position.y);
+  });
+
+  it('resolves replay racer progress in coast phase with decay and monotonic guard', () => {
+    const racer: ReplayProgressRacer = {
+      progress: 0.86,
+      finishApproachRatePerSec: 0.2
+    };
+
+    const result = resolveReplayRacerProgress({
+      racer,
+      dt: 1 / 60,
+      raceTimeMs: 35_000,
+      replayDurationMs: 42_000,
+      adjustedProgress: 0.86,
+      rawProgress: 0.88,
+      baseProgressSpeed: 0.02,
+      localRatePerSec: 0.01,
+      finishProgressOnFullRun: 0.85,
+      effectiveCoastStop: 0.97,
+      alreadyFinished: true,
+      crossedFinishLine: true,
+      clipFreezeProgress: 0.91
+    });
+
+    expect(result.raceProgress).toBeGreaterThanOrEqual(0.86);
+    expect(result.shouldFreeze).toBe(false);
+    expect(racer.coastEntryRatePerSec).toBeDefined();
+    expect(racer.terminalCruiseRatePerSec).toBeDefined();
+  });
+
+  it('resolves replay racer progress after data end before finish', () => {
+    const racer: ReplayProgressRacer = {
+      progress: 0.81,
+      finishApproachRatePerSec: 0.015
+    };
+
+    const result = resolveReplayRacerProgress({
+      racer,
+      dt: 1 / 30,
+      raceTimeMs: 50_000,
+      replayDurationMs: 42_000,
+      adjustedProgress: 0.8,
+      rawProgress: 0.8,
+      baseProgressSpeed: 0.02,
+      localRatePerSec: 0,
+      finishProgressOnFullRun: 0.9,
+      effectiveCoastStop: 0.98,
+      alreadyFinished: false,
+      crossedFinishLine: false,
+      clipFreezeProgress: 0.91
+    });
+
+    expect(result.raceProgress).toBeGreaterThanOrEqual(0.81);
+    expect(result.raceProgress).toBeLessThanOrEqual(0.9);
+    expect(racer.finishApproachRatePerSec).toBeGreaterThan(0.015);
+    expect(racer.terminalCruiseRatePerSec).toBeUndefined();
   });
 });

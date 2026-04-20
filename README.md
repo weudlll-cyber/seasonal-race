@@ -91,6 +91,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Replay run-path/coast safety derivation and broadcast camera selection/zoom policy are now isolated in `studio-replay-utils.ts`, reducing orchestration density in `studio-replay-controller.ts`.
 - Replay pixel-space collision/separation policy is now isolated in `studio-replay-utils.ts`, reducing orchestration density in `studio-replay-controller.ts` while preserving finish/coast spread behavior.
 - Replay transient racer-state reset and label-application policy are now isolated in `studio-replay-utils.ts`, further reducing orchestration density in `studio-replay-controller.ts` while preserving behavior.
+- Replay finish/coast progress transition logic is now isolated in `studio-replay-utils.ts`, further reducing orchestration density in `studio-replay-controller.ts` while preserving behavior.
 - Studio replay racer-view construction/reset logic is now isolated in `studio-replay-racer-builder.ts`, reducing view-lifecycle orchestration noise in studio app flow.
 - Studio file/image utility helpers are now isolated in `studio-file-utils.ts`, reducing generic browser utility noise in studio orchestration.
 - Runtime racer-pack fallback/sprite extraction/preview-size helpers are now isolated in `studio-racer-pack-utils.ts`, reducing replay sprite orchestration noise in studio app flow.

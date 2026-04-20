@@ -35,7 +35,6 @@ import {
   computeBoundaryHalfWidthAtProgress,
   computeCoastStopProgress,
   computeFreeSwimPersonalBias,
-  computeLinearDecayCoast,
   computeReplayRankScore,
   computeStartLaneSlot,
   computeTrackTangentAtProgress,
@@ -44,6 +43,7 @@ import {
   mapCameraRacersToCenterline,
   normalize,
   resetReplayRacerTransientState,
+  resolveReplayRacerProgress,
   resolveReplayZoomScale,
   selectReplayCameraInputRacers,
   smoothstep,
@@ -261,10 +261,6 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
 
     const coastStopProgress = rr.coastStopProgress ?? 1;
     const effectiveCoastStop = coastStopProgress;
-    const coastWindow = Math.max(0.0005, 1 - finishProgressOnFullRun);
-    // Coast blend uses last committed progress for stable progression.
-    const coastDepth = clamp01((rr.progress - finishProgressOnFullRun) / coastWindow);
-    const coastLateralBlend = smoothstep(coastDepth);
 
     // If this racer is already frozen at its final position, skip all movement.
     if (rr.frozenX !== undefined && rr.frozenY !== undefined) {
@@ -273,74 +269,24 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
       cameraRacers.push({ progress: rr.progress, position: { x: rr.frozenX, y: rr.frozenY } });
       continue;
     }
-
-    // Freeze guard. Coast block can force this true when coast time is complete.
-    let shouldFreeze = rr.progress >= effectiveCoastStop - 0.0002;
-
-    if (alreadyFinished || crossedFinishLine) {
-      // Time-based linear-decay coast model.
-      if (rr.coastEntryRatePerSec === undefined) {
-        // finishApproachRatePerSec was frozen at 91% of the finish (before the
-        // replay sim clips at 1.0) so it holds the true race speed.
-        rr.coastEntryRatePerSec = Math.max(
-          rr.finishApproachRatePerSec ?? baseProgressSpeed * 0.85,
-          baseProgressSpeed * 0.7
-        );
-        // Backdate by one frame so the first coast tick already advances.
-        rr.coastStartTimeMs = raceTimeMs - dt * 1000;
-      }
-
-      const p0 = finishProgressOnFullRun;
-      const p1 = effectiveCoastStop;
-      const dist = Math.max(0.0004, p1 - p0);
-      const v0 = rr.coastEntryRatePerSec;
-      const elapsed = Math.max(0, (raceTimeMs - (rr.coastStartTimeMs ?? raceTimeMs)) / 1000);
-      const { coastFrac, currentV } = computeLinearDecayCoast(v0, dist, elapsed);
-      rr.terminalCruiseRatePerSec = currentV;
-
-      // Stop when coast time has elapsed, even if tiny integration drift remains.
-      if (coastFrac >= 1) {
-        shouldFreeze = true;
-      }
-
-      if (!shouldFreeze && rr.progress < effectiveCoastStop) {
-        // Integrate velocity directly to avoid absolute-position jump artifacts.
-        raceProgress = Math.min(p1, rr.progress + currentV * dt);
-      } else {
-        // Never snap to stop-progress; freeze at the current world position.
-        raceProgress = rr.progress;
-      }
-    } else if (raceTimeMs > replayData.durationMs) {
-      // If replay data ended before this racer crossed, keep pushing hard to the finish line.
-      const carriedApproachRate =
-        rr.finishApproachRatePerSec ?? Math.max(localRatePerSec, baseProgressSpeed * 0.82);
-      rr.finishApproachRatePerSec = Math.min(
-        baseProgressSpeed * 1.08,
-        Math.max(baseProgressSpeed * 0.72, carriedApproachRate * 1.002)
-      );
-      delete rr.terminalCruiseRatePerSec;
-      raceProgress = Math.min(
-        finishProgressOnFullRun,
-        rr.progress + rr.finishApproachRatePerSec * dt
-      );
-    } else {
-      // Normal replay-driven phase; freeze approach rate before replay clip-at-1.0.
-      const inClipZone = rawProgress >= finishProgressOnFullRun * FINISH_CLIP_FREEZE_PROGRESS;
-      if (localRatePerSec > 0 && !inClipZone) {
-        rr.finishApproachRatePerSec = localRatePerSec;
-      } else if (rr.finishApproachRatePerSec === undefined) {
-        rr.finishApproachRatePerSec = baseProgressSpeed * 0.78;
-      }
-      if (inClipZone && rr.finishApproachRatePerSec !== undefined) {
-        // Advance at the frozen race speed; no cap at the finish line.
-        raceProgress = Math.max(adjustedProgress, rr.progress + rr.finishApproachRatePerSec * dt);
-      } else {
-        raceProgress = adjustedProgress;
-      }
-    }
-
-    // Strict monotonicity: progress must never decrease.
-    raceProgress = Math.max(rr.progress, raceProgress);
+    const progressResult = resolveReplayRacerProgress({
+      racer: rr,
+      dt,
+      raceTimeMs,
+      replayDurationMs: replayData.durationMs,
+      adjustedProgress,
+      rawProgress,
+      baseProgressSpeed,
+      localRatePerSec,
+      finishProgressOnFullRun,
+      effectiveCoastStop,
+      alreadyFinished,
+      crossedFinishLine,
+      clipFreezeProgress: FINISH_CLIP_FREEZE_PROGRESS
+    });
+    raceProgress = progressResult.raceProgress;
+    const shouldFreeze = progressResult.shouldFreeze;
+    const coastLateralBlend = progressResult.coastLateralBlend;
 
     const pendingFinish =
       !preStartActive &&
