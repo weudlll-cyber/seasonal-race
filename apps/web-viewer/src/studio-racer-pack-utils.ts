@@ -14,15 +14,18 @@ import {
 interface ResolveRuntimeRacerPackInput {
   requiredRacerCount: number;
   generatedRacerPack: GeneratedRacerSpritePack | null;
+  runtimeRacerPackCache: RuntimeRacerPackCache;
+  defaultRuntimePackFrameCount: number;
+}
+
+export interface RuntimeRacerPackCache {
   fallbackRuntimeRacerPack: GeneratedRacerSpritePack | null;
   fallbackRuntimeRacerPackKey: string;
-  defaultRuntimePackFrameCount: number;
 }
 
 interface ResolveRuntimeRacerPackResult {
   runtimeRacerPack: GeneratedRacerSpritePack;
-  fallbackRuntimeRacerPack: GeneratedRacerSpritePack | null;
-  fallbackRuntimeRacerPackKey: string;
+  runtimeRacerPackCache: RuntimeRacerPackCache;
 }
 
 function buildDefaultRacerSourceImage(): HTMLCanvasElement {
@@ -61,25 +64,25 @@ export function resolveRuntimeRacerPack(
   const {
     requiredRacerCount,
     generatedRacerPack,
-    fallbackRuntimeRacerPack,
-    fallbackRuntimeRacerPackKey,
+    runtimeRacerPackCache,
     defaultRuntimePackFrameCount
   } = input;
 
   if (generatedRacerPack) {
     return {
       runtimeRacerPack: generatedRacerPack,
-      fallbackRuntimeRacerPack,
-      fallbackRuntimeRacerPackKey
+      runtimeRacerPackCache
     };
   }
 
   const key = `${requiredRacerCount}`;
-  if (fallbackRuntimeRacerPack && fallbackRuntimeRacerPackKey === key) {
+  if (
+    runtimeRacerPackCache.fallbackRuntimeRacerPack &&
+    runtimeRacerPackCache.fallbackRuntimeRacerPackKey === key
+  ) {
     return {
-      runtimeRacerPack: fallbackRuntimeRacerPack,
-      fallbackRuntimeRacerPack,
-      fallbackRuntimeRacerPackKey
+      runtimeRacerPack: runtimeRacerPackCache.fallbackRuntimeRacerPack,
+      runtimeRacerPackCache
     };
   }
 
@@ -99,8 +102,10 @@ export function resolveRuntimeRacerPack(
 
   return {
     runtimeRacerPack: nextFallbackRuntimeRacerPack,
-    fallbackRuntimeRacerPack: nextFallbackRuntimeRacerPack,
-    fallbackRuntimeRacerPackKey: key
+    runtimeRacerPackCache: {
+      fallbackRuntimeRacerPack: nextFallbackRuntimeRacerPack,
+      fallbackRuntimeRacerPackKey: key
+    }
   };
 }
 

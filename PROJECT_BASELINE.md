@@ -160,6 +160,8 @@
 - Studio centerline/boundary point-edit state transformations are now extracted into `studio-track-edit-helpers`, reducing orchestration complexity in `studio-app` while keeping behavior unchanged.
 - Studio file/image utility helpers are now extracted into `studio-file-utils`, reducing utility noise in `studio-app`.
 - Runtime racer-pack fallback/sprite extraction/preview-size helpers are now extracted into `studio-racer-pack-utils`, reducing orchestration complexity in `studio-app`.
+- Studio replay racer-view construction/reset logic is now extracted into `studio-replay-racer-builder`, reducing view-lifecycle orchestration complexity in `studio-app`.
+- Studio UI state synchronization mapping is now extracted into `studio-ui-state`, reducing control-value/label wiring noise in `studio-app`.
 - Broadcast mode now resizes the renderer to the real viewport so race playback fills the full screen area.
 - Broadcast mode now supports `Esc` as a direct return shortcut back to editor mode.
 - Authored-to-broadcast track remapping now uses distinct source/target viewport dimensions to keep race path aligned with the background image in broadcast mode.

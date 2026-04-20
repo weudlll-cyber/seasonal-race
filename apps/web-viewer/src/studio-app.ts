@@ -6,7 +6,7 @@
  * Dependencies: PixiJS and local track-editor utility helpers.
  */
 
-import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { Application, Container, Graphics, Sprite, Texture } from 'pixi.js';
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
 import { CameraController } from './camera';
 import { DEFAULT_EDITOR_TRACK_ID } from './track-editor-utils';
@@ -66,11 +66,9 @@ import {
   getEditablePoints as getEditablePointsForMode,
   resolveCenterlinePoints
 } from './studio-track-edit-helpers';
-import {
-  createRacerSpriteFromPack,
-  resolveRuntimeRacerPack,
-  resolveTrackPreviewSizePx
-} from './studio-racer-pack-utils';
+import { type RuntimeRacerPackCache, resolveTrackPreviewSizePx } from './studio-racer-pack-utils';
+import { rebuildReplayRacerViews } from './studio-replay-racer-builder';
+import { applyStudioUiState } from './studio-ui-state';
 import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
@@ -185,8 +183,10 @@ export async function startStudioApp(): Promise<void> {
   let generatedSpriteSheetDataUrl: string | null = null;
   let generatedSpriteSheetMeta: GeneratedRacerSpritePackMeta | null = null;
   let generatedRacerPack: GeneratedRacerSpritePack | null = null;
-  let fallbackRuntimeRacerPack: GeneratedRacerSpritePack | null = null;
-  let fallbackRuntimeRacerPackKey = '';
+  let runtimeRacerPackCache: RuntimeRacerPackCache = {
+    fallbackRuntimeRacerPack: null,
+    fallbackRuntimeRacerPackKey: ''
+  };
   let spriteSourceImageDimensions: { width: number; height: number } | null = null;
 
   dom.laneWidthInput.value = String(laneWidthPx);
@@ -646,26 +646,20 @@ export async function startStudioApp(): Promise<void> {
   }
 
   const syncUiFromState = (): void => {
-    dom.trackEditModeSelect.value = trackEditMode;
-    dom.trackOrientationSelect.value = trackOrientation;
-    dom.boundaryEditSideSelect.value = boundaryEditSide;
-    dom.boundaryEditSideSelect.disabled = trackEditMode !== 'boundaries';
-
-    dom.laneWidthInput.value = String(laneWidthPx);
-    dom.laneWidthValue.textContent = `${laneWidthPx} px`;
-
-    dom.racerCountInput.value = String(replayRacerCount);
-    dom.racerCountValue.textContent = String(replayRacerCount);
-
-    dom.nameModeSelect.value = nameDisplayMode;
-    dom.focusRacerInput.value = String(focusRacerNumber);
-    dom.focusRacerLabel.textContent = `D${focusRacerNumber}`;
-
-    dom.previewToggleButton.textContent = playingPreview ? 'Pause Preview' : 'Play Preview';
-    dom.smoothToggleButton.textContent = `Smoothing: ${smoothingEnabled ? 'On' : 'Off'}`;
-    dom.replayToggleButton.textContent = `Replay Test: ${replayModeEnabled ? 'On' : 'Off'}`;
-    dom.laneBoardsToggleButton.textContent = `Lane Boards: ${laneBoardsVisible ? 'On' : 'Off'}`;
-    dom.broadcastToggleButton.textContent = `Broadcast View: ${broadcastViewEnabled ? 'On' : 'Off'}`;
+    applyStudioUiState(dom, {
+      trackEditMode,
+      trackOrientation,
+      boundaryEditSide,
+      laneWidthPx,
+      replayRacerCount,
+      nameDisplayMode,
+      focusRacerNumber,
+      playingPreview,
+      smoothingEnabled,
+      replayModeEnabled,
+      laneBoardsVisible,
+      broadcastViewEnabled
+    });
   };
 
   const buildCurrentTestPreset = (): StudioTestPreset => {
@@ -945,96 +939,17 @@ export async function startStudioApp(): Promise<void> {
   };
 
   function rebuildReplayRacers(): void {
-    for (const rr of replayRacers) {
-      runnerLayer.removeChild(rr.sprite);
-      labelLayer.removeChild(rr.labelBg);
-      labelLayer.removeChild(rr.labelText);
-      rr.labelBg.destroy();
-      rr.labelText.destroy();
-      rr.sprite.destroy();
-    }
-
-    const ids = createRacerIds(replayRacerCount);
-    const runtimePackResolution = resolveRuntimeRacerPack({
-      requiredRacerCount: replayRacerCount,
+    const rebuilt = rebuildReplayRacerViews({
+      replayRacers,
+      replayRacerCount,
+      runnerLayer,
+      labelLayer,
       generatedRacerPack,
-      fallbackRuntimeRacerPack,
-      fallbackRuntimeRacerPackKey,
+      runtimeRacerPackCache,
       defaultRuntimePackFrameCount: DEFAULT_RUNTIME_PACK_FRAME_COUNT
     });
-    const runtimeRacerPack = runtimePackResolution.runtimeRacerPack;
-    fallbackRuntimeRacerPack = runtimePackResolution.fallbackRuntimeRacerPack;
-    fallbackRuntimeRacerPackKey = runtimePackResolution.fallbackRuntimeRacerPackKey;
-    const markerRadius =
-      replayRacerCount >= 90 ? 4 : replayRacerCount >= 70 ? 5 : replayRacerCount >= 45 ? 6 : 9;
-    const labelFontSize =
-      replayRacerCount >= 90 ? 7 : replayRacerCount >= 70 ? 8 : replayRacerCount >= 45 ? 9 : 11;
-
-    replayRacers = ids.map((id, index) => {
-      const racer = new Container();
-      const bodySprite = createRacerSpriteFromPack(runtimeRacerPack, index, markerRadius * 2.6);
-      racer.addChild(bodySprite);
-
-      const marker = new Graphics();
-      marker.beginFill(0xffffff, 0.01);
-      marker.drawCircle(0, 0, markerRadius);
-      marker.endFill();
-      racer.addChild(marker);
-
-      const labelText = new Text(`D${index + 1}`, {
-        fontFamily: 'Segoe UI',
-        fontSize: labelFontSize,
-        fill: 0xffffff,
-        stroke: 0x001018,
-        strokeThickness: 2
-      });
-      labelText.anchor.set(0.5, 1);
-
-      const padX = 5;
-      const padY = 2;
-      const labelBg = new Graphics();
-      labelBg.beginFill(0x0e2231, 0.88);
-      labelBg.lineStyle(1, 0x8ab9ff, 0.7);
-      labelBg.drawRoundedRect(
-        -labelText.width / 2 - padX,
-        -labelText.height - padY * 2,
-        labelText.width + padX * 2,
-        labelText.height + padY * 2,
-        4
-      );
-      labelBg.endFill();
-      labelBg.y = -markerRadius - 2;
-      labelText.y = -markerRadius - 2;
-      labelBg.visible = false;
-      labelText.visible = false;
-
-      labelLayer.addChild(labelBg);
-      labelLayer.addChild(labelText);
-      racer.visible = false;
-      racer.eventMode = 'static';
-      racer.on('pointerover', () => {
-        const target = replayRacers.find((entry) => entry.id === id);
-        if (target) target.hovered = true;
-      });
-      racer.on('pointerout', () => {
-        const target = replayRacers.find((entry) => entry.id === id);
-        if (target) target.hovered = false;
-      });
-      runnerLayer.addChild(racer);
-      return {
-        id,
-        index,
-        sprite: racer,
-        marker,
-        bodySprite,
-        bodyBaseScaleX: bodySprite.scale.x,
-        bodyBaseScaleY: bodySprite.scale.y,
-        labelBg,
-        labelText,
-        progress: 0,
-        hovered: false
-      };
-    });
+    replayRacers = rebuilt.replayRacers;
+    runtimeRacerPackCache = rebuilt.runtimeRacerPackCache;
 
     focusRacerNumber = normalizeFocusRacerNumber(focusRacerNumber, replayRacerCount);
     dom.focusRacerInput.value = String(focusRacerNumber);

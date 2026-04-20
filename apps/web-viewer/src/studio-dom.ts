@@ -5,7 +5,7 @@
  * Usage: Imported by studio app orchestrators to avoid duplicating DOM wiring.
  */
 
-import { DEFAULT_EDITOR_TRACK_ID, DEFAULT_EDITOR_TRACK_NAME } from './track-editor-utils';
+import { DEFAULT_EDITOR_TRACK_ID, DEFAULT_EDITOR_TRACK_NAME } from './track-editor-utils.js';
 
 export interface EditorDom {
   trackIdInput: HTMLInputElement;

@@ -113,6 +113,9 @@
 - `apps/web-viewer/src/studio-replay-utils.ts`
   - Pure replay helper layer (cinematic plan, coast decay math, path metrics, and ranking helper functions).
   - Keeps low-level replay math/policy utilities separate from frame orchestration flow.
+- `apps/web-viewer/src/studio-replay-racer-builder.ts`
+  - Builds and resets replay racer sprites/labels/hover handlers for studio replay mode.
+  - Keeps replay racer-view construction lifecycle out of studio app orchestration.
 - `apps/web-viewer/src/studio-single-preview-controller.ts`
   - Owns single-runner preview tick flow used outside replay mode.
   - Keeps preview-only runner/camera update behavior out of the studio surface orchestrator.
@@ -131,6 +134,9 @@
 - `apps/web-viewer/src/studio-ui-controls-controller.ts`
   - Owns studio toggle/input listener wiring for preview, replay, broadcast, and lane/racer controls.
   - Keeps UI event wiring and button/label text updates out of the studio surface orchestrator.
+- `apps/web-viewer/src/studio-ui-state.ts`
+  - Applies current studio runtime state snapshot to control values and toggle button labels.
+  - Keeps UI state synchronization mapping out of studio app orchestration.
 - `apps/web-viewer/src/surface-effects.ts`
   - Shared surface-effect profile system (profile resolution, category mapping, size scaling, particle emission/tick/draw helpers, and motion-style pose helpers).
   - Central extension point for adding new race-world themes (water, sand, snow, ash, space, neon, etc.) and category-specific visual intensity behavior.

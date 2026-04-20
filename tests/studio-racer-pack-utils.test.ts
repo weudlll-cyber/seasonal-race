@@ -26,13 +26,15 @@ describe('studio racer pack helpers', () => {
     const resolved = resolveRuntimeRacerPack({
       requiredRacerCount: 30,
       generatedRacerPack: generatedPack as never,
-      fallbackRuntimeRacerPack: null,
-      fallbackRuntimeRacerPackKey: '',
+      runtimeRacerPackCache: {
+        fallbackRuntimeRacerPack: null,
+        fallbackRuntimeRacerPackKey: ''
+      },
       defaultRuntimePackFrameCount: 10
     });
 
     expect(resolved.runtimeRacerPack).toBe(generatedPack);
-    expect(resolved.fallbackRuntimeRacerPack).toBeNull();
-    expect(resolved.fallbackRuntimeRacerPackKey).toBe('');
+    expect(resolved.runtimeRacerPackCache.fallbackRuntimeRacerPack).toBeNull();
+    expect(resolved.runtimeRacerPackCache.fallbackRuntimeRacerPackKey).toBe('');
   });
 });
