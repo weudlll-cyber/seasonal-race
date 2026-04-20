@@ -10,7 +10,7 @@
 2. `packages/*`
 
 - Reusable domain modules.
-- Clear contracts for race engine, race types, branding, and shared types.
+- Clear contracts for race engine, race types, and shared types.
 
 3. `tests/*`
 
@@ -86,6 +86,12 @@
   - Orchestrates mode switches, Pixi stage lifecycle, and module composition.
   - Binds visible studio surface selectors (race type/category/size/profile) to shared effect resolution.
   - Applies authoring-time on-track sprite-size control for single preview.
+- `apps/web-viewer/src/studio-paths.ts`
+  - Shared studio path-resolution helpers for centerline/boundary preview and replay path derivation.
+  - Keeps coast-end semantics and boundary midpoint rules in one reusable module.
+- `apps/web-viewer/src/studio-track-edit-helpers.ts`
+  - Pure centerline/boundary edit-state helpers for point editing and boundary generation.
+  - Keeps track-edit state transitions out of the studio app orchestration flow.
 - `apps/web-viewer/src/studio-dom.ts`
   - Centralized studio DOM resolution and control typing.
   - Removes duplicated selector/ID wiring from app orchestrators.
@@ -104,18 +110,87 @@
 - `apps/web-viewer/src/studio-replay-controller.ts`
   - Owns replay-mode frame tick flow (racer placement, label policy, leaderboard refresh, broadcast camera handoff).
   - Keeps replay simulation and broadcast-follow behavior out of the studio surface orchestrator.
+- `apps/web-viewer/src/studio-replay-utils.ts`
+  - Pure replay helper layer (cinematic plan, finish/coast progress transitions, coast decay math, path metrics, run-path/coast-end safety mapping, collision/separation policy, transient-state reset, label-application policy, camera selection, and ranking helper functions).
+  - Keeps low-level replay math/policy utilities separate from frame orchestration flow.
+- `apps/web-viewer/src/studio-replay-racer-builder.ts`
+  - Builds and resets replay racer sprites/labels/hover handlers for studio replay mode.
+  - Keeps replay racer-view construction lifecycle out of studio app orchestration.
 - `apps/web-viewer/src/studio-single-preview-controller.ts`
   - Owns single-runner preview tick flow used outside replay mode.
   - Keeps preview-only runner/camera update behavior out of the studio surface orchestrator.
 - `apps/web-viewer/src/studio-background-controller.ts`
   - Owns background image load/clear/layout behavior for editor and broadcast view states.
   - Keeps background asset lifecycle and cover/contain layout transitions out of the studio surface orchestrator.
+- `apps/web-viewer/src/studio-preset-store.ts`
+  - Owns studio preset persistence helpers (localStorage preset metadata + IndexedDB background image assets).
+  - Keeps persistence and storage-fallback behavior out of studio composition/orchestration flow.
+- `apps/web-viewer/src/studio-preset-select-state.ts`
+  - Pure preset-dropdown selection model helper derived from preset store state.
+  - Keeps preset select fallback/selection policy logic out of studio app orchestration.
+- `apps/web-viewer/src/studio-file-utils.ts`
+  - Shared browser utility helpers for studio file download and local image loading.
+  - Keeps Blob/data-url/image-loader utility behavior out of studio app orchestration.
+- `apps/web-viewer/src/studio-racer-pack-utils.ts`
+  - Shared runtime racer-pack fallback, frame sprite extraction, and preview-size helpers.
+  - Keeps pack-cache and sprite extraction behavior out of studio app orchestration.
+- `apps/web-viewer/src/studio-geometry-state.ts`
+  - Shared geometry-state orientation rotation helper for centerline and boundaries.
+  - Keeps duplicated orientation-rotation wiring out of studio app orchestration.
+- `apps/web-viewer/src/studio-editor-view-state.ts`
+  - Pure editor zoom/view transform math helpers for centered zoom and world positioning.
+  - Keeps editor camera/zoom state math out of studio app orchestration.
+- `apps/web-viewer/src/studio-app-view-events.ts`
+  - Owns studio broadcast-window (`Esc`/resize) and editor-zoom event wiring.
+  - Keeps view-event listener setup out of studio app orchestration.
+- `apps/web-viewer/src/studio-app-ticker-controller.ts`
+  - Owns studio playback ticker branching for no-track, replay, and single-preview frame flow.
+  - Keeps frame-level mode branching and ticker-state transitions out of studio app orchestration.
+- `apps/web-viewer/src/studio-app-secondary-controls-controller.ts`
+  - Owns secondary studio editor control wiring (generator/surface/preset/json) via callback registration.
+  - Keeps non-core listener registration density out of studio app orchestration.
+- `apps/web-viewer/src/studio-replay-racer-lifecycle.ts`
+  - Owns replay-racer lifecycle helpers for rebuild state transitions and preview-size scaling policy.
+  - Keeps replay-racer lifecycle policy wiring out of studio app orchestration.
+- `apps/web-viewer/src/studio-surface-effects-state.ts`
+  - Pure helper layer for studio surface-setup selection resolution and particle-emitter state transitions.
+  - Keeps surface selector inference and emitter-state update flow out of studio app orchestration.
+- `apps/web-viewer/src/studio-generator-ui-state.ts`
+  - Pure helper layer for generator preset resolution and sprite-sheet warning text policy.
+  - Keeps generator policy calculations out of studio app orchestration.
+- `apps/web-viewer/src/studio-sprite-preview-state.ts`
+  - Pure helper layer for sprite-preview frame/variant animation state progression.
+  - Keeps preview animation stepping policy out of studio app orchestration.
+- `apps/web-viewer/src/studio-sprite-preview-render.ts`
+  - Shared sprite-preview canvas drawing and texture extraction helpers.
+  - Keeps preview rendering logic out of studio app orchestration.
+- `apps/web-viewer/src/studio-track-json-load-state.ts`
+  - Pure helper layer for parsing and normalizing studio track JSON imports.
+  - Keeps JSON load validation/normalization flow out of studio app orchestration.
+- `apps/web-viewer/src/studio-preset-actions.ts`
+  - Shared helper layer for studio preset build/save/load/delete state logic.
+  - Keeps preset lifecycle parsing and persistence flow out of studio app orchestration.
+- `apps/web-viewer/src/studio-runner-preview-texture.ts`
+  - Shared helper layer for runner preview texture selection and scale policy.
+  - Keeps ticker rendering-policy calculations out of studio app orchestration.
+- `apps/web-viewer/src/studio-track-template-generator.ts`
+  - Pure track-template generation domain helpers used by studio quick-start template actions.
+  - Keeps template-point generation logic out of sprite-pack generation module flow.
 - `apps/web-viewer/src/studio-ui-controls-controller.ts`
   - Owns studio toggle/input listener wiring for preview, replay, broadcast, and lane/racer controls.
   - Keeps UI event wiring and button/label text updates out of the studio surface orchestrator.
+- `apps/web-viewer/src/studio-ui-state.ts`
+  - Applies current studio runtime state snapshot to control values and toggle button labels.
+  - Keeps UI state synchronization mapping out of studio app orchestration.
 - `apps/web-viewer/src/surface-effects.ts`
   - Shared surface-effect profile system (profile resolution, category mapping, size scaling, particle emission/tick/draw helpers, and motion-style pose helpers).
   - Central extension point for adding new race-world themes (water, sand, snow, ash, space, neon, etc.) and category-specific visual intensity behavior.
+- `apps/web-viewer/src/surface-effect-profiles.ts`
+  - Owns surface profile registry data and profile-resolution heuristics.
+  - Keeps profile catalog/selection policy separate from particle simulation runtime logic.
+- `apps/web-viewer/src/studio-replay-math.ts`
+  - Owns shared replay math/path helpers (`clamp`, `lerp`, tangent/length/normalization helpers).
+  - Keeps low-level math primitives separate from replay state-policy helpers.
 - `apps/web-viewer/src/runtime-app.ts`
   - Runtime race surface entry isolated from studio authoring controls.
   - Serves as dedicated integration point for real game playback logic.
@@ -125,6 +200,9 @@
 - `apps/web-viewer/src/admin-app.ts`
   - Dedicated admin launch surface (`?mode=admin`) with catalog fetch, id selectors, orientation control, payload preview, and race start actions.
   - Reuses web-admin launch model helpers so UI launch requests stay contract-aligned with API/runtime flow.
+- `apps/web-viewer/src/admin-shell.ts`
+  - Owns admin launch shell HTML/CSS rendering and strict DOM element resolution.
+  - Keeps static shell rendering concerns out of admin launch orchestration logic.
 - `apps/web-viewer/src/runtime-bootstrap-client.ts`
   - URL/query helpers + API fetch wrapper for runtime bootstrap payload loading.
 - `apps/web-viewer/src/runtime-track.ts`
@@ -151,12 +229,6 @@
 - `apps/web-viewer/src/world-transform-utils.ts`
   - Shared Pixi world transform helpers for camera reset and background clamping.
   - Keeps camera-bound behavior consistent across preview and runtime surfaces.
-- `apps/web-viewer/src/scene.ts`
-  - Layered scene builder (background, environment, obstacles, racers, trails, bursts, finish).
-  - Asset load with placeholder fallback to keep rendering resilient during asset gaps.
-- `apps/web-viewer/src/viewer-model.ts`
-  - Fixed-step simulation adapter (`100ms`) from race session to viewer-facing state.
-  - Produces both racer state and camera-ready state.
 
 ## Planned App Separation
 

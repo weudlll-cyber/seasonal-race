@@ -47,3 +47,12 @@ The following decisions are locked unless explicitly changed via ADR:
 - Development and feature validation are local-first.
 - Production target is VPS hosting.
 - A secure one-command installation script is a mandatory release artifact.
+
+8. Refactor discipline strategy
+
+- Refactors must be necessity-driven.
+- During dedicated refactor phases, larger coherent restructures are allowed.
+- During feature implementation, changes must be clean-by-default so no later large cleanup wave is needed.
+- Every refactor batch must include parity tests for affected behavior.
+- Every refactor batch must update architecture/status docs in the same change set.
+- Avoid creating new abstraction layers unless they remove clear duplication or reduce risk.
