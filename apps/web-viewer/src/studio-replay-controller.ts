@@ -24,6 +24,26 @@ import {
   drawReplayLaneBoards,
   renderLeaderboardRows
 } from './studio-render';
+import {
+  buildFrameProgressById,
+  buildReplayCinematicPlan,
+  clamp,
+  clamp01,
+  computeBoundaryHalfWidthAtProgress,
+  computeCoastStopProgress,
+  computeFreeSwimPersonalBias,
+  computeLinearDecayCoast,
+  computePathLength,
+  computeReplayRankScore,
+  computeStartLaneSlot,
+  computeTrackTangentAtProgress,
+  lerp,
+  lerpPoint,
+  mapCameraRacersToCenterline,
+  normalize,
+  smoothstep,
+  smoothWindow
+} from './studio-replay-utils';
 
 const START_FORMATION_BLEND_MS = 3200;
 const PRESTART_HOLD_MS = 2200;
@@ -705,210 +725,4 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
     leaderboardTickMs,
     replayData
   };
-}
-
-interface ReplayCameraBeat {
-  startPhase: number;
-  endPhase: number;
-  zoomScale: number;
-  focusTopPack: boolean;
-}
-
-interface ReplayCinematicPlan {
-  beats: ReplayCameraBeat[];
-  phaseOffset: number;
-}
-
-function buildReplayCinematicPlan(runId: number): ReplayCinematicPlan {
-  const rng = seededRng(runId * 7919 + 17);
-
-  const beats: ReplayCameraBeat[] = [
-    createBeat(0.1 + rng() * 0.05, 0.18 + rng() * 0.04, 3.7 + rng() * 0.26, true),
-    createBeat(0.36 + rng() * 0.08, 0.17 + rng() * 0.04, 1.08 + rng() * 0.08, false),
-    createBeat(0.6 + rng() * 0.08, 0.18 + rng() * 0.04, 3.8 + rng() * 0.24, true)
-  ];
-
-  if (rng() > 0.55) {
-    beats.push(createBeat(0.78 + rng() * 0.06, 0.14 + rng() * 0.03, 3.45 + rng() * 0.24, true));
-  }
-
-  return {
-    beats: beats.sort((a, b) => a.startPhase - b.startPhase),
-    phaseOffset: rng() * Math.PI * 2
-  };
-}
-
-function createBeat(
-  startPhase: number,
-  duration: number,
-  zoomScale: number,
-  focusTopPack: boolean
-): ReplayCameraBeat {
-  const start = clamp01(startPhase);
-  const end = clamp01(start + duration);
-  return {
-    startPhase: start,
-    endPhase: Math.max(start + 0.03, end),
-    zoomScale,
-    focusTopPack
-  };
-}
-
-function seededRng(seedInput: number): () => number {
-  let seed = seedInput >>> 0;
-  return () => {
-    seed = Math.imul(seed, 1664525) + 1013904223;
-    return (seed >>> 0) / 0xffffffff;
-  };
-}
-
-function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
-}
-
-function smoothWindow(value: number, start: number, end: number): number {
-  if (value <= start || value >= end) return 0;
-  const t = (value - start) / Math.max(0.0001, end - start);
-  const rise = smoothstep(clamp01(t / 0.78));
-  const fall = smoothstep(clamp01((1 - t) / 0.78));
-  return Math.min(rise, fall);
-}
-
-function smoothstep(t: number): number {
-  return t * t * (3 - 2 * t);
-}
-
-function lerp(from: number, to: number, t: number): number {
-  return from + (to - from) * t;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-function computeStartLaneSlot(columnIndex: number, columns: number): number {
-  if (columns <= 1) return 0;
-  return clamp(((columnIndex / Math.max(1, columns - 1)) * 2 - 1) * 0.86, -0.86, 0.86);
-}
-
-function computeFreeSwimPersonalBias(racerIndex: number): number {
-  const raw = Math.sin((racerIndex + 1) * 12.9898) * 43758.5453;
-  const unit = raw - Math.floor(raw);
-  return unit * 2 - 1;
-}
-
-function buildFrameProgressById(
-  racers: Array<{ id: string; progress: number }>
-): Map<string, number> {
-  return new Map(racers.map((r) => [r.id, r.progress]));
-}
-
-function computeLinearDecayCoast(
-  entryRatePerSec: number,
-  coastDistanceNorm: number,
-  elapsedSeconds: number
-): { coastFrac: number; currentV: number } {
-  // T = 2*dist/v0 keeps area(velocity-time) equal to coast distance.
-  const coastDurationSec = Math.max(
-    0.1,
-    (2 * coastDistanceNorm) / Math.max(0.0001, entryRatePerSec)
-  );
-  const coastFrac = clamp01(elapsedSeconds / coastDurationSec);
-  const currentV = entryRatePerSec * Math.max(0, 1 - coastFrac);
-  return { coastFrac, currentV };
-}
-
-function mapCameraRacersToCenterline(
-  racers: Array<{ progress: number; position: TrackPoint }>,
-  path: TrackPoint[]
-): Array<{ progress: number; position: TrackPoint }> {
-  return racers.map((r) => ({
-    progress: r.progress,
-    position: interpolateTrackPosition(path, clamp01(r.progress))
-  }));
-}
-
-function computeBoundaryHalfWidthAtProgress(
-  leftBoundaryPath: TrackPoint[],
-  rightBoundaryPath: TrackPoint[],
-  progress: number,
-  normal: TrackPoint,
-  fallbackHalfWidth: number
-): number {
-  if (leftBoundaryPath.length < 2 || rightBoundaryPath.length < 2) {
-    return fallbackHalfWidth;
-  }
-
-  const left = interpolateTrackPosition(leftBoundaryPath, clamp01(progress));
-  const right = interpolateTrackPosition(rightBoundaryPath, clamp01(progress));
-  const projected = Math.abs((left.x - right.x) * normal.x + (left.y - right.y) * normal.y) * 0.5;
-  if (!Number.isFinite(projected) || projected < 2) {
-    return fallbackHalfWidth;
-  }
-  return Math.max(10, projected);
-}
-
-function computeCoastStopProgress(
-  finishProgressOnFullRun: number,
-  crossIndex: number,
-  racerCount: number,
-  _racerIndex: number
-): number {
-  // Use almost the full authored coast zone for stop distribution.
-  // First finisher stops near coast-end; later finishers progressively closer to finish.
-  const coastWindow = Math.max(0.0005, 1 - finishProgressOnFullRun);
-  const minStop = Math.min(0.999, finishProgressOnFullRun + coastWindow * 0.06);
-  const maxStop = Math.min(0.9995, finishProgressOnFullRun + coastWindow * 0.99);
-  const normalizedRank = (crossIndex - 1) / Math.max(1, racerCount - 1);
-  const easedRank = Math.pow(normalizedRank, 1.12);
-  const baseStop = maxStop - (maxStop - minStop) * easedRank;
-  return Math.max(minStop, Math.min(maxStop, baseStop));
-}
-
-function computePathLength(points: TrackPoint[]): number {
-  if (points.length < 2) return 1;
-  let total = 0;
-  for (let i = 1; i < points.length; i += 1) {
-    const a = points[i - 1]!;
-    const b = points[i]!;
-    total += Math.hypot(b.x - a.x, b.y - a.y);
-  }
-  return Math.max(1, total);
-}
-
-function computeTrackTangentAtProgress(path: TrackPoint[], progress: number): TrackPoint {
-  const p0 = interpolateTrackPosition(path, clamp01(progress - 0.003));
-  const p1 = interpolateTrackPosition(path, clamp01(progress + 0.003));
-  return normalize(p1.x - p0.x, p1.y - p0.y);
-}
-
-function normalize(dx: number, dy: number): TrackPoint {
-  const len = Math.hypot(dx, dy);
-  if (len <= 0.00001) return { x: 1, y: 0 };
-  return { x: dx / len, y: dy / len };
-}
-
-function lerpPoint(a: TrackPoint, b: TrackPoint, t: number): TrackPoint {
-  return {
-    x: a.x + (b.x - a.x) * t,
-    y: a.y + (b.y - a.y) * t
-  };
-}
-
-function computeReplayRankScore(
-  progress: number,
-  finishOrder: number | undefined,
-  lockedTopFiveRank: number | undefined
-): number {
-  if (lockedTopFiveRank !== undefined) {
-    // Keep podium/top-five stable after they cross.
-    return 2 - lockedTopFiveRank * 0.01;
-  }
-
-  if (finishOrder !== undefined) {
-    // Remaining finishers stay below locked top-five and keep natural order among themselves.
-    return 1.1 - finishOrder * 0.001;
-  }
-
-  return progress;
 }

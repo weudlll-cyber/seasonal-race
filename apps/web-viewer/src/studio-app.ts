@@ -9,11 +9,7 @@
 import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
 import { CameraController } from './camera';
-import {
-  buildSmoothedPreviewPath,
-  DEFAULT_EDITOR_TRACK_ID,
-  interpolateTrackPosition
-} from './track-editor-utils';
+import { DEFAULT_EDITOR_TRACK_ID } from './track-editor-utils';
 import { buildDemoRecordedRaceData } from './replay-utils';
 import {
   createRacerIds,
@@ -45,6 +41,11 @@ import {
   type GeneratedRacerSpritePackMeta,
   type TrackTemplateKind
 } from './studio-generators';
+import {
+  buildCenterlineFromBoundaries,
+  resolveStudioPaths,
+  type StudioTrackEditMode
+} from './studio-paths';
 import {
   buildSurfaceEffectSetup,
   drawSurfaceParticles,
@@ -85,7 +86,7 @@ const MIN_EDITOR_ZOOM = 1;
 const MAX_EDITOR_ZOOM = 4;
 const DEFAULT_RUNTIME_PACK_FRAME_COUNT = 10;
 
-type TrackEditMode = 'centerline' | 'boundaries';
+type TrackEditMode = StudioTrackEditMode;
 type BoundarySide = 'left' | 'right';
 
 interface StudioTestPreset {
@@ -1855,111 +1856,37 @@ export async function startStudioApp(): Promise<void> {
       return;
     }
 
-    let renderPoints =
-      backgroundSprite && broadcastViewEnabled
-        ? mapTrackPointsToCurrentLayout(
-            points,
-            backgroundSprite.texture.width,
-            backgroundSprite.texture.height,
-            VIEW_WIDTH,
-            VIEW_HEIGHT,
-            app.screen.width,
-            app.screen.height,
-            false,
-            true
-          )
-        : points;
-
-    let renderLeftBoundaryPoints: TrackPoint[] | null = null;
-    let renderRightBoundaryPoints: TrackPoint[] | null = null;
-    let boundaryCoastPoint: TrackPoint | null = null;
-    let raceCenterline: TrackPoint[] | null = null;
-
-    if (
-      trackEditMode === 'boundaries' &&
-      leftBoundaryPoints.length >= 3 &&
-      rightBoundaryPoints.length >= 3
-    ) {
-      const mappedLeft =
-        backgroundSprite && broadcastViewEnabled
-          ? mapTrackPointsToCurrentLayout(
-              leftBoundaryPoints,
-              backgroundSprite.texture.width,
-              backgroundSprite.texture.height,
-              VIEW_WIDTH,
-              VIEW_HEIGHT,
-              app.screen.width,
-              app.screen.height,
-              false,
-              true
-            )
-          : leftBoundaryPoints;
-      const mappedRight =
-        backgroundSprite && broadcastViewEnabled
-          ? mapTrackPointsToCurrentLayout(
-              rightBoundaryPoints,
-              backgroundSprite.texture.width,
-              backgroundSprite.texture.height,
-              VIEW_WIDTH,
-              VIEW_HEIGHT,
-              app.screen.width,
-              app.screen.height,
-              false,
-              true
-            )
-          : rightBoundaryPoints;
-
-      const leftCoastControl = mappedLeft[mappedLeft.length - 1]!;
-      const rightCoastControl = mappedRight[mappedRight.length - 1]!;
-
-      // Convention: first point = start, penultimate = finish line, last = coast-zone end.
-      // Build race centerline from boundaries WITHOUT the last (coast) point,
-      // so the centerline naturally ends at the finish line.
-      const raceLeft = mappedLeft.slice(0, -1);
-      const raceRight = mappedRight.slice(0, -1);
-
-      boundaryCoastPoint = {
-        x: round3((leftCoastControl.x + rightCoastControl.x) * 0.5),
-        y: round3((leftCoastControl.y + rightCoastControl.y) * 0.5)
-      };
-
-      renderLeftBoundaryPoints = smoothingEnabled
-        ? buildSmoothedPreviewPath(mappedLeft, 10)
-        : mappedLeft;
-      renderRightBoundaryPoints = smoothingEnabled
-        ? buildSmoothedPreviewPath(mappedRight, 10)
-        : mappedRight;
-      // Full centerline (including coast zone) for preview/editor display.
-      renderPoints = buildCenterlineFromBoundaries(
-        renderLeftBoundaryPoints,
-        renderRightBoundaryPoints
+    const mapPointsForLayout = (sourcePoints: TrackPoint[]): TrackPoint[] => {
+      if (!backgroundSprite || !broadcastViewEnabled) {
+        return sourcePoints;
+      }
+      return mapTrackPointsToCurrentLayout(
+        sourcePoints,
+        backgroundSprite.texture.width,
+        backgroundSprite.texture.height,
+        VIEW_WIDTH,
+        VIEW_HEIGHT,
+        app.screen.width,
+        app.screen.height,
+        false,
+        true
       );
-      // Race-only centerline (up to finish line) from boundaries without coast point.
-      const raceLeftSmoothed = smoothingEnabled ? buildSmoothedPreviewPath(raceLeft, 10) : raceLeft;
-      const raceRightSmoothed = smoothingEnabled
-        ? buildSmoothedPreviewPath(raceRight, 10)
-        : raceRight;
-      raceCenterline = buildCenterlineFromBoundaries(raceLeftSmoothed, raceRightSmoothed);
-    }
+    };
 
-    const previewPath = smoothingEnabled
-      ? buildSmoothedPreviewPath(renderPoints, 10)
-      : renderPoints;
-
-    // In boundary mode, use the race-only centerline (ends at finish line).
-    // In centerline mode, use all points except the last (coast end) as before.
-    let replayRacePath: TrackPoint[];
-    if (trackEditMode === 'boundaries' && raceCenterline) {
-      replayRacePath = smoothingEnabled
-        ? buildSmoothedPreviewPath(raceCenterline, 10)
-        : raceCenterline;
-    } else {
-      const replayRaceControlPoints = renderPoints.slice(0, -1);
-      replayRacePath = smoothingEnabled
-        ? buildSmoothedPreviewPath(replayRaceControlPoints, 10)
-        : replayRaceControlPoints;
-    }
-    const coastEndPoint = boundaryCoastPoint ?? renderPoints[renderPoints.length - 1] ?? null;
+    const {
+      renderLeftBoundaryPoints,
+      renderRightBoundaryPoints,
+      previewPath,
+      replayRacePath,
+      coastEndPoint
+    } = resolveStudioPaths({
+      points,
+      leftBoundaryPoints,
+      rightBoundaryPoints,
+      trackEditMode,
+      smoothingEnabled,
+      mapPointsForLayout
+    });
 
     if (replayModeEnabled) {
       runner.visible = false;
@@ -2139,23 +2066,6 @@ function runBackgroundStoreRequest<T>(
 function clampInteger(value: number, min: number, max: number, fallback: number): number {
   if (!Number.isFinite(value)) return fallback;
   return Math.max(min, Math.min(max, Math.floor(value)));
-}
-
-function buildCenterlineFromBoundaries(left: TrackPoint[], right: TrackPoint[]): TrackPoint[] {
-  const samples = Math.max(24, Math.min(220, Math.max(left.length, right.length) * 6));
-  const centerline: TrackPoint[] = [];
-  for (let i = 0; i <= samples; i += 1) {
-    const progress = i / samples;
-    const l = interpolateTrackPosition(left, progress);
-    const r = interpolateTrackPosition(right, progress);
-    centerline.push({
-      x: round3((l.x + r.x) * 0.5),
-      y: round3((l.y + r.y) * 0.5)
-    });
-  }
-
-  // Keep export/editor manageable while preserving curve fidelity.
-  return centerline.filter((_, index) => index % 2 === 0 || index === centerline.length - 1);
 }
 
 function buildBoundaryPairFromCenterline(

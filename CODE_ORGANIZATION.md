@@ -86,6 +86,9 @@
   - Orchestrates mode switches, Pixi stage lifecycle, and module composition.
   - Binds visible studio surface selectors (race type/category/size/profile) to shared effect resolution.
   - Applies authoring-time on-track sprite-size control for single preview.
+- `apps/web-viewer/src/studio-paths.ts`
+  - Shared studio path-resolution helpers for centerline/boundary preview and replay path derivation.
+  - Keeps coast-end semantics and boundary midpoint rules in one reusable module.
 - `apps/web-viewer/src/studio-dom.ts`
   - Centralized studio DOM resolution and control typing.
   - Removes duplicated selector/ID wiring from app orchestrators.
@@ -104,6 +107,9 @@
 - `apps/web-viewer/src/studio-replay-controller.ts`
   - Owns replay-mode frame tick flow (racer placement, label policy, leaderboard refresh, broadcast camera handoff).
   - Keeps replay simulation and broadcast-follow behavior out of the studio surface orchestrator.
+- `apps/web-viewer/src/studio-replay-utils.ts`
+  - Pure replay helper layer (cinematic plan, coast decay math, path metrics, and ranking helper functions).
+  - Keeps low-level replay math/policy utilities separate from frame orchestration flow.
 - `apps/web-viewer/src/studio-single-preview-controller.ts`
   - Owns single-runner preview tick flow used outside replay mode.
   - Keeps preview-only runner/camera update behavior out of the studio surface orchestrator.

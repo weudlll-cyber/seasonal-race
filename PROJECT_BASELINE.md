@@ -113,6 +113,7 @@
 - Coast settling now includes deterministic time-complete freeze in addition to stop-progress threshold, with freeze-at-current-position (no last-frame snap to stop target) to prevent rare never-settle oscillation and end-position jump artifacts.
 - Studio replay controller internals were cleaned by removing unused per-racer world-history fields and replacing per-racer frame scans with a precomputed per-frame progress map.
 - Studio replay controller readability was further improved by extracting small behavior-preserving helpers (clip-zone threshold constant, linear-decay coast helper, finish-camera centerline mapper).
+- Studio replay low-level utility logic is now extracted into `studio-replay-utils` (cinematic-plan generation, coast/geometry math, and ranking helpers) so `studio-replay-controller` stays focused on frame orchestration.
 - Studio replay controller comments were normalized for clarity/maintenance without changing replay behavior.
 - Studio replay controller formatting was additionally normalized by splitting dense expressions into readable blocks, without changing replay behavior.
 - Replay row-lag formation offsets now fade out through race progression so late-race leading order reflects live performance instead of fixed row/index spacing.
@@ -154,6 +155,7 @@
 - Studio single-preview frame tick behavior is now extracted into `studio-single-preview-controller` to decouple non-replay runner/camera flow from studio composition.
 - Studio background image flow (load/clear/layout) is now extracted into `studio-background-controller` to decouple asset lifecycle from studio composition.
 - Studio control-panel event wiring is now extracted into `studio-ui-controls-controller` to decouple UI listener wiring from studio composition.
+- Studio preview/replay path derivation is now extracted into `studio-paths`, centralizing boundary/coast endpoint semantics and reducing orchestration complexity in `studio-app`.
 - Broadcast mode now resizes the renderer to the real viewport so race playback fills the full screen area.
 - Broadcast mode now supports `Esc` as a direct return shortcut back to editor mode.
 - Authored-to-broadcast track remapping now uses distinct source/target viewport dimensions to keep race path aligned with the background image in broadcast mode.
