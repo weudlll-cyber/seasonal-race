@@ -156,6 +156,9 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Runtime racer behavior now supports deterministic presets (`arcade`, `balanced`, `chaotic`) that tune pace spread, pack interaction intensity, and lateral movement style.
 - Runtime auto-simulation now applies pack-aware behavior layers (overtake impulses, leader/trailer rubber-banding, and close-range lateral conflict avoidance) for more natural multi-racer flow.
 - Runtime behavior preset can be selected via query (`behavior=arcade|balanced|chaotic`) for controlled playtest tuning.
+- Runtime water rendering now includes layered foam streaks and persistent wake decay trails for stronger motion readability in dense packs.
+- Runtime splash/ripple intensity now scales by both racer speed and local track curvature, so hard turns create visibly stronger water disturbance.
+- Runtime backdrop now adds image-free shore glint lines, preserving the no-background-image approach while improving edge contrast.
 - Track editor supports background image import, drag-to-edit points, and optional smooth-preview mode for curved route visualization.
 - Track editor now supports named test presets (save/load/delete in local browser storage) so multiple setup variants can be restored quickly between iterations.
 - Track metadata fields and JSON editing are now placed in optional advanced sections, keeping the default authoring flow focused on visual controls only.

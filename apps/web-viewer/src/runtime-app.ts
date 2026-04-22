@@ -29,7 +29,11 @@ import {
   type RacerSizeClass,
   type SurfaceParticle
 } from './surface-effects';
-import { mapRuntimeTrackPointsToViewport, sampleRuntimeTrackPosition } from './runtime-track';
+import {
+  estimateRuntimeTrackCurvature,
+  mapRuntimeTrackPointsToViewport,
+  sampleRuntimeTrackPosition
+} from './runtime-track';
 import { normalizeTrackOrientation, type TrackOrientation } from './track-orientation.js';
 
 const VIEW_WIDTH = 1160;
@@ -43,6 +47,17 @@ interface RuntimeRacerView {
   hueShiftRad: number;
   previousProgress: number;
   previousPosition: { x: number; y: number };
+}
+
+interface RuntimeWakeStreak {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  ageMs: number;
+  lifeMs: number;
+  size: number;
+  intensity: number;
 }
 
 export async function startRuntimeApp(): Promise<void> {
@@ -73,8 +88,14 @@ export async function startRuntimeApp(): Promise<void> {
   const waveLayer = new Graphics();
   world.addChild(waveLayer);
 
+  const foamLayer = new Graphics();
+  world.addChild(foamLayer);
+
   const rippleLayer = new Graphics();
   world.addChild(rippleLayer);
+
+  const wakeLayer = new Graphics();
+  world.addChild(wakeLayer);
 
   const particleLayer = new Graphics();
   world.addChild(particleLayer);
@@ -108,6 +129,7 @@ export async function startRuntimeApp(): Promise<void> {
     runtimeOrientation
   );
   const particles: SurfaceParticle[] = [];
+  const wakeStreaks: RuntimeWakeStreak[] = [];
   let effectSetup = buildSurfaceEffectSetup({ raceType: runtimeRaceType });
   let autoRacerModels = createRuntimeAutoRacerModels(runtimeRacerCount, { behaviorPreset });
   let racerViews = buildRuntimeRacerViews(autoRacerModels, racerLayer);
@@ -168,8 +190,15 @@ export async function startRuntimeApp(): Promise<void> {
     });
     drawWaterBackdrop(waterBackdrop, runtimeTrackPoints, elapsedMs);
     drawWaterWaves(waveLayer, runtimeTrackPoints, elapsedMs);
+    drawWaterFoam(foamLayer, runtimeTrackPoints, elapsedMs);
 
-    const rippleSeeds: Array<{ x: number; y: number; speedNorm: number; phaseRad: number }> = [];
+    const rippleSeeds: Array<{
+      x: number;
+      y: number;
+      speedNorm: number;
+      curvature: number;
+      phaseRad: number;
+    }> = [];
 
     for (const view of racerViews) {
       const frame = racerFrames[view.model.index];
@@ -188,6 +217,8 @@ export async function startRuntimeApp(): Promise<void> {
       const laneSpread = 24 + runtimeRacerBaseScale * 22;
       const px = center.x + normalX * frame.lateralOffset * laneSpread;
       const py = center.y + normalY * frame.lateralOffset * laneSpread;
+      const curvature = estimateRuntimeTrackCurvature(runtimeTrackPoints, frame.progress);
+      const speedForEffects = clamp01((0.32 + frame.speedNorm * 0.68) * (1 + curvature * 0.85));
 
       const dx = px - view.previousPosition.x;
       const dy = py - view.previousPosition.y;
@@ -196,9 +227,18 @@ export async function startRuntimeApp(): Promise<void> {
         y: py + 9,
         dx,
         dy,
-        speedNorm: 0.35 + frame.speedNorm * 0.65,
+        speedNorm: speedForEffects,
         dtSec,
         elapsedMs
+      });
+
+      emitWakeStreak(wakeStreaks, {
+        x: px,
+        y: py + 10,
+        dx,
+        dy,
+        speedNorm: frame.speedNorm,
+        curvature
       });
 
       const pose = poseScaleByMotionStyle(
@@ -222,13 +262,21 @@ export async function startRuntimeApp(): Promise<void> {
       view.sprite.position.set(px, py);
       view.sprite.zIndex = Math.round(py * 10 + frame.progress * 1000);
 
-      rippleSeeds.push({ x: px, y: py, speedNorm: frame.speedNorm, phaseRad: view.hueShiftRad });
+      rippleSeeds.push({
+        x: px,
+        y: py,
+        speedNorm: frame.speedNorm,
+        curvature,
+        phaseRad: view.hueShiftRad
+      });
       view.previousProgress = frame.progress;
       view.previousPosition = { x: px, y: py };
     }
 
     tickSurfaceParticles(particles, effectSetup, dtSec);
     drawSurfaceParticles(particleLayer, particles);
+    tickWakeStreaks(wakeStreaks, dtSec);
+    drawWakeStreaks(wakeLayer, wakeStreaks);
     drawWaterRipples(rippleLayer, rippleSeeds, elapsedMs);
   });
 }
@@ -362,6 +410,10 @@ function drawWaterBackdrop(
   layer.drawRoundedRect(20, 30, VIEW_WIDTH - 40, VIEW_HEIGHT - 60, 44);
   layer.endFill();
 
+  // Subtle image-free shore glint ring to improve water edge readability.
+  layer.lineStyle(2, 0x8fdfff, 0.2 + pulse * 0.45);
+  layer.drawRoundedRect(26, 36, VIEW_WIDTH - 52, VIEW_HEIGHT - 72, 40);
+
   layer.lineStyle(3, 0x1b6b92, 0.42);
   const first = points[0];
   if (!first) {
@@ -406,15 +458,61 @@ function drawWaterWaves(
   }
 }
 
+function drawWaterFoam(
+  layer: Graphics,
+  points: Array<{ x: number; y: number }>,
+  elapsedMs: number
+): void {
+  layer.clear();
+  const time = elapsedMs / 1000;
+
+  for (let segment = 0; segment < WAVE_SEGMENTS; segment += 1) {
+    const progress = segment / WAVE_SEGMENTS;
+    const point = sampleRuntimeTrackPosition(points, progress);
+    const ahead = sampleRuntimeTrackPosition(points, (progress + 0.006) % 1);
+    const tangentX = ahead.x - point.x;
+    const tangentY = ahead.y - point.y;
+    const tangentLength = Math.hypot(tangentX, tangentY) || 1;
+    const tx = tangentX / tangentLength;
+    const ty = tangentY / tangentLength;
+    const nx = -ty;
+    const ny = tx;
+
+    const foamJitter = Math.sin(time * 3.4 + segment * 0.94) * 8;
+    const foamSize = 6 + Math.sin(time * 4.2 + segment * 1.6) * 2;
+    const foamAlpha = 0.11 + (Math.sin(time * 2.8 + segment * 0.6) * 0.5 + 0.5) * 0.1;
+
+    layer.lineStyle(1.5, 0xd9f7ff, foamAlpha);
+    layer.moveTo(point.x + nx * (8 + foamJitter), point.y + ny * (8 + foamJitter));
+    layer.lineTo(
+      point.x + nx * (8 + foamJitter) + tx * foamSize,
+      point.y + ny * (8 + foamJitter) + ty * foamSize
+    );
+
+    layer.lineStyle(1.2, 0x7bd8f3, foamAlpha * 0.92);
+    layer.moveTo(point.x - nx * (7 + foamJitter * 0.8), point.y - ny * (7 + foamJitter * 0.8));
+    layer.lineTo(
+      point.x - nx * (7 + foamJitter * 0.8) + tx * foamSize * 0.86,
+      point.y - ny * (7 + foamJitter * 0.8) + ty * foamSize * 0.86
+    );
+  }
+}
+
 function drawWaterRipples(
   layer: Graphics,
-  rippleSeeds: Array<{ x: number; y: number; speedNorm: number; phaseRad: number }>,
+  rippleSeeds: Array<{
+    x: number;
+    y: number;
+    speedNorm: number;
+    curvature: number;
+    phaseRad: number;
+  }>,
   elapsedMs: number
 ): void {
   layer.clear();
   const t = elapsedMs / 1000;
   for (const seed of rippleSeeds) {
-    const baseRadius = 6 + seed.speedNorm * 12;
+    const baseRadius = 6 + seed.speedNorm * 12 + seed.curvature * 7;
     const pulse = 1 + Math.sin(t * 6 + seed.phaseRad) * 0.25;
     const radiusA = baseRadius * pulse;
     const radiusB = (baseRadius + 8) * (0.8 + pulse * 0.22);
@@ -424,6 +522,66 @@ function drawWaterRipples(
     layer.lineStyle(1, 0x7dd6f4, 0.18);
     layer.drawCircle(seed.x, seed.y + 8, radiusB);
   }
+}
+
+function emitWakeStreak(
+  wakeStreaks: RuntimeWakeStreak[],
+  options: { x: number; y: number; dx: number; dy: number; speedNorm: number; curvature: number }
+): void {
+  const length = Math.hypot(options.dx, options.dy) || 1;
+  const tx = -options.dx / length;
+  const ty = -options.dy / length;
+  const strength = 0.3 + options.speedNorm * 0.7 + options.curvature * 0.45;
+
+  wakeStreaks.push({
+    x: options.x,
+    y: options.y,
+    vx: tx * (24 + strength * 38) + (Math.random() - 0.5) * 14,
+    vy: ty * (24 + strength * 38) + (Math.random() - 0.5) * 14,
+    ageMs: 0,
+    lifeMs: 420 + strength * 520,
+    size: 3 + strength * 5,
+    intensity: strength
+  });
+
+  if (wakeStreaks.length > 900) {
+    wakeStreaks.splice(0, wakeStreaks.length - 900);
+  }
+}
+
+function tickWakeStreaks(wakeStreaks: RuntimeWakeStreak[], dtSec: number): void {
+  for (let index = wakeStreaks.length - 1; index >= 0; index -= 1) {
+    const streak = wakeStreaks[index];
+    if (!streak) continue;
+
+    streak.ageMs += dtSec * 1000;
+    if (streak.ageMs >= streak.lifeMs) {
+      wakeStreaks.splice(index, 1);
+      continue;
+    }
+
+    const drag = Math.max(0, 1 - dtSec * 1.9);
+    streak.vx *= drag;
+    streak.vy *= drag;
+    streak.x += streak.vx * dtSec;
+    streak.y += streak.vy * dtSec;
+  }
+}
+
+function drawWakeStreaks(layer: Graphics, wakeStreaks: RuntimeWakeStreak[]): void {
+  layer.clear();
+  for (const streak of wakeStreaks) {
+    const life = 1 - streak.ageMs / streak.lifeMs;
+    const alpha = 0.05 + life * 0.25 * streak.intensity;
+    const radius = streak.size * (0.65 + life * 0.5);
+
+    layer.lineStyle(Math.max(0.8, radius * 0.36), 0xb8f1ff, alpha);
+    layer.drawCircle(streak.x, streak.y, radius);
+  }
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 function resolveRacerPalette(

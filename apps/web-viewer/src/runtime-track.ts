@@ -69,3 +69,39 @@ export function sampleRuntimeTrackPosition(points: TrackPoint[], progress: numbe
 
   return interpolateTrackPosition(points, progress);
 }
+
+export function sampleRuntimeTrackTangent(
+  points: TrackPoint[],
+  progress: number,
+  delta = 0.003
+): TrackPoint {
+  const safeDelta = Math.max(0.0005, Math.min(0.02, delta));
+  const prev = sampleRuntimeTrackPosition(points, wrap01(progress - safeDelta));
+  const next = sampleRuntimeTrackPosition(points, wrap01(progress + safeDelta));
+  const dx = next.x - prev.x;
+  const dy = next.y - prev.y;
+  const length = Math.hypot(dx, dy) || 1;
+  return { x: dx / length, y: dy / length };
+}
+
+export function estimateRuntimeTrackCurvature(
+  points: TrackPoint[],
+  progress: number,
+  delta = 0.006
+): number {
+  const safeDelta = Math.max(0.001, Math.min(0.03, delta));
+  const tangentA = sampleRuntimeTrackTangent(points, progress - safeDelta, safeDelta * 0.5);
+  const tangentB = sampleRuntimeTrackTangent(points, progress + safeDelta, safeDelta * 0.5);
+  const dot = clamp(-1, 1, tangentA.x * tangentB.x + tangentA.y * tangentB.y);
+  const angleRad = Math.acos(dot);
+  return clamp(0, 1, angleRad / Math.PI);
+}
+
+function wrap01(value: number): number {
+  const wrapped = value % 1;
+  return wrapped < 0 ? wrapped + 1 : wrapped;
+}
+
+function clamp(min: number, max: number, value: number): number {
+  return Math.max(min, Math.min(max, value));
+}
