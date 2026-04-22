@@ -92,6 +92,9 @@
 - Runtime water presentation now adds foam streak layering and persistent wake-trail decay for richer movement persistence.
 - Runtime turn response now scales splash and ripple strength using local track curvature plus speed.
 - Runtime visuals remain image-free while adding shore-glint edge contrast for clearer water boundaries.
+- Runtime now includes adaptive visual quality policy (`low`/`medium`/`high`/`auto`) for performance-aware rendering control.
+- Runtime auto-quality now dynamically scales wave/foam complexity and ripple/wake budgets based on racer count and observed frame timing.
+- Runtime supports `quality` query tuning for controlled performance test scenarios without code changes.
 - Track metadata and raw JSON controls are now optional advanced sections so default test workflow stays lightweight.
 - Track editor now supports a broadcast preview mode (camera follow and zoom rides) to evaluate the same perspective players will see during races.
 - Broadcast preview is now fullscreen and high-DPI for player-like visual validation.

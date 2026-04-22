@@ -223,6 +223,9 @@
   - Pure runtime geometry helpers that map bootstrap track points to the active viewport.
   - Provides runtime track sampling fallback so playback still runs when bootstrap track data is incomplete.
   - Exposes tangent/curvature sampling helpers for turn-aware runtime visual effect intensity.
+- `apps/web-viewer/src/runtime-visual-quality.ts`
+  - Pure runtime quality-policy helpers that resolve explicit/auto visual modes and adaptive per-frame render budgets.
+  - Keeps performance-budget decisions (wave/foam density, ripple/wake caps, intensity scaling) separate from renderer orchestration.
 - `apps/web-viewer/src/runtime-racer-simulation.ts`
   - Pure deterministic runtime racer-pack simulation helpers (racer model seeding, behavior-preset resolution, and per-frame progress/lateral movement snapshots).
   - Owns pack interaction policy (overtake impulse, leader/trailer rubber-band shaping, and lateral conflict avoidance) while keeping these calculations isolated from Pixi rendering code.

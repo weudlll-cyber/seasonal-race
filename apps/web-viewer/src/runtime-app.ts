@@ -34,12 +34,17 @@ import {
   mapRuntimeTrackPointsToViewport,
   sampleRuntimeTrackPosition
 } from './runtime-track';
+import {
+  resolveRuntimeVisualBudget,
+  resolveRuntimeVisualQuality,
+  type RuntimeVisualQuality
+} from './runtime-visual-quality';
 import { normalizeTrackOrientation, type TrackOrientation } from './track-orientation.js';
 
 const VIEW_WIDTH = 1160;
 const VIEW_HEIGHT = 720;
 const DEFAULT_RUNTIME_RACER_COUNT = 12;
-const WAVE_SEGMENTS = 22;
+const DEFAULT_WAVE_SEGMENTS = 22;
 
 interface RuntimeRacerView {
   model: RuntimeAutoRacerModel;
@@ -113,12 +118,16 @@ export async function startRuntimeApp(): Promise<void> {
   });
   label.position.set(24, 18);
   app.stage.addChild(label);
+  const searchParams = new URLSearchParams(window.location.search);
 
   let runtimeOrientation: TrackOrientation = resolveRuntimeTrackOrientation(window.location.search);
   let runtimeRaceType = 'duck';
   let runtimeRacerCount = clampRuntimeRacerCount(DEFAULT_RUNTIME_RACER_COUNT);
   let behaviorPreset: RuntimeRacerBehaviorPreset = resolveRuntimeRacerBehaviorPreset(
-    new URLSearchParams(window.location.search).get('behavior')
+    searchParams.get('behavior')
+  );
+  let visualQuality: RuntimeVisualQuality = resolveRuntimeVisualQuality(
+    searchParams.get('quality')
   );
   let runtimeRacerBaseScale = resolveRuntimeSpriteBaseScale(runtimeRacerCount);
   let runtimeTrackPoints = mapRuntimeTrackPointsToViewport(
@@ -174,23 +183,31 @@ export async function startRuntimeApp(): Promise<void> {
 
       drawWaterBackdrop(waterBackdrop, runtimeTrackPoints, 0);
 
-      label.text = `Runtime ${bootstrap.raceType} | profile: ${effectSetup.profile.displayName} | orientation: ${runtimeOrientation} | racers: ${runtimeRacerCount} | behavior: ${behaviorPreset} | auto-sim: on | duration: ${lapDurationMs}ms`;
+      label.text = `Runtime ${bootstrap.raceType} | profile: ${effectSetup.profile.displayName} | orientation: ${runtimeOrientation} | racers: ${runtimeRacerCount} | behavior: ${behaviorPreset} | quality: ${visualQuality} | auto-sim: on | duration: ${lapDurationMs}ms`;
     } catch (error) {
       label.text = `Runtime bootstrap failed: ${error instanceof Error ? error.message : 'unknown error'}`;
     }
   }
 
   let elapsedMs = 0;
+  let smoothedFrameMs = 16.7;
   app.ticker.add((delta) => {
     const dtSec = delta / 60;
+    const frameMs = dtSec * 1000;
+    smoothedFrameMs = smoothedFrameMs * 0.9 + frameMs * 0.1;
     elapsedMs += dtSec * 1000;
+    const visualBudget = resolveRuntimeVisualBudget({
+      quality: visualQuality,
+      racerCount: runtimeRacerCount,
+      frameMs: smoothedFrameMs
+    });
 
     const racerFrames = buildRuntimeAutoRacerFrame(autoRacerModels, elapsedMs, lapDurationMs, {
       behaviorPreset
     });
     drawWaterBackdrop(waterBackdrop, runtimeTrackPoints, elapsedMs);
-    drawWaterWaves(waveLayer, runtimeTrackPoints, elapsedMs);
-    drawWaterFoam(foamLayer, runtimeTrackPoints, elapsedMs);
+    drawWaterWaves(waveLayer, runtimeTrackPoints, elapsedMs, visualBudget.waveSegments);
+    drawWaterFoam(foamLayer, runtimeTrackPoints, elapsedMs, visualBudget.foamSegments);
 
     const rippleSeeds: Array<{
       x: number;
@@ -199,8 +216,14 @@ export async function startRuntimeApp(): Promise<void> {
       curvature: number;
       phaseRad: number;
     }> = [];
+    const rippleStride = Math.max(
+      1,
+      Math.ceil(Math.max(1, racerViews.length) / Math.max(1, visualBudget.maxRippleSeeds))
+    );
 
-    for (const view of racerViews) {
+    for (let index = 0; index < racerViews.length; index += 1) {
+      const view = racerViews[index];
+      if (!view) continue;
       const frame = racerFrames[view.model.index];
       if (!frame) {
         continue;
@@ -227,7 +250,7 @@ export async function startRuntimeApp(): Promise<void> {
         y: py + 9,
         dx,
         dy,
-        speedNorm: speedForEffects,
+        speedNorm: clamp01(speedForEffects * visualBudget.effectIntensityScale),
         dtSec,
         elapsedMs
       });
@@ -238,7 +261,8 @@ export async function startRuntimeApp(): Promise<void> {
         dx,
         dy,
         speedNorm: frame.speedNorm,
-        curvature
+        curvature,
+        maxWakeStreaks: visualBudget.maxWakeStreaks
       });
 
       const pose = poseScaleByMotionStyle(
@@ -262,13 +286,15 @@ export async function startRuntimeApp(): Promise<void> {
       view.sprite.position.set(px, py);
       view.sprite.zIndex = Math.round(py * 10 + frame.progress * 1000);
 
-      rippleSeeds.push({
-        x: px,
-        y: py,
-        speedNorm: frame.speedNorm,
-        curvature,
-        phaseRad: view.hueShiftRad
-      });
+      if (index % rippleStride === 0 && rippleSeeds.length < visualBudget.maxRippleSeeds) {
+        rippleSeeds.push({
+          x: px,
+          y: py,
+          speedNorm: frame.speedNorm,
+          curvature,
+          phaseRad: view.hueShiftRad
+        });
+      }
       view.previousProgress = frame.progress;
       view.previousPosition = { x: px, y: py };
     }
@@ -431,13 +457,15 @@ function drawWaterBackdrop(
 function drawWaterWaves(
   layer: Graphics,
   points: Array<{ x: number; y: number }>,
-  elapsedMs: number
+  elapsedMs: number,
+  segmentCount: number
 ): void {
   layer.clear();
+  const segments = Math.max(6, Math.min(40, segmentCount || DEFAULT_WAVE_SEGMENTS));
   const waveTime = elapsedMs / 1000;
-  for (let segment = 0; segment < WAVE_SEGMENTS; segment += 1) {
-    const tA = segment / WAVE_SEGMENTS;
-    const tB = (segment + 1) / WAVE_SEGMENTS;
+  for (let segment = 0; segment < segments; segment += 1) {
+    const tA = segment / segments;
+    const tB = (segment + 1) / segments;
     const pA = sampleRuntimeTrackPosition(points, tA);
     const pB = sampleRuntimeTrackPosition(points, tB);
     const normalX = pA.y - pB.y;
@@ -461,13 +489,15 @@ function drawWaterWaves(
 function drawWaterFoam(
   layer: Graphics,
   points: Array<{ x: number; y: number }>,
-  elapsedMs: number
+  elapsedMs: number,
+  segmentCount: number
 ): void {
   layer.clear();
+  const segments = Math.max(4, Math.min(38, segmentCount || DEFAULT_WAVE_SEGMENTS));
   const time = elapsedMs / 1000;
 
-  for (let segment = 0; segment < WAVE_SEGMENTS; segment += 1) {
-    const progress = segment / WAVE_SEGMENTS;
+  for (let segment = 0; segment < segments; segment += 1) {
+    const progress = segment / segments;
     const point = sampleRuntimeTrackPosition(points, progress);
     const ahead = sampleRuntimeTrackPosition(points, (progress + 0.006) % 1);
     const tangentX = ahead.x - point.x;
@@ -526,7 +556,15 @@ function drawWaterRipples(
 
 function emitWakeStreak(
   wakeStreaks: RuntimeWakeStreak[],
-  options: { x: number; y: number; dx: number; dy: number; speedNorm: number; curvature: number }
+  options: {
+    x: number;
+    y: number;
+    dx: number;
+    dy: number;
+    speedNorm: number;
+    curvature: number;
+    maxWakeStreaks: number;
+  }
 ): void {
   const length = Math.hypot(options.dx, options.dy) || 1;
   const tx = -options.dx / length;
@@ -544,8 +582,8 @@ function emitWakeStreak(
     intensity: strength
   });
 
-  if (wakeStreaks.length > 900) {
-    wakeStreaks.splice(0, wakeStreaks.length - 900);
+  if (wakeStreaks.length > options.maxWakeStreaks) {
+    wakeStreaks.splice(0, wakeStreaks.length - options.maxWakeStreaks);
   }
 }
 
