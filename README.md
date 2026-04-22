@@ -153,6 +153,9 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Runtime race view now generates and animates a full racer pack automatically (deterministic per-racer pace, lateral swim drift, and continuous movement) instead of rendering a single runner.
 - Runtime race view now renders procedural water visuals (waves, ripples, and splash wake layering) directly from simulation state, so no static background image asset is required.
 - Runtime racer glyphs now use per-racer procedural color palettes for better on-track differentiation in dense packs.
+- Runtime racer behavior now supports deterministic presets (`arcade`, `balanced`, `chaotic`) that tune pace spread, pack interaction intensity, and lateral movement style.
+- Runtime auto-simulation now applies pack-aware behavior layers (overtake impulses, leader/trailer rubber-banding, and close-range lateral conflict avoidance) for more natural multi-racer flow.
+- Runtime behavior preset can be selected via query (`behavior=arcade|balanced|chaotic`) for controlled playtest tuning.
 - Track editor supports background image import, drag-to-edit points, and optional smooth-preview mode for curved route visualization.
 - Track editor now supports named test presets (save/load/delete in local browser storage) so multiple setup variants can be restored quickly between iterations.
 - Track metadata fields and JSON editing are now placed in optional advanced sections, keeping the default authoring flow focused on visual controls only.
