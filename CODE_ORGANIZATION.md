@@ -226,6 +226,9 @@
 - `apps/web-viewer/src/runtime-visual-quality.ts`
   - Pure runtime quality-policy helpers that resolve explicit/auto visual modes and adaptive per-frame render budgets.
   - Keeps performance-budget decisions (wave/foam density, ripple/wake caps, intensity scaling) separate from renderer orchestration.
+- `apps/web-viewer/src/runtime-hud.ts`
+  - Pure runtime HUD helpers for top-pack leaderboard extraction and focus-racer query parsing/rank resolution.
+  - Keeps runtime overlay logic deterministic and testable outside Pixi rendering concerns.
 - `apps/web-viewer/src/runtime-racer-simulation.ts`
   - Pure deterministic runtime racer-pack simulation helpers (racer model seeding, behavior-preset resolution, and per-frame progress/lateral movement snapshots).
   - Owns pack interaction policy (overtake impulse, leader/trailer rubber-band shaping, and lateral conflict avoidance) while keeping these calculations isolated from Pixi rendering code.

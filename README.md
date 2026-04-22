@@ -162,6 +162,8 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Runtime now supports adaptive visual quality modes (`low`, `medium`, `high`, `auto`) via query (`quality`) with per-frame performance budgets.
 - In `auto` quality mode, wave/foam segment density, ripple seed counts, wake persistence, and effect intensity scale down automatically under high racer density or slower frame times.
 - Runtime keeps large-race readability by capping ripple/wake workload dynamically while preserving core racer motion and route visibility.
+- Runtime HUD now renders a compact Top Pack leaderboard (top 3) with live progress and relative lead gaps.
+- Runtime supports optional focus tracking via query (`focusRacer=<1-based-number>`), adding a highlight ring and live speed/progress/rank readout.
 - Track editor supports background image import, drag-to-edit points, and optional smooth-preview mode for curved route visualization.
 - Track editor now supports named test presets (save/load/delete in local browser storage) so multiple setup variants can be restored quickly between iterations.
 - Track metadata fields and JSON editing are now placed in optional advanced sections, keeping the default authoring flow focused on visual controls only.
