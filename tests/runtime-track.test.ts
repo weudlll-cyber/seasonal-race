@@ -9,9 +9,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  estimateRuntimeTrackCurvature,
   FALLBACK_RUNTIME_TRACK_POINTS,
   mapRuntimeTrackPointsToViewport,
-  sampleRuntimeTrackPosition
+  sampleRuntimeTrackPosition,
+  sampleRuntimeTrackTangent
 } from '../apps/web-viewer/src/runtime-track';
 
 describe('runtime track helpers', () => {
@@ -73,5 +75,45 @@ describe('runtime track helpers', () => {
     const spanY = Math.max(...ys) - Math.min(...ys);
 
     expect(spanY).toBeGreaterThan(spanX);
+  });
+
+  it('samples a normalized tangent vector', () => {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 200, y: 0 }
+    ];
+
+    const tangent = sampleRuntimeTrackTangent(points, 0.5);
+    expect(Math.hypot(tangent.x, tangent.y)).toBeCloseTo(1, 5);
+    expect(tangent.x).toBeGreaterThan(0.9);
+    expect(Math.abs(tangent.y)).toBeLessThan(0.1);
+  });
+
+  it('estimates stronger curvature on turns than on straight lines', () => {
+    const straight = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 200, y: 0 },
+      { x: 300, y: 0 }
+    ];
+    const curved = [
+      { x: 0, y: 0 },
+      { x: 80, y: 40 },
+      { x: 120, y: 140 },
+      { x: 170, y: 240 }
+    ];
+
+    const probeProgress = [0.12, 0.24, 0.36, 0.48, 0.62, 0.76, 0.88];
+    const straightCurvature = Math.max(
+      ...probeProgress.map((progress) => estimateRuntimeTrackCurvature(straight, progress, 0.08))
+    );
+    const curvedCurvature = Math.max(
+      ...probeProgress.map((progress) => estimateRuntimeTrackCurvature(curved, progress, 0.08))
+    );
+
+    expect(straightCurvature).toBeGreaterThanOrEqual(0);
+    expect(straightCurvature).toBeLessThan(0.05);
+    expect(curvedCurvature).toBeGreaterThan(straightCurvature + 0.02);
   });
 });

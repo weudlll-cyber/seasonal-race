@@ -209,6 +209,7 @@
   - Serves as dedicated integration point for real game playback logic.
   - Applies shared surface-effect profile/category behavior and motion-style glyph rendering for runtime visual feedback.
   - Auto-scales runtime racer sprite size from racer count for consistent readability.
+  - Renders layered procedural water atmosphere (waves, foam, ripples, wake persistence, and shore glints) with curvature-aware intensity scaling.
   - Consumes runtime bootstrap payload when `raceId` is provided in URL query.
 - `apps/web-viewer/src/admin-app.ts`
   - Dedicated admin launch surface (`?mode=admin`) with catalog fetch, id selectors, orientation control, payload preview, and race start actions.
@@ -221,6 +222,7 @@
 - `apps/web-viewer/src/runtime-track.ts`
   - Pure runtime geometry helpers that map bootstrap track points to the active viewport.
   - Provides runtime track sampling fallback so playback still runs when bootstrap track data is incomplete.
+  - Exposes tangent/curvature sampling helpers for turn-aware runtime visual effect intensity.
 - `apps/web-viewer/src/runtime-racer-simulation.ts`
   - Pure deterministic runtime racer-pack simulation helpers (racer model seeding, behavior-preset resolution, and per-frame progress/lateral movement snapshots).
   - Owns pack interaction policy (overtake impulse, leader/trailer rubber-band shaping, and lateral conflict avoidance) while keeping these calculations isolated from Pixi rendering code.
