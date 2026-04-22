@@ -237,6 +237,7 @@
   - Supports configurable playback direction (`left-to-right` and `top-to-bottom`) without changing core track data.
 - `apps/web-viewer/src/camera.ts`
   - `CameraController` for smooth world follow/zoom behavior.
+  - Shared by studio playback and runtime playback, including optional focus-aware anchor blending.
   - Receives camera-ready race state and applies interpolated world transform.
 - `apps/web-viewer/src/track-editor-utils.ts`
   - Reusable path utilities for editor mode.

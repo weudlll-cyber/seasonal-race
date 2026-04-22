@@ -164,6 +164,8 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Runtime keeps large-race readability by capping ripple/wake workload dynamically while preserving core racer motion and route visibility.
 - Runtime HUD now renders a compact Top Pack leaderboard (top 3) with live progress and relative lead gaps.
 - Runtime supports optional focus tracking via query (`focusRacer=<1-based-number>`), adding a highlight ring and live speed/progress/rank readout.
+- Runtime camera now uses the shared `CameraController`, adding gentle follow/zoom motion in live playback instead of a fully static viewport.
+- When `focusRacer` is set, camera framing blends toward that racer and slightly widens zoom when the focus drops behind the leader, improving readability without losing pack context.
 - Track editor supports background image import, drag-to-edit points, and optional smooth-preview mode for curved route visualization.
 - Track editor now supports named test presets (save/load/delete in local browser storage) so multiple setup variants can be restored quickly between iterations.
 - Track metadata fields and JSON editing are now placed in optional advanced sections, keeping the default authoring flow focused on visual controls only.
