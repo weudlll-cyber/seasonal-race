@@ -150,6 +150,9 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Runtime racer motion now supports category-specific pose styles (glide/gallop/stomp/sail/thrust), so horse-like categories visibly animate differently from duck/ship/rocket styles.
 - Category emission cadence now mirrors movement style (for example horse/hoof gallop = burst-burst-pause spray rhythm, heavy stomp = intermittent heavy bursts, ship = smooth wave-modulated wake).
 - Runtime game mode now auto-scales racer sprite size from racer count to keep readability stable across small and large races.
+- Runtime race view now generates and animates a full racer pack automatically (deterministic per-racer pace, lateral swim drift, and continuous movement) instead of rendering a single runner.
+- Runtime race view now renders procedural water visuals (waves, ripples, and splash wake layering) directly from simulation state, so no static background image asset is required.
+- Runtime racer glyphs now use per-racer procedural color palettes for better on-track differentiation in dense packs.
 - Track editor supports background image import, drag-to-edit points, and optional smooth-preview mode for curved route visualization.
 - Track editor now supports named test presets (save/load/delete in local browser storage) so multiple setup variants can be restored quickly between iterations.
 - Track metadata fields and JSON editing are now placed in optional advanced sections, keeping the default authoring flow focused on visual controls only.
