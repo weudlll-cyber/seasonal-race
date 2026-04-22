@@ -86,6 +86,9 @@
 - Runtime race mode now auto-generates and simulates a full moving racer pack (deterministic per-racer pace plus lateral movement) rather than a single runner.
 - Runtime race mode now includes procedural water atmosphere rendering (animated wave lines, per-racer ripples, and wake splashes) driven by simulation data.
 - Runtime race mode visuals are now image-free by default (no static background image needed for water scene rendering).
+- Runtime racer simulation now includes deterministic behavior presets (`arcade`, `balanced`, `chaotic`) to control pack aggressiveness and movement variability.
+- Runtime pack movement now includes overtake impulses, light leader/trailer rubber-banding, and lateral conflict avoidance to reduce unnatural stacking.
+- Runtime behavior preset is now externally selectable through runtime query parameter `behavior` for test and tuning workflows.
 - Track metadata and raw JSON controls are now optional advanced sections so default test workflow stays lightweight.
 - Track editor now supports a broadcast preview mode (camera follow and zoom rides) to evaluate the same perspective players will see during races.
 - Broadcast preview is now fullscreen and high-DPI for player-like visual validation.

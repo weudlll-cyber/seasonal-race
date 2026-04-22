@@ -10,6 +10,8 @@ import {
   buildRuntimeAutoRacerFrame,
   clampRuntimeRacerCount,
   createRuntimeAutoRacerModels,
+  resolveRuntimeRacerBehaviorPreset,
+  type RuntimeRacerBehaviorPreset,
   type RuntimeAutoRacerModel
 } from './runtime-racer-simulation';
 import {
@@ -94,6 +96,9 @@ export async function startRuntimeApp(): Promise<void> {
   let runtimeOrientation: TrackOrientation = resolveRuntimeTrackOrientation(window.location.search);
   let runtimeRaceType = 'duck';
   let runtimeRacerCount = clampRuntimeRacerCount(DEFAULT_RUNTIME_RACER_COUNT);
+  let behaviorPreset: RuntimeRacerBehaviorPreset = resolveRuntimeRacerBehaviorPreset(
+    new URLSearchParams(window.location.search).get('behavior')
+  );
   let runtimeRacerBaseScale = resolveRuntimeSpriteBaseScale(runtimeRacerCount);
   let runtimeTrackPoints = mapRuntimeTrackPointsToViewport(
     [],
@@ -104,7 +109,7 @@ export async function startRuntimeApp(): Promise<void> {
   );
   const particles: SurfaceParticle[] = [];
   let effectSetup = buildSurfaceEffectSetup({ raceType: runtimeRaceType });
-  let autoRacerModels = createRuntimeAutoRacerModels(runtimeRacerCount);
+  let autoRacerModels = createRuntimeAutoRacerModels(runtimeRacerCount, { behaviorPreset });
   let racerViews = buildRuntimeRacerViews(autoRacerModels, racerLayer);
 
   drawWaterBackdrop(waterBackdrop, runtimeTrackPoints, 0);
@@ -142,12 +147,12 @@ export async function startRuntimeApp(): Promise<void> {
           : {}),
         sizeClass: resolveSizeClassFromRacerCount(runtimeRacerCount)
       });
-      autoRacerModels = createRuntimeAutoRacerModels(runtimeRacerCount);
+      autoRacerModels = createRuntimeAutoRacerModels(runtimeRacerCount, { behaviorPreset });
       racerViews = buildRuntimeRacerViews(autoRacerModels, racerLayer);
 
       drawWaterBackdrop(waterBackdrop, runtimeTrackPoints, 0);
 
-      label.text = `Runtime ${bootstrap.raceType} | profile: ${effectSetup.profile.displayName} | orientation: ${runtimeOrientation} | racers: ${runtimeRacerCount} | auto-sim: on | duration: ${lapDurationMs}ms`;
+      label.text = `Runtime ${bootstrap.raceType} | profile: ${effectSetup.profile.displayName} | orientation: ${runtimeOrientation} | racers: ${runtimeRacerCount} | behavior: ${behaviorPreset} | auto-sim: on | duration: ${lapDurationMs}ms`;
     } catch (error) {
       label.text = `Runtime bootstrap failed: ${error instanceof Error ? error.message : 'unknown error'}`;
     }
@@ -158,7 +163,9 @@ export async function startRuntimeApp(): Promise<void> {
     const dtSec = delta / 60;
     elapsedMs += dtSec * 1000;
 
-    const racerFrames = buildRuntimeAutoRacerFrame(autoRacerModels, elapsedMs, lapDurationMs);
+    const racerFrames = buildRuntimeAutoRacerFrame(autoRacerModels, elapsedMs, lapDurationMs, {
+      behaviorPreset
+    });
     drawWaterBackdrop(waterBackdrop, runtimeTrackPoints, elapsedMs);
     drawWaterWaves(waveLayer, runtimeTrackPoints, elapsedMs);
 
