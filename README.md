@@ -159,6 +159,9 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Runtime water rendering now includes layered foam streaks and persistent wake decay trails for stronger motion readability in dense packs.
 - Runtime splash/ripple intensity now scales by both racer speed and local track curvature, so hard turns create visibly stronger water disturbance.
 - Runtime backdrop now adds image-free shore glint lines, preserving the no-background-image approach while improving edge contrast.
+- Runtime now supports adaptive visual quality modes (`low`, `medium`, `high`, `auto`) via query (`quality`) with per-frame performance budgets.
+- In `auto` quality mode, wave/foam segment density, ripple seed counts, wake persistence, and effect intensity scale down automatically under high racer density or slower frame times.
+- Runtime keeps large-race readability by capping ripple/wake workload dynamically while preserving core racer motion and route visibility.
 - Track editor supports background image import, drag-to-edit points, and optional smooth-preview mode for curved route visualization.
 - Track editor now supports named test presets (save/load/delete in local browser storage) so multiple setup variants can be restored quickly between iterations.
 - Track metadata fields and JSON editing are now placed in optional advanced sections, keeping the default authoring flow focused on visual controls only.
