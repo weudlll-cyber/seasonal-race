@@ -39,6 +39,11 @@ import {
   resolveRuntimeVisualQuality,
   type RuntimeVisualQuality
 } from './runtime-visual-quality';
+import {
+  buildRuntimeLeaderboard,
+  resolveRuntimeFocusRacer,
+  resolveRuntimeRacerRank
+} from './runtime-hud';
 import { normalizeTrackOrientation, type TrackOrientation } from './track-orientation.js';
 
 const VIEW_WIDTH = 1160;
@@ -118,6 +123,28 @@ export async function startRuntimeApp(): Promise<void> {
   });
   label.position.set(24, 18);
   app.stage.addChild(label);
+
+  const leaderboardLabel = new Text('', {
+    fontFamily: 'Consolas',
+    fontSize: 16,
+    fill: 0xcdeaff,
+    stroke: 0x082337,
+    strokeThickness: 2,
+    lineHeight: 20
+  });
+  leaderboardLabel.position.set(VIEW_WIDTH - 360, 22);
+  app.stage.addChild(leaderboardLabel);
+
+  const focusLabel = new Text('', {
+    fontFamily: 'Consolas',
+    fontSize: 15,
+    fill: 0xaee7ff,
+    stroke: 0x072034,
+    strokeThickness: 2
+  });
+  focusLabel.position.set(24, VIEW_HEIGHT - 38);
+  app.stage.addChild(focusLabel);
+
   const searchParams = new URLSearchParams(window.location.search);
 
   let runtimeOrientation: TrackOrientation = resolveRuntimeTrackOrientation(window.location.search);
@@ -129,6 +156,7 @@ export async function startRuntimeApp(): Promise<void> {
   let visualQuality: RuntimeVisualQuality = resolveRuntimeVisualQuality(
     searchParams.get('quality')
   );
+  let focusRacerIndex = resolveRuntimeFocusRacer(searchParams.get('focusRacer'), runtimeRacerCount);
   let runtimeRacerBaseScale = resolveRuntimeSpriteBaseScale(runtimeRacerCount);
   let runtimeTrackPoints = mapRuntimeTrackPointsToViewport(
     [],
@@ -170,6 +198,7 @@ export async function startRuntimeApp(): Promise<void> {
       drawTrackLane(lane, runtimeTrackPoints);
       lapDurationMs = Math.max(5_000, bootstrap.launch.durationMs);
       runtimeRacerCount = clampRuntimeRacerCount(bootstrap.racerList.racerCount);
+      focusRacerIndex = resolveRuntimeFocusRacer(searchParams.get('focusRacer'), runtimeRacerCount);
       runtimeRacerBaseScale = resolveRuntimeSpriteBaseScale(runtimeRacerCount);
       effectSetup = buildSurfaceEffectSetup({
         raceType: bootstrap.raceType,
@@ -183,7 +212,7 @@ export async function startRuntimeApp(): Promise<void> {
 
       drawWaterBackdrop(waterBackdrop, runtimeTrackPoints, 0);
 
-      label.text = `Runtime ${bootstrap.raceType} | profile: ${effectSetup.profile.displayName} | orientation: ${runtimeOrientation} | racers: ${runtimeRacerCount} | behavior: ${behaviorPreset} | quality: ${visualQuality} | auto-sim: on | duration: ${lapDurationMs}ms`;
+      label.text = `Runtime ${bootstrap.raceType} | profile: ${effectSetup.profile.displayName} | orientation: ${runtimeOrientation} | racers: ${runtimeRacerCount} | behavior: ${behaviorPreset} | quality: ${visualQuality} | focus: ${focusRacerIndex === null ? 'off' : focusRacerIndex + 1} | auto-sim: on | duration: ${lapDurationMs}ms`;
     } catch (error) {
       label.text = `Runtime bootstrap failed: ${error instanceof Error ? error.message : 'unknown error'}`;
     }
@@ -205,6 +234,7 @@ export async function startRuntimeApp(): Promise<void> {
     const racerFrames = buildRuntimeAutoRacerFrame(autoRacerModels, elapsedMs, lapDurationMs, {
       behaviorPreset
     });
+    const topPack = buildRuntimeLeaderboard(racerFrames, 3);
     drawWaterBackdrop(waterBackdrop, runtimeTrackPoints, elapsedMs);
     drawWaterWaves(waveLayer, runtimeTrackPoints, elapsedMs, visualBudget.waveSegments);
     drawWaterFoam(foamLayer, runtimeTrackPoints, elapsedMs, visualBudget.foamSegments);
@@ -281,7 +311,8 @@ export async function startRuntimeApp(): Promise<void> {
         effectSetup.motionStyle,
         elapsedMs / 1000 + view.hueShiftRad,
         view.model.index,
-        racerViews.length
+        racerViews.length,
+        focusRacerIndex === view.model.index
       );
       view.sprite.position.set(px, py);
       view.sprite.zIndex = Math.round(py * 10 + frame.progress * 1000);
@@ -304,6 +335,27 @@ export async function startRuntimeApp(): Promise<void> {
     tickWakeStreaks(wakeStreaks, dtSec);
     drawWakeStreaks(wakeLayer, wakeStreaks);
     drawWaterRipples(rippleLayer, rippleSeeds, elapsedMs);
+
+    leaderboardLabel.text = [
+      `Top Pack (${visualBudget.qualityResolved})`,
+      ...topPack.map((entry) => {
+        const racerNumber = entry.racerIndex + 1;
+        const gap = entry.rank === 1 ? 'lead' : `-${(entry.gapToLeader * 100).toFixed(1)}%`;
+        return `#${entry.rank} R${racerNumber.toString().padStart(2, '0')} ${(entry.progress * 100).toFixed(1)}% ${gap}`;
+      })
+    ].join('\n');
+
+    if (focusRacerIndex !== null) {
+      const focusFrame = racerFrames[focusRacerIndex];
+      const focusRank = resolveRuntimeRacerRank(racerFrames, focusRacerIndex);
+      if (focusFrame && focusRank !== null) {
+        focusLabel.text = `Focus R${focusRacerIndex + 1} | rank ${focusRank}/${racerFrames.length} | speed ${(focusFrame.speedNorm * 100).toFixed(0)}% | progress ${(focusFrame.progress * 100).toFixed(1)}%`;
+      } else {
+        focusLabel.text = `Focus R${focusRacerIndex + 1} | no data`;
+      }
+    } else {
+      focusLabel.text = 'Focus off (set ?focusRacer=number)';
+    }
   });
 }
 
@@ -353,10 +405,16 @@ function drawRuntimeRacerGlyph(
   motionStyle: string,
   phaseSeconds: number,
   racerIndex: number,
-  totalRacers: number
+  totalRacers: number,
+  isFocused = false
 ): void {
   racer.clear();
   const palette = resolveRacerPalette(racerIndex, totalRacers);
+
+  if (isFocused) {
+    racer.lineStyle(2.4, 0xf4ff85, 0.95);
+    racer.drawCircle(0, 0, 18);
+  }
 
   if (motionStyle === 'gallop') {
     const stride = Math.sin(phaseSeconds * 10);
