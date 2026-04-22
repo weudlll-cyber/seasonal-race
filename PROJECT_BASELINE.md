@@ -83,6 +83,9 @@
 - Runtime racer glyph motion now supports style-specific pose signatures (`glide`, `gallop`, `stomp`, `sail`, `thrust`) as a base for richer per-category animation.
 - Category emission cadence now follows motion style rhythms (for example hoof-animal gallop burst/pause cycles) for clearer behavioral separation between racer classes.
 - Runtime game mode now automatically adjusts racer sprite base scale from racer count to keep crowded races legible.
+- Runtime race mode now auto-generates and simulates a full moving racer pack (deterministic per-racer pace plus lateral movement) rather than a single runner.
+- Runtime race mode now includes procedural water atmosphere rendering (animated wave lines, per-racer ripples, and wake splashes) driven by simulation data.
+- Runtime race mode visuals are now image-free by default (no static background image needed for water scene rendering).
 - Track metadata and raw JSON controls are now optional advanced sections so default test workflow stays lightweight.
 - Track editor now supports a broadcast preview mode (camera follow and zoom rides) to evaluate the same perspective players will see during races.
 - Broadcast preview is now fullscreen and high-DPI for player-like visual validation.

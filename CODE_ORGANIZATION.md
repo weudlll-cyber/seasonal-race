@@ -221,6 +221,9 @@
 - `apps/web-viewer/src/runtime-track.ts`
   - Pure runtime geometry helpers that map bootstrap track points to the active viewport.
   - Provides runtime track sampling fallback so playback still runs when bootstrap track data is incomplete.
+- `apps/web-viewer/src/runtime-racer-simulation.ts`
+  - Pure deterministic runtime racer-pack simulation helpers (racer model seeding, per-frame progress/lateral movement snapshots).
+  - Keeps auto-movement calculations isolated from Pixi rendering code inside runtime surface orchestration.
 - `apps/web-viewer/src/track-orientation.ts`
   - Shared orientation normalization and point-rotation helpers for runtime race direction variants.
   - Supports configurable playback direction (`left-to-right` and `top-to-bottom`) without changing core track data.
