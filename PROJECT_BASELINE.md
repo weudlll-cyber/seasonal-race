@@ -97,6 +97,8 @@
 - Runtime supports `quality` query tuning for controlled performance test scenarios without code changes.
 - Runtime HUD now exposes live top-pack leaderboard details (rank/progress/gap) for faster visual verification during dense simulations.
 - Runtime supports focused racer telemetry via `focusRacer` query control with highlight ring and live rank/speed/progress readout.
+- Runtime playback now uses the shared `CameraController` for light follow/zoom motion rather than a fixed viewport.
+- Runtime focus mode now influences camera anchoring and soft zoom-out when the selected racer trails the leader, improving manual inspection readability.
 - Track metadata and raw JSON controls are now optional advanced sections so default test workflow stays lightweight.
 - Track editor now supports a broadcast preview mode (camera follow and zoom rides) to evaluate the same perspective players will see during races.
 - Broadcast preview is now fullscreen and high-DPI for player-like visual validation.

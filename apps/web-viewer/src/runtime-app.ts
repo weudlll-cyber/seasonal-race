@@ -6,6 +6,7 @@
  */
 
 import { Application, Container, Graphics, Text } from 'pixi.js';
+import { CameraController } from './camera';
 import {
   buildRuntimeAutoRacerFrame,
   clampRuntimeRacerCount,
@@ -88,6 +89,7 @@ export async function startRuntimeApp(): Promise<void> {
 
   const world = new Container();
   app.stage.addChild(world);
+  const camera = new CameraController(VIEW_WIDTH, VIEW_HEIGHT);
 
   const waterBackdrop = new Graphics();
   world.addChild(waterBackdrop);
@@ -246,6 +248,9 @@ export async function startRuntimeApp(): Promise<void> {
       curvature: number;
       phaseRad: number;
     }> = [];
+    const cameraRacers: Array<
+      { progress: number; position: { x: number; y: number } } | undefined
+    > = [];
     const rippleStride = Math.max(
       1,
       Math.ceil(Math.max(1, racerViews.length) / Math.max(1, visualBudget.maxRippleSeeds))
@@ -316,6 +321,7 @@ export async function startRuntimeApp(): Promise<void> {
       );
       view.sprite.position.set(px, py);
       view.sprite.zIndex = Math.round(py * 10 + frame.progress * 1000);
+      cameraRacers[view.model.index] = { progress: frame.progress, position: { x: px, y: py } };
 
       if (index % rippleStride === 0 && rippleSeeds.length < visualBudget.maxRippleSeeds) {
         rippleSeeds.push({
@@ -336,6 +342,23 @@ export async function startRuntimeApp(): Promise<void> {
     drawWakeStreaks(wakeLayer, wakeStreaks);
     drawWaterRipples(rippleLayer, rippleSeeds, elapsedMs);
 
+    const focusCameraRacer = focusRacerIndex !== null ? cameraRacers[focusRacerIndex] : undefined;
+    const cameraState = {
+      racers: cameraRacers.filter(
+        (entry): entry is { progress: number; position: { x: number; y: number } } =>
+          entry !== undefined
+      ),
+      finished: false,
+      elapsedSeconds: elapsedMs / 1000,
+      focusWeight: focusRacerIndex === null ? 0 : 0.38,
+      cameraSettings: {
+        expectedDurationMs: lapDurationMs,
+        zoomScaleMultiplier: visualBudget.qualityResolved === 'low' ? 0.96 : 1
+      },
+      ...(focusCameraRacer ? { focusRacer: focusCameraRacer } : {})
+    };
+    camera.update(dtSec, cameraState, world);
+
     leaderboardLabel.text = [
       `Top Pack (${visualBudget.qualityResolved})`,
       ...topPack.map((entry) => {
@@ -349,7 +372,7 @@ export async function startRuntimeApp(): Promise<void> {
       const focusFrame = racerFrames[focusRacerIndex];
       const focusRank = resolveRuntimeRacerRank(racerFrames, focusRacerIndex);
       if (focusFrame && focusRank !== null) {
-        focusLabel.text = `Focus R${focusRacerIndex + 1} | rank ${focusRank}/${racerFrames.length} | speed ${(focusFrame.speedNorm * 100).toFixed(0)}% | progress ${(focusFrame.progress * 100).toFixed(1)}%`;
+        focusLabel.text = `Focus R${focusRacerIndex + 1} | rank ${focusRank}/${racerFrames.length} | speed ${(focusFrame.speedNorm * 100).toFixed(0)}% | progress ${(focusFrame.progress * 100).toFixed(1)}% | camera assist on`;
       } else {
         focusLabel.text = `Focus R${focusRacerIndex + 1} | no data`;
       }

@@ -63,6 +63,10 @@ export interface CameraState {
   finished: boolean;
   /** Wall-clock seconds since race start. */
   elapsedSeconds: number;
+  /** Optional camera hint for keeping a selected racer more readable. */
+  focusRacer?: CameraRacerState;
+  /** Optional blend weight [0,1] from leader to focus anchor. */
+  focusWeight?: number;
   /** Optional admin-overridable camera settings for this race. */
   cameraSettings?: RaceCameraSettings;
 }
@@ -138,6 +142,9 @@ export class CameraController {
 
     const sorted = [...state.racers].sort((a, b) => b.progress - a.progress);
     const leader = sorted[0]!;
+    const focusWeight = resolveCameraFocusWeight(state.focusWeight);
+    const focusRacer = state.focusRacer;
+    const focusGap = resolveCameraFocusGap(leader, focusRacer);
 
     // Intro transition: still follow leader position, but blend zoom from overview slowly.
     const introEnd = settings.introOverviewHoldSeconds + settings.introTransitionSeconds;
@@ -145,21 +152,25 @@ export class CameraController {
       const blend = clamp01(
         (state.elapsedSeconds - settings.introOverviewHoldSeconds) / settings.introTransitionSeconds
       );
+      const anchor = resolveCameraAnchorPoint(leader, focusRacer, focusWeight);
+      const introZoom = applyFocusAwareZoom(lerp(ZOOM_OVERVIEW, ZOOM_FOLLOW, blend), focusGap);
       return {
-        x: leader.position.x,
-        y: leader.position.y,
-        scaleX: this.applyZoomScale(lerp(ZOOM_OVERVIEW, ZOOM_FOLLOW, blend), settings),
-        scaleY: this.applyZoomScale(lerp(ZOOM_OVERVIEW, ZOOM_FOLLOW, blend), settings)
+        x: anchor.x,
+        y: anchor.y,
+        scaleX: this.applyZoomScale(introZoom, settings),
+        scaleY: this.applyZoomScale(introZoom, settings)
       };
     }
 
     // Final sprint — dramatic push-in on the leader
     if (leader.progress >= FINAL_SPRINT_THRESHOLD) {
+      const anchor = resolveCameraAnchorPoint(leader, focusRacer, focusWeight);
+      const finalZoom = applyFocusAwareZoom(ZOOM_FINAL, focusGap);
       return {
-        x: leader.position.x,
-        y: leader.position.y,
-        scaleX: this.applyZoomScale(ZOOM_FINAL, settings),
-        scaleY: this.applyZoomScale(ZOOM_FINAL, settings)
+        x: anchor.x,
+        y: anchor.y,
+        scaleX: this.applyZoomScale(finalZoom, settings),
+        scaleY: this.applyZoomScale(finalZoom, settings)
       };
     }
 
@@ -171,12 +182,16 @@ export class CameraController {
     // Runtime-aware cinematic pulses: default count is chosen by expected runtime,
     // but can be overridden via admin race config.
     const pulseZoom = this.computePulseZoom(state, settings);
-    const targetZoom = this.applyZoomScale(baseZoom + pulseZoom, settings);
+    const targetZoom = this.applyZoomScale(
+      applyFocusAwareZoom(baseZoom + pulseZoom, focusGap),
+      settings
+    );
+    const anchor = resolveCameraAnchorPoint(leader, focusRacer, focusWeight);
 
-    // Follow the leader's position
+    // Follow the leader, but blend toward the focus racer when one is selected.
     return {
-      x: leader.position.x,
-      y: leader.position.y,
+      x: anchor.x,
+      y: anchor.y,
       scaleX: targetZoom,
       scaleY: targetZoom
     };
@@ -247,8 +262,43 @@ export function defaultZoomPulseCountForExpectedDuration(expectedDurationSeconds
   return 4;
 }
 
+export function resolveCameraAnchorPoint(
+  leader: CameraRacerState,
+  focusRacer?: CameraRacerState,
+  focusWeight = 0.34
+): TrackPoint {
+  if (!focusRacer) {
+    return { x: leader.position.x, y: leader.position.y };
+  }
+
+  const weight = resolveCameraFocusWeight(focusWeight);
+  return {
+    x: lerp(leader.position.x, focusRacer.position.x, weight),
+    y: lerp(leader.position.y, focusRacer.position.y, weight)
+  };
+}
+
+export function resolveCameraFocusGap(
+  leader: CameraRacerState,
+  focusRacer?: CameraRacerState
+): number {
+  if (!focusRacer) {
+    return 0;
+  }
+  return clamp01(Math.max(0, leader.progress - focusRacer.progress));
+}
+
+export function applyFocusAwareZoom(baseZoom: number, focusGap: number): number {
+  const gapPenalty = Math.min(0.22, Math.max(0, focusGap) * 0.42);
+  return Math.max(ZOOM_MIN, baseZoom - gapPenalty);
+}
+
 function lerp(from: number, to: number, alpha: number): number {
   return from + (to - from) * alpha;
+}
+
+function resolveCameraFocusWeight(focusWeight = 0.34): number {
+  return clamp01(focusWeight);
 }
 
 function clamp(value: number, min: number, max: number): number {
