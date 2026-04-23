@@ -198,6 +198,13 @@ function stepRuntimeTraffic(
   const rankById = new Map(sortedStates.map((state, index) => [state.model.id, index]));
   const laneTrafficByLane = buildLaneTrafficByLane(states);
   const nearestGapById = buildNearestProgressGapById(states);
+  const densityBlend = clamp01((states.length - 48) / 52);
+  const tunedLaneChangeRate = preset.laneChangeRate * lerp(1, 0.72, densityBlend);
+  const tunedLaneCooldownMs = preset.laneChangeCooldownMs * lerp(1, 1.65, densityBlend);
+  const tunedFollowGap = preset.followGap * lerp(1, 1.55, densityBlend);
+  const tunedPassGap = preset.passGap * lerp(1, 1.42, densityBlend);
+  const tunedWeaveAmplitude = preset.weaveAmplitude * lerp(1, 0.58, densityBlend);
+  const tunedSpeedCap = lerp(1.26, 1.12, densityBlend);
 
   for (const state of states) {
     const rank = rankById.get(state.model.id) ?? 0;
@@ -210,13 +217,27 @@ function stepRuntimeTraffic(
     const gapToLeader = Math.max(0, leaderProgress - state.progress);
     const trailingBoost =
       rank > 0
-        ? clamp(0, 0.05, gapToLeader * 0.032 * state.model.skill * preset.rubberBandStrength)
+        ? clamp(
+            0,
+            0.05,
+            gapToLeader *
+              0.032 *
+              state.model.skill *
+              preset.rubberBandStrength *
+              lerp(1, 0.8, densityBlend)
+          )
         : 0;
     const leaderDrag =
-      rank === 0 ? clamp(0, 0.018, states.length * 0.00008 * preset.leaderDragStrength) : 0;
+      rank === 0
+        ? clamp(
+            0,
+            0.024,
+            states.length * 0.00008 * preset.leaderDragStrength * lerp(1, 1.3, densityBlend)
+          )
+        : 0;
     let targetSpeed = clamp(
       0,
-      1.26,
+      tunedSpeedCap,
       (state.model.basePace + cadenceBoost + trailingBoost - leaderDrag) * launchBlend
     );
 
@@ -227,9 +248,9 @@ function stepRuntimeTraffic(
     const currentAhead = laneTrafficByLane.get(state.lane)?.ahead.get(state.model.id);
     const currentGap = currentAhead ? currentAhead.progressGap : Number.POSITIVE_INFINITY;
     const overtakePressure =
-      currentGap < preset.passGap * 1.2 ||
+      currentGap < tunedPassGap * 1.2 ||
       (currentAhead !== undefined &&
-        currentGap < preset.passGap * 1.45 &&
+        currentGap < tunedPassGap * 1.45 &&
         currentAhead.speed < targetSpeed * 0.985);
     if (state.laneCooldownMs <= 0 && overtakePressure) {
       const preferredDirection =
@@ -256,9 +277,9 @@ function stepRuntimeTraffic(
           ? candidateBehind.progressGap
           : Number.POSITIVE_INFINITY;
         const candidateAheadSpeed = candidateAhead?.speed ?? targetSpeed;
-        const gainVsCurrent = candidateAheadGap - Math.min(currentGap, preset.passGap * 1.2);
-        const requiredRearGap = preset.followGap * 0.62;
-        const requiredAheadGap = preset.passGap * 0.8;
+        const gainVsCurrent = candidateAheadGap - Math.min(currentGap, tunedPassGap * 1.2);
+        const requiredRearGap = tunedFollowGap * lerp(0.62, 0.88, densityBlend);
+        const requiredAheadGap = tunedPassGap * lerp(0.8, 0.95, densityBlend);
         if (candidateBehindGap < requiredRearGap || candidateAheadGap < requiredAheadGap) {
           continue;
         }
@@ -276,14 +297,15 @@ function stepRuntimeTraffic(
         }
       }
 
-      if (bestLane !== undefined && bestScore > 0.18) {
+      const laneChangeScoreThreshold = lerp(0.18, 0.34, densityBlend);
+      if (bestLane !== undefined && bestScore > laneChangeScoreThreshold) {
         state.targetLane = bestLane;
-        state.laneCooldownMs = preset.laneChangeCooldownMs;
+        state.laneCooldownMs = tunedLaneCooldownMs;
       }
     }
 
     if (state.targetLane === state.lane && currentAhead) {
-      const followRatio = clamp01(currentAhead.progressGap / preset.followGap);
+      const followRatio = clamp01(currentAhead.progressGap / tunedFollowGap);
       targetSpeed = Math.min(targetSpeed, currentAhead.speed * (0.84 + followRatio * 0.16));
     }
 
@@ -297,13 +319,13 @@ function stepRuntimeTraffic(
     const weave =
       Math.sin(raceProgress * TAU * 0.85 + state.model.weavePhase) *
       0.05 *
-      preset.weaveAmplitude *
+      tunedWeaveAmplitude *
       weaveScale *
       (0.55 + launchBlend * 0.45);
     const lateralTarget = laneTarget + weave * (state.targetLane === state.lane ? 1 : 0.35);
     state.lateralOffset += clamp(
-      -preset.laneChangeRate * dtSec,
-      preset.laneChangeRate * dtSec,
+      -tunedLaneChangeRate * dtSec,
+      tunedLaneChangeRate * dtSec,
       lateralTarget - state.lateralOffset
     );
     state.lateralOffset = clamp(-1, 1, state.lateralOffset);
@@ -312,6 +334,10 @@ function stepRuntimeTraffic(
       state.lane = state.targetLane;
     }
   }
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * clamp01(t);
 }
 
 function buildNearestProgressGapById(states: RuntimeTrafficState[]): Map<string, number> {

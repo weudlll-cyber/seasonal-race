@@ -18,6 +18,7 @@ import {
 import {
   resolveRuntimeLocalPackLayout,
   resolveRuntimeRenderMinimumSeparation,
+  resolveRuntimeSeparationDisplacementCap,
   resolveRuntimeStableTrackLocalPose
 } from './runtime-layout';
 import {
@@ -398,7 +399,7 @@ export async function startRuntimeApp(): Promise<void> {
       const normalX = -tangentY / tangentLen;
       const normalY = tangentX / tangentLen;
 
-      const laneSpread = 24 + runtimeRacerBaseScale * 22;
+      const laneSpread = resolveRuntimeLaneSpread(runtimeRacerBaseScale, racerViews.length);
       const trackHalfWidth = resolveRuntimeTrackHalfWidth(racerViews.length);
       const laneBias = resolveRuntimeLaneBias(view.model.index, racerViews.length);
       const lateralMix = clamp(-1, 1, frame.lateralOffset * 0.62 + laneBias * 0.38);
@@ -548,7 +549,9 @@ export async function startRuntimeApp(): Promise<void> {
         y: plan.targetY,
         anchorX: plan.targetX,
         anchorY: plan.targetY,
-        maxDisplacementPx: plan.view.hasPoseSample ? 4.4 : 0
+        maxDisplacementPx: plan.view.hasPoseSample
+          ? resolveRuntimeSeparationDisplacementCap(racerViews.length, runtimeRacerBaseScale)
+          : 0
       })),
       runtimeRacerBaseScale
     );
@@ -1241,9 +1244,17 @@ function resolveRuntimeLaneBias(racerIndex: number, totalRacers: number): number
 
 function resolveRuntimeTrackHalfWidth(racerCount: number): number {
   if (racerCount <= 10) return 86;
-  if (racerCount <= 20) return 80;
-  if (racerCount <= 45) return 72;
-  return 64;
+  if (racerCount <= 20) return 82;
+  if (racerCount <= 45) return 76;
+  if (racerCount <= 70) return 74;
+  if (racerCount <= 100) return 72;
+  return 70;
+}
+
+function resolveRuntimeLaneSpread(spriteBaseScale: number, racerCount: number): number {
+  const baseLaneSpread = 24 + spriteBaseScale * 22;
+  const densityBlend = clamp(0, 1, (racerCount - 48) / 52);
+  return baseLaneSpread * (1 + densityBlend * 0.24);
 }
 
 function resolveRuntimeStartGridOffset(

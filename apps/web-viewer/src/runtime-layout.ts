@@ -190,15 +190,17 @@ export function resolveRuntimeRenderMinimumSeparation(
   poses: RuntimeRenderPose[],
   spriteBaseScale: number
 ): Map<string, { x: number; y: number }> {
-  const minSeparation = clamp(12.5, 19, 11 + spriteBaseScale * 7.1);
-  const maxPairPush = clamp(1.2, 3.4, minSeparation * 0.24);
+  const densityBlend = clamp01((poses.length - 36) / 64);
+  const minSeparation = clamp(12.5, 24, 11 + spriteBaseScale * 7.1 + densityBlend * 4.8);
+  const maxPairPush = clamp(1.2, 5, minSeparation * lerp(0.24, 0.36, densityBlend));
+  const iterationCount = Math.round(lerp(3, 6, densityBlend));
   const resolved = poses.map((pose) => ({
     ...pose,
     x: pose.x,
     y: pose.y
   }));
 
-  for (let iter = 0; iter < 3; iter += 1) {
+  for (let iter = 0; iter < iterationCount; iter += 1) {
     for (let i = 0; i < resolved.length; i += 1) {
       const a = resolved[i];
       if (!a) continue;
@@ -236,6 +238,14 @@ export function resolveRuntimeRenderMinimumSeparation(
   }
 
   return new Map(resolved.map((pose) => [pose.id, { x: pose.x, y: pose.y }]));
+}
+
+export function resolveRuntimeSeparationDisplacementCap(
+  racerCount: number,
+  spriteBaseScale: number
+): number {
+  const densityBlend = clamp01((racerCount - 28) / 72);
+  return clamp(3.8, 10, 3.8 + spriteBaseScale * 0.9 + densityBlend * 5.2);
 }
 
 function clampPoseDisplacement(pose: RuntimeRenderPose & { x: number; y: number }): void {
