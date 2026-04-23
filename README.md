@@ -42,6 +42,7 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
   - `corepack pnpm install`
   - `corepack pnpm run ci:full`
 - Keep `pnpm-lock.yaml` committed for reproducible CI runs.
+- Local web-viewer dev server now proxies `/api/v1` to `http://127.0.0.1:5050`, so admin mode can load track/racer catalogs without manually overriding API Base.
 
 ## Deployment Direction
 
@@ -56,7 +57,8 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Track authoring now supports a two-boundary mode (left/right lines) in addition to centerline mode; racers run on a derived midpoint path between both boundaries.
 - In boundary mode, broadcast/replay lateral spread now follows the real left/right corridor width at each point along the track (not only fixed lane-width spacing).
 - In boundary mode, finish-line and rollout-point spacing in broadcast now follows the boundary control points (finish = boundary penultimate midpoint, rollout = boundary endpoint midpoint), preserving authored distance.
-- Replay racers now use continuous free-swim lateral steering (not rigid lanes) with smooth side transitions, front-traffic avoidance, and stronger local anti-collision spacing to reduce overlaps.
+- Runtime replay traffic now uses a stateful lane-slot simulation model: racers keep a stable slot, switch only to adjacent slots with a clear free-gap advantage, and otherwise wait behind traffic at follow distance.
+- Runtime rendering now only projects and smooths simulation output; collision and overtaking decisions are no longer generated in the render loop.
 - After reaching rollout stop-progress, racers now stay anchored there and no longer snap backward toward the finish line (strict monotonic progress guard).
 - Post-finish coast now uses order-aware, phase-smoothed braking: front finishers decelerate more gradually right after crossing and carry speed farther toward coast-end, while later finishers still settle earlier.
 - Later finishers now map their stop targets deterministically across nearly the full authored coast zone: first finisher near coast-end, later finishers progressively closer to the finish line.
@@ -152,9 +154,13 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Runtime game mode now auto-scales racer sprite size from racer count to keep readability stable across small and large races.
 - Runtime race view now generates and animates a full racer pack automatically (deterministic per-racer pace, lateral swim drift, and continuous movement) instead of rendering a single runner.
 - Runtime race view now renders procedural water visuals (waves, ripples, and splash wake layering) directly from simulation state, so no static background image asset is required.
+- Runtime race view now renders a visible race ribbon/channel (not only a centerline), including edge definition for clearer track boundaries.
+- Runtime now draws explicit start and finish markers so race direction and objective remain visually obvious.
 - Runtime racer glyphs now use per-racer procedural color palettes for better on-track differentiation in dense packs.
 - Runtime racer behavior now supports deterministic presets (`arcade`, `balanced`, `chaotic`) that tune pace spread, pack interaction intensity, and lateral movement style.
 - Runtime auto-simulation now applies pack-aware behavior layers (overtake impulses, leader/trailer rubber-banding, and close-range lateral conflict avoidance) for more natural multi-racer flow.
+- Runtime racer positioning now blends deterministic lane bias with simulation drift so packs read less like a single-file line and more like a real race field.
+- Runtime racer progression now follows a startline-to-finish flow by default (no implicit endless-lap wrapping in the auto-sim path).
 - Runtime behavior preset can be selected via query (`behavior=arcade|balanced|chaotic`) for controlled playtest tuning.
 - Runtime water rendering now includes layered foam streaks and persistent wake decay trails for stronger motion readability in dense packs.
 - Runtime splash/ripple intensity now scales by both racer speed and local track curvature, so hard turns create visibly stronger water disturbance.
@@ -164,8 +170,19 @@ A modular, extensible race-game platform with multiple race types (Duck, Horse, 
 - Runtime keeps large-race readability by capping ripple/wake workload dynamically while preserving core racer motion and route visibility.
 - Runtime HUD now renders a compact Top Pack leaderboard (top 3) with live progress and relative lead gaps.
 - Runtime supports optional focus tracking via query (`focusRacer=<1-based-number>`), adding a highlight ring and live speed/progress/rank readout.
-- Runtime camera now uses the shared `CameraController`, adding gentle follow/zoom motion in live playback instead of a fully static viewport.
-- When `focusRacer` is set, camera framing blends toward that racer and slightly widens zoom when the focus drops behind the leader, improving readability without losing pack context.
+- Runtime now defaults to stable full-track overview framing for clearer race readability in local playtests.
+- Runtime follow camera is now opt-in via query (`camera=follow`) and uses the shared `CameraController` with optional focus-aware framing.
+- Runtime now attempts catalog-based auto-launch when `raceId` is missing and recovery when it is stale, reducing local preview/fallback dead-ends.
+- Runtime track rendering now uses dense sampled corridor geometry plus explicit start-grid spacing, so local playback reads more like a race start than a single-point cluster.
+- Runtime water/track atmosphere now suppresses thin animated guide-lines in favor of softer glow and foam shapes for a rounder, less technical look.
+- Runtime path sampling now uses spline-smoothed curve points for racer motion and lane rendering, so hard polyline corners are softened instead of merely subdivided.
+- Runtime start behavior now holds racers in short launch rows and releases those rows in a staggered rollout, improving visible field separation in the opening phase.
+- Runtime launch placement now clamps each racer to the available lane width, preventing early out-of-bounds starts at the track edges.
+- Runtime anti-collision now applies stronger near-pack lateral repel with tuned lane-width clamping, so dense groups separate again without leaving the corridor.
+- Runtime renderer now resolves dense-pack anti-collision via deterministic lane-slot steering with smoothed local collision offsets and short-lived detour targets, reducing overlap while avoiding jumpy collision reactions.
+- Runtime rear-contact handling now keeps leading racers from being pulled backward and caps forward collision boost for trailing racers, reducing unrealistic instant place-swaps.
+- Runtime now allocates a wider playable corridor and slightly smaller dense-pack racer scale, giving anti-collision and overtaking logic more usable room before packs collapse into a single knot.
+- Runtime racer placement still applies temporal smoothing and per-frame motion limits after collision resolution, preventing abrupt anti-collision teleport jumps.
 - Track editor supports background image import, drag-to-edit points, and optional smooth-preview mode for curved route visualization.
 - Track editor now supports named test presets (save/load/delete in local browser storage) so multiple setup variants can be restored quickly between iterations.
 - Track metadata fields and JSON editing are now placed in optional advanced sections, keeping the default authoring flow focused on visual controls only.

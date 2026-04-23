@@ -7,7 +7,7 @@
  */
 
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
-import { interpolateTrackPosition } from './track-editor-utils.js';
+import { buildSmoothedPreviewPath, interpolateTrackPosition } from './track-editor-utils.js';
 import { rotateTrackPointsForOrientation, type TrackOrientation } from './track-orientation.js';
 
 const MIN_RUNTIME_POINTS = 2;
@@ -63,11 +63,18 @@ export function mapRuntimeTrackPointsToViewport(
 }
 
 export function sampleRuntimeTrackPosition(points: TrackPoint[], progress: number): TrackPoint {
-  if (points.length < MIN_RUNTIME_POINTS) {
-    return interpolateTrackPosition(FALLBACK_RUNTIME_TRACK_POINTS, progress);
-  }
+  return interpolateTrackPosition(resolveRuntimeTrackCurve(points), progress);
+}
 
-  return interpolateTrackPosition(points, progress);
+export function buildRuntimeTrackSamplePoints(
+  points: TrackPoint[],
+  sampleCount = 72
+): TrackPoint[] {
+  const safeCount = Math.max(8, Math.min(240, Math.floor(sampleCount)));
+  const curvePoints = resolveRuntimeTrackCurve(points);
+  return Array.from({ length: safeCount + 1 }, (_, index) =>
+    interpolateTrackPosition(curvePoints, index / safeCount)
+  );
 }
 
 export function sampleRuntimeTrackTangent(
@@ -104,4 +111,14 @@ function wrap01(value: number): number {
 
 function clamp(min: number, max: number, value: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function resolveRuntimeTrackCurve(points: TrackPoint[]): TrackPoint[] {
+  const basePoints = points.length < MIN_RUNTIME_POINTS ? FALLBACK_RUNTIME_TRACK_POINTS : points;
+
+  if (basePoints.length < 3) {
+    return basePoints;
+  }
+
+  return buildSmoothedPreviewPath(basePoints, 10);
 }

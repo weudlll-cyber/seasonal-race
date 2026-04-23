@@ -161,6 +161,8 @@ function buildRuntimeUrl(raceId: string, apiBase: string): string {
 
 async function fetchCatalog<T>(url: string): Promise<T[]> {
   const response = await fetch(url);
+  const contentType = response.headers.get('content-type') ?? '';
+
   if (!response.ok) {
     const errorBody = (await response.json().catch(() => ({}))) as ApiErrorBody;
     const message =
@@ -168,6 +170,15 @@ async function fetchCatalog<T>(url: string): Promise<T[]> {
         ? errorBody.message
         : `Request failed (${response.status})`;
     throw new Error(message);
+  }
+
+  if (!contentType.toLowerCase().includes('application/json')) {
+    const responseText = await response.text();
+    const snippet = responseText.trim().slice(0, 80).replace(/\s+/g, ' ');
+    throw new Error(
+      `API base returned non-JSON content (${contentType || 'unknown'}). ` +
+        `Got: "${snippet}". Use /api/v1 (with Vite proxy) or http://127.0.0.1:5050/api/v1.`
+    );
   }
 
   const payload = (await response.json()) as CatalogResponse<T>;

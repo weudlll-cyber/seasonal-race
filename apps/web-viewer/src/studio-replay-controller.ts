@@ -315,15 +315,31 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
     // Keep sorted lanes at race start, then gradually release into free-swim.
     const freeSwimRelease = smoothstep(clamp01((racePhase - 0.1) / 0.28));
 
+    // Only allow stronger roaming when nearby racers are present.
+    let nearestProgressGap = 1;
+    let nearestDistancePx = Number.POSITIVE_INFINITY;
+    for (const candidate of replayRacers) {
+      if (candidate.id === rr.id) continue;
+      const candidateProgress =
+        clamp01(frameProgressById.get(candidate.id) ?? candidate.progress) * finishProgressOnFullRun;
+      nearestProgressGap = Math.min(nearestProgressGap, Math.abs(candidateProgress - rawProgress));
+      const dx = candidate.sprite.position.x - rr.sprite.position.x;
+      const dy = candidate.sprite.position.y - rr.sprite.position.y;
+      nearestDistancePx = Math.min(nearestDistancePx, Math.hypot(dx, dy));
+    }
+    const progressPackFactor = 1 - smoothstep(clamp01((nearestProgressGap - 0.018) / 0.05));
+    const distancePackFactor =
+      1 - smoothstep(clamp01((nearestDistancePx - (laneWidthPx * 5.5 + 26)) / 130));
+    const localPackFactor = Math.max(progressPackFactor * 0.4, distancePackFactor);
+
     // True free-swim movement: continuous steering field, no discrete lane hops.
     const waveA = Math.sin(elapsedSeconds * (0.28 + (rr.index % 11) * 0.016) + rr.index * 0.93);
     const waveB = Math.sin(elapsedSeconds * (0.46 + (rr.index % 7) * 0.014) + rr.index * 1.71);
     const finishCalmFactor =
       alreadyFinished || crossedFinishLine ? lerp(0.55, 0.22, coastLateralBlend) : 1;
-    // Increased amplitudes so racers naturally reach the full track width
-    // during the race (the boundary lines are fully driveable).
-    const swimWander =
-      (waveA * 0.28 + waveB * 0.18 + personalBias * 0.38) * freeSwimRelease * finishCalmFactor;
+    const roamingWander = (waveA * 0.18 + waveB * 0.12) * localPackFactor;
+    const stableBias = lerp(startLaneSlot * 0.72, personalBias * 0.32, freeSwimRelease * 0.8);
+    const swimWander = (stableBias + roamingWander) * freeSwimRelease * finishCalmFactor;
 
     const offsetNow = rr.freeSwimOffsetNorm ?? startLaneSlot;
     const freeSwimTarget = startLaneSlot * 0.22 + swimWander;
@@ -340,6 +356,22 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
       -offsetClamp,
       offsetClamp
     );
+    const targetDeltaLimit =
+      (0.085 + freeSwimRelease * 0.125) * (1 - clamp01((coastLateralBlend - 0.75) / 0.25));
+    const isolationDamping = lerp(0.45, 1, localPackFactor);
+    if (localPackFactor < 0.2) {
+      desiredOffsetNorm = lerp(desiredOffsetNorm, startLaneSlot, 0.55);
+    }
+    desiredOffsetNorm = clamp(
+      offsetNow +
+        clamp(
+          desiredOffsetNorm - offsetNow,
+          -targetDeltaLimit * isolationDamping,
+          targetDeltaLimit * isolationDamping
+        ),
+      -offsetClamp,
+      offsetClamp
+    );
 
     // Second-order lateral response (velocity + damping).
     const velocityNow = rr.freeSwimVelocityNorm ?? 0;
@@ -347,15 +379,24 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
     const settleBlend = clamp01((coastLateralBlend - 0.8) / 0.2);
     const stiffness = (1.5 + freeSwimRelease * 1.05) * (1 - settleBlend);
     const maxAccel = (0.72 + freeSwimRelease * 1.1) * (1 - settleBlend);
-    const maxVelocity = (0.2 + freeSwimRelease * 0.42) * (1 - settleBlend * 0.95);
+    const maxVelocity =
+      (0.18 + freeSwimRelease * 0.34) * (1 - settleBlend * 0.95) * lerp(0.62, 1, localPackFactor);
     const dampingFactor = lerp(0.94, 0.6, settleBlend);
+    const steerDelta = desiredOffsetNorm - offsetNow;
+    const reversing =
+      Math.abs(velocityNow) > 0.0005 &&
+      Math.abs(steerDelta) > 0.0005 &&
+      Math.sign(velocityNow) !== Math.sign(steerDelta);
     const accel = clamp(
-      (desiredOffsetNorm - offsetNow) * stiffness - velocityNow * 0.9,
+      steerDelta * stiffness - velocityNow * (reversing ? 1.3 : 0.9),
       -maxAccel,
       maxAccel
     );
     const velocityNext = clamp(
-      (velocityNow + accel * dt) * dampingFactor,
+      (velocityNow + accel * dt) *
+        dampingFactor *
+        (reversing ? 0.72 : 1) *
+        lerp(0.62, 1, localPackFactor),
       -maxVelocity,
       maxVelocity
     );

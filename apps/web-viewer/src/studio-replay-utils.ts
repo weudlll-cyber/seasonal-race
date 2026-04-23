@@ -7,7 +7,6 @@
 
 import type { TrackPoint } from '../../../packages/shared-types/src/index.js';
 import { interpolateTrackPosition } from './track-editor-utils.js';
-import { computeTrackNormal } from './track-layout-helpers.js';
 import {
   clamp,
   clamp01,
@@ -462,14 +461,17 @@ export function applyReplaySpriteSeparation(
 ): void {
   const racerCount = replayRacers.length;
   const spriteRadius = racerCount >= 90 ? 4 : racerCount >= 70 ? 5 : racerCount >= 45 ? 6 : 9;
-  const minSep = spriteRadius * 2;
+  const minSep = spriteRadius * 2.12;
   const maxPushPerFrame = spriteRadius * 1.6;
-  for (let iter = 0; iter < 2; iter++) {
+  const separationIterations = racerCount >= 60 ? 3 : 2;
+  for (let iter = 0; iter < separationIterations; iter++) {
     for (let i = 0; i < racerCount; i++) {
       const a = replayRacers[i]!;
       if (a.frozenX !== undefined) continue;
       // In finish approach, suppress tangential collision push.
       const inFinishApproach = a.progress >= finishProgressOnFullRun - 0.025;
+      const aTangent = computeTrackTangentAtProgress(fullRunPath, a.progress);
+      const aNormal = { x: -aTangent.y, y: aTangent.x };
       let ax = a.sprite.position.x;
       let ay = a.sprite.position.y;
       let totalDx = 0;
@@ -489,14 +491,28 @@ export function applyReplaySpriteSeparation(
         if (distSq >= effectiveMinSep * effectiveMinSep) continue;
         const dist = Math.sqrt(distSq);
         if (dist < 0.01) {
-          const angle = (a.index * 2.399) % (Math.PI * 2);
-          totalDx += Math.cos(angle) * effectiveMinSep * 0.5;
-          totalDy += Math.sin(angle) * effectiveMinSep * 0.5;
+          const baseSign = Math.sign(a.freeSwimOffsetNorm ?? 0);
+          const preferredSign = baseSign === 0 ? (a.index % 2 === 0 ? -1 : 1) : baseSign;
+          totalDx += aNormal.x * effectiveMinSep * 0.56 * preferredSign;
+          totalDy += aNormal.y * effectiveMinSep * 0.56 * preferredSign;
         } else {
           const overlap = effectiveMinSep - dist;
           const pushStrength = b.frozenX !== undefined ? 1.0 : 0.5;
-          totalDx += (dx / dist) * overlap * pushStrength;
-          totalDy += (dy / dist) * overlap * pushStrength;
+          let pushX = (dx / dist) * overlap * pushStrength;
+          let pushY = (dy / dist) * overlap * pushStrength;
+          const tangential = pushX * aTangent.x + pushY * aTangent.y;
+          const tangentialKeep = inFinishApproach ? 0 : 0.28;
+          pushX -= tangential * aTangent.x * (1 - tangentialKeep);
+          pushY -= tangential * aTangent.y * (1 - tangentialKeep);
+          const lateral = pushX * aNormal.x + pushY * aNormal.y;
+          if (Math.abs(lateral) < overlap * 0.16) {
+            const baseSign = Math.sign(a.freeSwimOffsetNorm ?? 0);
+            const preferredSign = baseSign === 0 ? (a.index % 2 === 0 ? -1 : 1) : baseSign;
+            pushX += aNormal.x * overlap * 0.42 * preferredSign;
+            pushY += aNormal.y * overlap * 0.42 * preferredSign;
+          }
+          totalDx += pushX;
+          totalDy += pushY;
         }
       }
       // Keep finish-approach collision lateral-only.
@@ -504,7 +520,6 @@ export function applyReplaySpriteSeparation(
         const coastDepthA = clamp01(
           (a.progress - finishProgressOnFullRun) / Math.max(0.0005, 1 - finishProgressOnFullRun)
         );
-        const aTangent = computeTrackTangentAtProgress(fullRunPath, a.progress);
         const tangential = totalDx * aTangent.x + totalDy * aTangent.y;
         const lateralX = totalDx - tangential * aTangent.x;
         const lateralY = totalDy - tangential * aTangent.y;
@@ -536,8 +551,7 @@ export function applyReplaySpriteSeparation(
         a.sprite.position.set(ax, ay);
         // Feed lateral component back into free-swim offset so steering
         // does not undo the separation on the next frame.
-        const aN = computeTrackNormal(fullRunPath, a.progress);
-        const lateralPx = totalDx * aN.x + totalDy * aN.y;
+        const lateralPx = totalDx * aNormal.x + totalDy * aNormal.y;
         const approxMaxLane = Math.max(laneWidthPx * 2.2, halfWidth * 0.995);
         const feedbackScale =
           a.progress >= finishProgressOnFullRun ? lerp(0.6, 0.95, coastDepthA) : 0.5;

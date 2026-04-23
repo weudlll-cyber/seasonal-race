@@ -140,6 +140,48 @@ describe('studio replay utility helpers', () => {
     expect(Math.abs(racers[1]!.freeSwimOffsetNorm ?? 0)).toBeLessThanOrEqual(0.999);
   });
 
+  it('prefers lateral separation on straight track segments', () => {
+    const makePosition = (x: number, y: number) => ({
+      x,
+      y,
+      set(nx: number, ny: number) {
+        this.x = nx;
+        this.y = ny;
+      }
+    });
+    const racers = [
+      {
+        index: 2,
+        progress: 0.4,
+        sprite: { position: makePosition(60, 40) },
+        freeSwimOffsetNorm: -0.2
+      },
+      {
+        index: 3,
+        progress: 0.4,
+        sprite: { position: makePosition(61.5, 40) },
+        freeSwimOffsetNorm: 0.2
+      }
+    ];
+
+    applyReplaySpriteSeparation(
+      racers,
+      [
+        { x: 0, y: 0 },
+        { x: 120, y: 0 },
+        { x: 240, y: 0 }
+      ],
+      0.86,
+      7,
+      10
+    );
+
+    const deltaX = Math.abs(racers[0]!.sprite.position.x - 60);
+    const deltaY = Math.abs(racers[0]!.sprite.position.y - 40);
+    expect(deltaY).toBeGreaterThan(deltaX * 1.15);
+    expect((racers[0]!.freeSwimOffsetNorm ?? 0) * (racers[1]!.freeSwimOffsetNorm ?? 0)).toBeLessThan(0);
+  });
+
   it('resets replay transient racer state fields for a fresh run', () => {
     const racer = {
       progress: 0.77,

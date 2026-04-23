@@ -25,6 +25,14 @@ export default defineConfig({
     sourcemap: true
   },
   server: {
-    port: 5173
+    port: 5173,
+    proxy: {
+      // Local dev convenience: keep admin default /api/v1 working without manual host/port edits.
+      '/api/v1': {
+        target: 'http://127.0.0.1:5050',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   }
 });

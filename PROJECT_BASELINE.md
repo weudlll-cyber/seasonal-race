@@ -37,9 +37,7 @@
 - Ops/Admin launch selector model is now in place to default valid selections and generate id-only start-race request payloads.
 - Ops/Admin launch helpers now support an explicit `trackOrientation` launch option that is mapped into launch `options.trackOrientation` for runtime direction control.
 - Ops/Admin launch model now includes UI-ready orientation option metadata plus default selected orientation state for upcoming launch dropdown controls.
-- Launch configuration contracts are now centralized in shared types (`race-launch`) and API option resolution is modularized, so future starter features can be added as new option resolvers instead of route rewrites.
-- Runtime bootstrap endpoint is now active (`/api/v1/races/:raceId/runtime-bootstrap`) and provides launched race config plus track/racer metadata for viewer startup.
-- API runtime bootstrap storage is now abstracted behind a launch-store contract with in-memory default behavior and a file-backed implementation for persistence foundation rollout.
+- Web-viewer dev server now proxies `/api/v1` to local API (`127.0.0.1:5050`) so admin mode catalog loads work with default API Base during local testing.
 - API launch-store default selection now supports env/config wiring (`SEASONAL_RACE_API_LAUNCH_STORE_FILE_PATH`) so file-backed persistence can be enabled without route rewrites.
 - Race-id sequencing is now managed by the launch store, so file-backed mode keeps `race-<n>` continuity across API restarts.
 - File-backed launch-store reads now self-heal malformed/corrupted JSON content by restoring a safe default store shape, avoiding API launch-flow outages from bad local store files.
@@ -87,7 +85,8 @@
 - Runtime race mode now includes procedural water atmosphere rendering (animated wave lines, per-racer ripples, and wake splashes) driven by simulation data.
 - Runtime race mode visuals are now image-free by default (no static background image needed for water scene rendering).
 - Runtime racer simulation now includes deterministic behavior presets (`arcade`, `balanced`, `chaotic`) to control pack aggressiveness and movement variability.
-- Runtime pack movement now includes overtake impulses, light leader/trailer rubber-banding, and lateral conflict avoidance to reduce unnatural stacking.
+- Runtime pack movement now uses a stateful lane-slot traffic simulation: stable slot hold, adjacent-lane switch only on clear gain, and explicit follow-distance waiting when blocked.
+- Runtime render placement is simplified to projection plus pose smoothing; traffic decisions now live in simulation instead of renderer-side correction layers.
 - Runtime behavior preset is now externally selectable through runtime query parameter `behavior` for test and tuning workflows.
 - Runtime water presentation now adds foam streak layering and persistent wake-trail decay for richer movement persistence.
 - Runtime turn response now scales splash and ripple strength using local track curvature plus speed.
@@ -95,10 +94,25 @@
 - Runtime now includes adaptive visual quality policy (`low`/`medium`/`high`/`auto`) for performance-aware rendering control.
 - Runtime auto-quality now dynamically scales wave/foam complexity and ripple/wake budgets based on racer count and observed frame timing.
 - Runtime supports `quality` query tuning for controlled performance test scenarios without code changes.
+- Runtime now renders a visible race ribbon/channel with edge definition instead of centerline-only lane visualization.
+- Runtime now renders explicit start and finish markers for clear race flow orientation.
+- Runtime racer placement now mixes deterministic lane bias with simulation drift to reduce single-file clumping in small/medium packs.
+- Runtime progression now defaults to startline-to-finish behavior (non-wrapping) for race-like local validation.
 - Runtime HUD now exposes live top-pack leaderboard details (rank/progress/gap) for faster visual verification during dense simulations.
 - Runtime supports focused racer telemetry via `focusRacer` query control with highlight ring and live rank/speed/progress readout.
-- Runtime playback now uses the shared `CameraController` for light follow/zoom motion rather than a fixed viewport.
-- Runtime focus mode now influences camera anchoring and soft zoom-out when the selected racer trails the leader, improving manual inspection readability.
+- Runtime playback now defaults to full-track overview framing for stable race readability during local testing.
+- Runtime follow camera is opt-in (`camera=follow`) and uses the shared `CameraController`, including focus-aware anchor blending.
+- Runtime can auto-launch a compatible catalog race when `raceId` is missing and recover when requested bootstrap is stale/missing, improving local test continuity.
+- Runtime lane rendering now derives from dense sampled track points and applies staged start-grid offsets so racers line up at the start instead of collapsing into a single cluster.
+- Runtime surface rendering now favors broad glow/foam shapes over thin animated line noise, making the track presentation read smoother during playback.
+- Runtime playback now samples a spline-smoothed curve from track control points, reducing visibly hard corners in both the lane corridor and racer trajectories.
+- Runtime opening phase now uses staged row release plus stronger early lane spread, reducing the single-cluster look right after the start.
+- Runtime renderer now clamps start placement to the active track corridor width so racers do not briefly spawn outside the lane at launch.
+- Runtime anti-collision separation has been reinforced for close packs (including a second repel pass) and lane clamp margins were relaxed to preserve visible side-by-side spacing.
+- Runtime rendering now applies anchored local track-space anti-collision with deterministic base lane-slots, smoothed local collision offsets, and temporary detour-lane hold after contacts, reducing overlap while damping blocker-jumps and whole-pack side-to-side drift.
+- Runtime collision progression now prevents front racers from being dragged backward by rear contact and limits trailing forward collision boost, reducing unnatural instant position swaps.
+- Runtime lane width and dense-pack sprite scale are now tuned more generously so overtaking/spacing logic has more usable room before racers compress into a narrow pack.
+- Runtime final placement still stabilizes collision-corrected positions over time (with max per-frame displacement), reducing sudden jitter/jump artifacts in dense packs.
 - Track metadata and raw JSON controls are now optional advanced sections so default test workflow stays lightweight.
 - Track editor now supports a broadcast preview mode (camera follow and zoom rides) to evaluate the same perspective players will see during races.
 - Broadcast preview is now fullscreen and high-DPI for player-like visual validation.

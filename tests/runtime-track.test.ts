@@ -9,6 +9,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildRuntimeTrackSamplePoints,
   estimateRuntimeTrackCurvature,
   FALLBACK_RUNTIME_TRACK_POINTS,
   mapRuntimeTrackPointsToViewport,
@@ -115,5 +116,33 @@ describe('runtime track helpers', () => {
     expect(straightCurvature).toBeGreaterThanOrEqual(0);
     expect(straightCurvature).toBeLessThan(0.05);
     expect(curvedCurvature).toBeGreaterThan(straightCurvature + 0.02);
+  });
+
+  it('builds smooth sampled points across the full track range', () => {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 100, y: 20 },
+      { x: 180, y: 80 },
+      { x: 260, y: 140 }
+    ];
+
+    const sampled = buildRuntimeTrackSamplePoints(points, 24);
+    expect(sampled).toHaveLength(25);
+    expect(sampled[0]).toEqual(sampleRuntimeTrackPosition(points, 0));
+    expect(sampled[sampled.length - 1]).toEqual(sampleRuntimeTrackPosition(points, 1));
+  });
+
+  it('rounds a sharp corner into a smooth runtime path', () => {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 100 },
+      { x: 200, y: 100 }
+    ];
+
+    const tangent = sampleRuntimeTrackTangent(points, 0.5, 0.04);
+
+    expect(Math.abs(tangent.x)).toBeGreaterThan(0.15);
+    expect(Math.abs(tangent.y)).toBeGreaterThan(0.15);
   });
 });

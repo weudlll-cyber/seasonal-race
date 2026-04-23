@@ -210,7 +210,9 @@
   - Applies shared surface-effect profile/category behavior and motion-style glyph rendering for runtime visual feedback.
   - Auto-scales runtime racer sprite size from racer count for consistent readability.
   - Renders layered procedural water atmosphere (waves, foam, ripples, wake persistence, and shore glints) with curvature-aware intensity scaling.
-  - Consumes runtime bootstrap payload when `raceId` is provided in URL query.
+  - Auto-launches a local runtime race when `raceId` is absent and consumes bootstrap payload once a race is available.
+  - Applies staged start-grid offsets with row-based release timing so early playback reads as a race launch rather than a single spawn point.
+  - Projects simulation-owned lane-slot traffic output onto track space and keeps only lightweight pose smoothing in the render path.
 - `apps/web-viewer/src/admin-app.ts`
   - Dedicated admin launch surface (`?mode=admin`) with catalog fetch, id selectors, orientation control, payload preview, and race start actions.
   - Reuses web-admin launch model helpers so UI launch requests stay contract-aligned with API/runtime flow.
@@ -219,10 +221,14 @@
   - Keeps static shell rendering concerns out of admin launch orchestration logic.
 - `apps/web-viewer/src/runtime-bootstrap-client.ts`
   - URL/query helpers + API fetch wrapper for runtime bootstrap payload loading.
+  - Includes catalog-driven auto-launch recovery helper for stale/missing runtime race ids in local testing.
 - `apps/web-viewer/src/runtime-track.ts`
   - Pure runtime geometry helpers that map bootstrap track points to the active viewport.
   - Provides runtime track sampling fallback so playback still runs when bootstrap track data is incomplete.
+  - Builds dense sampled points for smoother runtime lane/corridor rendering and marker placement.
   - Exposes tangent/curvature sampling helpers for turn-aware runtime visual effect intensity.
+- `apps/web-viewer/src/runtime-racer-simulation.ts`
+  - Generates deterministic runtime race frames with behavior presets, staged rollout pacing, and early lane spread to keep the opening pack readable.
 - `apps/web-viewer/src/runtime-visual-quality.ts`
   - Pure runtime quality-policy helpers that resolve explicit/auto visual modes and adaptive per-frame render budgets.
   - Keeps performance-budget decisions (wave/foam density, ripple/wake caps, intensity scaling) separate from renderer orchestration.

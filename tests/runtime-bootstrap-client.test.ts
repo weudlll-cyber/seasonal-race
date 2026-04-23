@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   fetchRuntimeBootstrap,
+  launchRuntimeRaceFromDefaults,
   resolveRuntimeApiBase,
   resolveRuntimeRaceId,
   resolveRuntimeTrackOrientation
@@ -91,5 +92,41 @@ describe('runtime bootstrap client', () => {
     } as Response);
 
     await expect(fetchRuntimeBootstrap('race-missing')).rejects.toThrow(/404/);
+  });
+
+  it('auto-launches a compatible race from catalogs', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [
+            { id: 'track-duck', raceType: 'duck' },
+            { id: 'track-horse', raceType: 'horse' }
+          ]
+        })
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [
+            { id: 'racer-horse', raceType: 'horse' },
+            { id: 'racer-duck', raceType: 'duck' }
+          ]
+        })
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ raceId: 'race-42' })
+      } as Response);
+
+    const raceId = await launchRuntimeRaceFromDefaults('http://localhost:5050/api/v1');
+    expect(raceId).toBe('race-42');
+    expect(fetchSpy).toHaveBeenCalledWith('http://localhost:5050/api/v1/catalog/tracks');
+    expect(fetchSpy).toHaveBeenCalledWith('http://localhost:5050/api/v1/catalog/racers');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'http://localhost:5050/api/v1/races/start',
+      expect.objectContaining({ method: 'POST' })
+    );
   });
 });
