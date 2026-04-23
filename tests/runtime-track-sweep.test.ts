@@ -145,7 +145,10 @@ describe('runtime track sweep diagnostics', () => {
         for (const racerCount of sweepConfig.racerCounts) {
           for (const seedBase of sweepConfig.seeds) {
             const raceSeed = hashStringToSeed(`${track.id}|${behavior}|${racerCount}|${seedBase}`);
-            const models = createRuntimeAutoRacerModels(racerCount, { behaviorPreset: behavior, raceSeed });
+            const models = createRuntimeAutoRacerModels(racerCount, {
+              behaviorPreset: behavior,
+              raceSeed
+            });
             let previousRanks = new Map<string, number>();
             let previousLeaderId = '';
 
@@ -196,8 +199,8 @@ describe('runtime track sweep diagnostics', () => {
               sweepConfig.durationMs,
               sweepConfig.durationMs,
               {
-              behaviorPreset: behavior,
-              raceSeed
+                behaviorPreset: behavior,
+                raceSeed
               }
             );
             const winner = [...finalFrames].sort((a, b) => b.progress - a.progress)[0];

@@ -79,7 +79,8 @@ export function resolveRuntimeLocalPackLayout(
         const dx = currentX - other.x;
         const dy = currentY - other.y;
         const distance = Math.hypot(dx, dy);
-        const effectiveMinSeparation = minSeparation * lerp(1.15, 0.92, clamp01(progressGap / 0.05));
+        const effectiveMinSeparation =
+          minSeparation * lerp(1.15, 0.92, clamp01(progressGap / 0.05));
         if (distance >= effectiveMinSeparation) {
           continue;
         }
@@ -123,9 +124,10 @@ export function resolveRuntimeLocalPackLayout(
   return resolved;
 }
 
-export function resolveRuntimeStableTrackLocalPose(
-  input: RuntimeStableTrackLocalPoseInput
-): { alongDistance: number; lateralDistance: number } {
+export function resolveRuntimeStableTrackLocalPose(input: RuntimeStableTrackLocalPoseInput): {
+  alongDistance: number;
+  lateralDistance: number;
+} {
   const safeDt = clamp(1 / 240, 1 / 20, input.dtSec);
   let targetLateralDistance = clamp(
     -input.lateralLimit,
@@ -159,25 +161,32 @@ export function resolveRuntimeStableTrackLocalPose(
     lerp(0.92, 1.18, clamp01(Math.max(input.collisionOffsetPx, pairSeparationPressure) / 18));
   const maxAlongStep = (80 + input.speedNorm * 70) * safeDt;
   const maxLateralStep =
-    (30 +
-      input.speedNorm * 20 +
-      input.collisionOffsetPx * 0.7 +
-      pairSeparationPressure * 0.45) *
+    (30 + input.speedNorm * 20 + input.collisionOffsetPx * 0.7 + pairSeparationPressure * 0.45) *
     safeDt;
 
-  const alongDistance = input.previousAlongDistance + clamp(
-    -maxAlongStep,
-    maxAlongStep,
-    (input.targetAlongDistance - input.previousAlongDistance) * alongResponse
-  );
-  let lateralDistance = input.previousLateralDistance + clamp(
-    -maxLateralStep,
-    maxLateralStep,
-    (targetLateralDistance - input.previousLateralDistance) * lateralResponse
-  );
+  const alongDistance =
+    input.previousAlongDistance +
+    clamp(
+      -maxAlongStep,
+      maxAlongStep,
+      (input.targetAlongDistance - input.previousAlongDistance) * alongResponse
+    );
+  let lateralDistance =
+    input.previousLateralDistance +
+    clamp(
+      -maxLateralStep,
+      maxLateralStep,
+      (targetLateralDistance - input.previousLateralDistance) * lateralResponse
+    );
 
-  if (weakCrossing && Math.sign(lateralDistance) !== previousSign && Math.abs(lateralDistance) < centerDeadzone * 1.25) {
-    lateralDistance = previousSign * Math.min(centerDeadzone * 1.25, Math.abs(input.previousLateralDistance) * 0.72 + 1.5);
+  if (
+    weakCrossing &&
+    Math.sign(lateralDistance) !== previousSign &&
+    Math.abs(lateralDistance) < centerDeadzone * 1.25
+  ) {
+    lateralDistance =
+      previousSign *
+      Math.min(centerDeadzone * 1.25, Math.abs(input.previousLateralDistance) * 0.72 + 1.5);
   }
 
   return {

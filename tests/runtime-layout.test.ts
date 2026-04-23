@@ -153,8 +153,8 @@ describe('runtime local pack layout', () => {
     expect(b).toBeDefined();
     expect(c).toBeDefined();
 
-    const dAB = Math.hypot((a!.x - b!.x), (a!.y - b!.y));
-    const dBC = Math.hypot((b!.x - c!.x), (b!.y - c!.y));
+    const dAB = Math.hypot(a!.x - b!.x, a!.y - b!.y);
+    const dBC = Math.hypot(b!.x - c!.x, b!.y - c!.y);
     expect(Math.min(dAB, dBC)).toBeGreaterThanOrEqual(8);
 
     expect(Math.hypot(a!.x - 100, a!.y - 100)).toBeLessThanOrEqual(5.001);

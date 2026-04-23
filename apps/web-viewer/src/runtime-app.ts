@@ -291,7 +291,11 @@ export async function startRuntimeApp(): Promise<void> {
         );
         lapDurationMs = Math.max(5_000, recoveredBootstrap.launch.durationMs);
         runtimeRacerCount = clampRuntimeRacerCount(recoveredBootstrap.racerList.racerCount);
-        runtimeModelSeed = resolveRuntimeModelSeed(recoveredRaceId, runtimeRacerCount, behaviorPreset);
+        runtimeModelSeed = resolveRuntimeModelSeed(
+          recoveredRaceId,
+          runtimeRacerCount,
+          behaviorPreset
+        );
         focusRacerIndex = resolveRuntimeFocusRacer(
           searchParams.get('focusRacer'),
           runtimeRacerCount
@@ -475,7 +479,8 @@ export async function startRuntimeApp(): Promise<void> {
         alongDistance: sample.alongDistance,
         lateralDistance: sample.lateralDistance,
         lateralLimit: sample.lateralLimit,
-        preferredLateralSign: Math.sign(sample.lateralDistance) || (sample.view.model.index % 2 === 0 ? -1 : 1)
+        preferredLateralSign:
+          Math.sign(sample.lateralDistance) || (sample.view.model.index % 2 === 0 ? -1 : 1)
       })),
       runtimeRacerBaseScale
     );

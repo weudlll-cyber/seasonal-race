@@ -321,7 +321,8 @@ export function tickStudioReplayMode(options: StudioReplayTickOptions): StudioRe
     for (const candidate of replayRacers) {
       if (candidate.id === rr.id) continue;
       const candidateProgress =
-        clamp01(frameProgressById.get(candidate.id) ?? candidate.progress) * finishProgressOnFullRun;
+        clamp01(frameProgressById.get(candidate.id) ?? candidate.progress) *
+        finishProgressOnFullRun;
       nearestProgressGap = Math.min(nearestProgressGap, Math.abs(candidateProgress - rawProgress));
       const dx = candidate.sprite.position.x - rr.sprite.position.x;
       const dy = candidate.sprite.position.y - rr.sprite.position.y;

@@ -353,9 +353,7 @@ function buildNearestProgressGapById(states: RuntimeTrafficState[]): Map<string,
   return result;
 }
 
-function buildLaneTrafficByLane(
-  states: RuntimeTrafficState[]
-): Map<
+function buildLaneTrafficByLane(states: RuntimeTrafficState[]): Map<
   number,
   {
     ahead: Map<string, { progressGap: number; speed: number }>;

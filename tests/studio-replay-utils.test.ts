@@ -179,7 +179,9 @@ describe('studio replay utility helpers', () => {
     const deltaX = Math.abs(racers[0]!.sprite.position.x - 60);
     const deltaY = Math.abs(racers[0]!.sprite.position.y - 40);
     expect(deltaY).toBeGreaterThan(deltaX * 1.15);
-    expect((racers[0]!.freeSwimOffsetNorm ?? 0) * (racers[1]!.freeSwimOffsetNorm ?? 0)).toBeLessThan(0);
+    expect(
+      (racers[0]!.freeSwimOffsetNorm ?? 0) * (racers[1]!.freeSwimOffsetNorm ?? 0)
+    ).toBeLessThan(0);
   });
 
   it('resets replay transient racer state fields for a fresh run', () => {
