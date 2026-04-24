@@ -26,6 +26,12 @@ const ZOOM_OVERVIEW = 0.7;
 /** Progress range [0,1] within which racers are considered "bunched". */
 const BUNCH_THRESHOLD = 0.08;
 
+/** Camera density behavior starts blending in from this racer count. */
+const DENSE_FIELD_RACER_THRESHOLD = 40;
+
+/** Full density blend is reached at this racer count. */
+const DENSE_FIELD_RACER_MAX = 100;
+
 /** Track progress at which the dramatic final-sprint zoom kicks in. */
 const FINAL_SPRINT_THRESHOLD = 0.88;
 
@@ -142,9 +148,14 @@ export class CameraController {
 
     const sorted = [...state.racers].sort((a, b) => b.progress - a.progress);
     const leader = sorted[0]!;
+    const trailer = sorted[sorted.length - 1]!;
+    const spread = Math.max(0, leader.progress - trailer.progress);
+    const densityBlend = resolveDenseFieldBlend(state.racers.length);
     const focusWeight = resolveCameraFocusWeight(state.focusWeight);
     const focusRacer = state.focusRacer;
     const focusGap = resolveCameraFocusGap(leader, focusRacer);
+    const densePackAnchor = resolveDensePackAnchor(sorted, 4);
+    const anchorBlendWeight = densityBlend * (focusRacer ? 0.18 : 0.42);
 
     // Intro transition: still follow leader position, but blend zoom from overview slowly.
     const introEnd = settings.introOverviewHoldSeconds + settings.introTransitionSeconds;
@@ -152,41 +163,67 @@ export class CameraController {
       const blend = clamp01(
         (state.elapsedSeconds - settings.introOverviewHoldSeconds) / settings.introTransitionSeconds
       );
-      const anchor = resolveCameraAnchorPoint(leader, focusRacer, focusWeight);
+      const anchor = blendTrackPoints(
+        resolveCameraAnchorPoint(leader, focusRacer, focusWeight),
+        densePackAnchor,
+        anchorBlendWeight
+      );
       const introZoom = applyFocusAwareZoom(lerp(ZOOM_OVERVIEW, ZOOM_FOLLOW, blend), focusGap);
       return {
         x: anchor.x,
         y: anchor.y,
-        scaleX: this.applyZoomScale(introZoom, settings),
-        scaleY: this.applyZoomScale(introZoom, settings)
+        scaleX: this.applyZoomScale(
+          applyDensityAwareZoom(introZoom, densityBlend, spread),
+          settings
+        ),
+        scaleY: this.applyZoomScale(
+          applyDensityAwareZoom(introZoom, densityBlend, spread),
+          settings
+        )
       };
     }
 
     // Final sprint — dramatic push-in on the leader
     if (leader.progress >= FINAL_SPRINT_THRESHOLD) {
-      const anchor = resolveCameraAnchorPoint(leader, focusRacer, focusWeight);
+      const anchor = blendTrackPoints(
+        resolveCameraAnchorPoint(leader, focusRacer, focusWeight),
+        densePackAnchor,
+        anchorBlendWeight
+      );
       const finalZoom = applyFocusAwareZoom(ZOOM_FINAL, focusGap);
       return {
         x: anchor.x,
         y: anchor.y,
-        scaleX: this.applyZoomScale(finalZoom, settings),
-        scaleY: this.applyZoomScale(finalZoom, settings)
+        scaleX: this.applyZoomScale(
+          applyDensityAwareZoom(finalZoom, densityBlend, spread),
+          settings
+        ),
+        scaleY: this.applyZoomScale(
+          applyDensityAwareZoom(finalZoom, densityBlend, spread),
+          settings
+        )
       };
     }
 
     // Check if pack is bunched together
-    const last = sorted[sorted.length - 1]!;
-    const spread = leader.progress - last.progress;
     const baseZoom = spread < BUNCH_THRESHOLD ? ZOOM_BUNCH : ZOOM_FOLLOW;
 
     // Runtime-aware cinematic pulses: default count is chosen by expected runtime,
     // but can be overridden via admin race config.
     const pulseZoom = this.computePulseZoom(state, settings);
     const targetZoom = this.applyZoomScale(
-      applyFocusAwareZoom(baseZoom + pulseZoom, focusGap),
+      applyDensityAwareZoom(
+        applyFocusAwareZoom(baseZoom + pulseZoom, focusGap),
+        densityBlend,
+        spread
+      ),
       settings
     );
-    const anchor = resolveCameraAnchorPoint(leader, focusRacer, focusWeight);
+    const anchor = blendTrackPoints(
+      resolveCameraAnchorPoint(leader, focusRacer, focusWeight),
+      densePackAnchor,
+      anchorBlendWeight
+    );
 
     // Follow the leader, but blend toward the focus racer when one is selected.
     return {
@@ -291,6 +328,43 @@ export function resolveCameraFocusGap(
 export function applyFocusAwareZoom(baseZoom: number, focusGap: number): number {
   const gapPenalty = Math.min(0.22, Math.max(0, focusGap) * 0.42);
   return Math.max(ZOOM_MIN, baseZoom - gapPenalty);
+}
+
+function applyDensityAwareZoom(baseZoom: number, densityBlend: number, spread: number): number {
+  const bunchFactor = clamp01((BUNCH_THRESHOLD - spread) / BUNCH_THRESHOLD);
+  const densePenalty = densityBlend * (0.14 + bunchFactor * 0.08);
+  return Math.max(ZOOM_MIN, baseZoom - densePenalty);
+}
+
+function resolveDenseFieldBlend(racerCount: number): number {
+  return clamp01(
+    (racerCount - DENSE_FIELD_RACER_THRESHOLD) /
+      (DENSE_FIELD_RACER_MAX - DENSE_FIELD_RACER_THRESHOLD)
+  );
+}
+
+function resolveDensePackAnchor(racers: CameraRacerState[], maxRacers: number): TrackPoint {
+  const count = Math.max(1, Math.min(maxRacers, racers.length));
+  let sumX = 0;
+  let sumY = 0;
+  for (let index = 0; index < count; index += 1) {
+    const racer = racers[index];
+    if (!racer) continue;
+    sumX += racer.position.x;
+    sumY += racer.position.y;
+  }
+  return {
+    x: sumX / count,
+    y: sumY / count
+  };
+}
+
+function blendTrackPoints(a: TrackPoint, b: TrackPoint, weight: number): TrackPoint {
+  const t = clamp01(weight);
+  return {
+    x: lerp(a.x, b.x, t),
+    y: lerp(a.y, b.y, t)
+  };
 }
 
 function lerp(from: number, to: number, alpha: number): number {

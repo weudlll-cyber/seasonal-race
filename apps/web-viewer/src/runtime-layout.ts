@@ -210,6 +210,7 @@ export function resolveRuntimeRenderMinimumSeparation(
   }));
 
   for (let iter = 0; iter < iterationCount; iter += 1) {
+    let adjustedInIteration = false;
     for (let i = 0; i < resolved.length; i += 1) {
       const a = resolved[i];
       if (!a) continue;
@@ -218,7 +219,9 @@ export function resolveRuntimeRenderMinimumSeparation(
         if (!b) continue;
 
         const dx = a.x - b.x;
+        if (Math.abs(dx) >= minSeparation) continue;
         const dy = a.y - b.y;
+        if (Math.abs(dy) >= minSeparation) continue;
         const distance = Math.hypot(dx, dy);
         if (distance >= minSeparation) continue;
 
@@ -239,10 +242,14 @@ export function resolveRuntimeRenderMinimumSeparation(
         a.y += ny * push;
         b.x -= nx * push;
         b.y -= ny * push;
+        adjustedInIteration = true;
 
         clampPoseDisplacement(a);
         clampPoseDisplacement(b);
       }
+    }
+    if (!adjustedInIteration) {
+      break;
     }
   }
 
