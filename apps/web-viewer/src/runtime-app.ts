@@ -1259,7 +1259,7 @@ function resolveRuntimeTrackHalfWidth(racerCount: number): number {
 function resolveRuntimeLaneSpread(spriteBaseScale: number, racerCount: number): number {
   const baseLaneSpread = 24 + spriteBaseScale * 22;
   const densityBlend = clamp(0, 1, (racerCount - 48) / 52);
-  return baseLaneSpread * (1 + densityBlend * 0.24);
+  return baseLaneSpread * (1 + densityBlend * 0.3);
 }
 
 function resolveRuntimeStartGridOffset(
